@@ -13,7 +13,7 @@ export class Product {
   @PrimaryGeneratedColumn()
   productId: number;
 
-  @Column()
+  @Column({ unique: true })
   productName: string;
 
   @Column({ type: 'float' })

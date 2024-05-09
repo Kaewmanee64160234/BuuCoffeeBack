@@ -7,6 +7,9 @@ import { Category } from './categories/entities/category.entity';
 import { ProductsModule } from './products/products.module';
 import { Product } from './products/entities/product.entity';
 import { ProductTypesModule } from './product-types/product-types.module';
+import { ToppingsModule } from './toppings/toppings.module';
+import { ProductType } from './product-types/entities/product-type.entity';
+import { Topping } from './toppings/entities/topping.entity';
 
 @Module({
   imports: [
@@ -17,12 +20,13 @@ import { ProductTypesModule } from './product-types/product-types.module';
       username: 'root',
       password: '',
       database: 'buucoffee',
-      entities: [Category, Product],
+      entities: [Category, Product, ProductType, Topping],
       synchronize: true,
     }),
     CategoriesModule,
     ProductsModule,
     ProductTypesModule,
+    ToppingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
