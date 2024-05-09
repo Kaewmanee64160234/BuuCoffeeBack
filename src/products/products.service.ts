@@ -18,7 +18,10 @@ export class ProductsService {
     private productTypeRepository: Repository<ProductType>,
   ) {}
 
-  async create(createProductDto: CreateProductDto) {
+  async create(
+    createProductDto: CreateProductDto,
+    imageFile: Express.Multer.File,
+  ) {
     try {
       // Find category by id
       const category = await this.categoryRepository.findOne({
@@ -32,38 +35,38 @@ export class ProductsService {
       newProduct.productName = createProductDto.productName;
       newProduct.productPrice = createProductDto.productPrice;
 
-      // Check if productImage is defined before converting to base64
-      if (createProductDto.productImage) {
-        newProduct.productImage = Buffer.from(
-          createProductDto.productImage,
-        ).toString('base64');
+      if (imageFile) {
+        newProduct.productImage = Buffer.from(imageFile.buffer).toString(
+          'base64',
+        );
+      } else {
+        newProduct.productImage = null;
       }
 
       newProduct.category = category;
 
-      const newProduct_ = await this.productRepository.save(newProduct);
-      if (category.haveTopping == true) {
-        // Add product types if provided
-        if (
-          createProductDto.productTypes &&
-          createProductDto.productTypes.length > 0
-        ) {
-          for (const productType of createProductDto.productTypes) {
-            const newProductType = new ProductType();
-            newProductType.productTypeName = productType.productTypeName;
-            newProductType.product = newProduct;
-            newProductType.productTypePrice = productType.productTypePrice;
-            await this.productTypeRepository.save(newProductType); // Save product type
-          }
-        }
-      } else {
-        //set product type to null
-        newProduct_.productTypes = null;
+      // Save the new product to the database
+      const savedProduct = await this.productRepository.save(newProduct);
 
-        await this.productRepository.save(newProduct_);
+      // Add product types if the category supports toppings
+      if (category.haveTopping && createProductDto.productTypes?.length > 0) {
+        const productTypes = createProductDto.productTypes.map(
+          (productTypeDto) => {
+            const newProductType = new ProductType();
+            newProductType.productTypeName = productTypeDto.productTypeName;
+            newProductType.product = savedProduct; // Assign the saved product
+            newProductType.productTypePrice = productTypeDto.productTypePrice;
+            return newProductType;
+          },
+        );
+
+        // Save all product types in one transaction
+        await this.productTypeRepository.save(productTypes);
       }
+
+      // Fetch the saved product with relations and return it
       return this.productRepository.findOne({
-        where: { productId: newProduct_.productId },
+        where: { productId: savedProduct.productId },
         relations: ['category', 'productTypes'],
       });
     } catch (error) {
