@@ -42,21 +42,26 @@ export class ProductsService {
       newProduct.category = category;
 
       const newProduct_ = await this.productRepository.save(newProduct);
-
-      // Add product types if provided
-      if (
-        createProductDto.productTypes &&
-        createProductDto.productTypes.length > 0
-      ) {
-        for (const productType of createProductDto.productTypes) {
-          const newProductType = new ProductType();
-          newProductType.productTypeName = productType.productTypeName;
-          newProductType.product = newProduct;
-          newProductType.productTypePrice = productType.productTypePrice;
-          await this.productTypeRepository.save(newProductType); // Save product type
+      if (category.haveTopping == true) {
+        // Add product types if provided
+        if (
+          createProductDto.productTypes &&
+          createProductDto.productTypes.length > 0
+        ) {
+          for (const productType of createProductDto.productTypes) {
+            const newProductType = new ProductType();
+            newProductType.productTypeName = productType.productTypeName;
+            newProductType.product = newProduct;
+            newProductType.productTypePrice = productType.productTypePrice;
+            await this.productTypeRepository.save(newProductType); // Save product type
+          }
         }
-      }
+      } else {
+        //set product type to null
+        newProduct_.productTypes = null;
 
+        await this.productRepository.save(newProduct_);
+      }
       return this.productRepository.findOne({
         where: { productId: newProduct_.productId },
         relations: ['category', 'productTypes'],
@@ -85,6 +90,7 @@ export class ProductsService {
     try {
       const product = await this.productRepository.findOne({
         where: { productId: id },
+        relations: ['productTypes', 'category'],
       });
       if (!product) {
         throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
@@ -100,18 +106,53 @@ export class ProductsService {
 
   async update(id: number, updateProductDto: UpdateProductDto) {
     try {
-      const product = await this.findOne(id); // Reuse findOne to handle fetching and error handling
+      const product = await this.productRepository.findOne({
+        where: { productId: id },
+        relations: ['productTypes', 'category'], // Include 'category' in relations
+      });
+
+      if (!product) {
+        throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
+      }
+
       if (updateProductDto.productImage) {
         updateProductDto.productImage = Buffer.from(
           updateProductDto.productImage,
         ).toString('base64');
       }
+
+      // Update productType if provided and category has 'haveTopping' property
+      if (
+        updateProductDto.productTypes &&
+        updateProductDto.productTypes.length > 0 &&
+        product.category?.haveTopping && // Check if product.category is defined
+        product.productTypes.length > 0
+      ) {
+        for (const productType of updateProductDto.productTypes) {
+          const productType_ = product.productTypes.find(
+            (pt) => pt.productTypeId === productType.productTypeId,
+          );
+          if (!productType_) {
+            throw new HttpException(
+              'Product type not found',
+              HttpStatus.NOT_FOUND,
+            );
+          }
+          await this.productTypeRepository.save({
+            ...productType_,
+            ...productType,
+          });
+        }
+      }
+
       const updatedProduct = await this.productRepository.save({
         ...product,
         ...updateProductDto,
       });
+
       return updatedProduct;
     } catch (error) {
+      console.log(error);
       throw new HttpException(
         'Failed to update product',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -125,6 +166,8 @@ export class ProductsService {
       if (!result.affected) {
         throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
       }
+      //delete product types
+      await this.productTypeRepository.delete({ product: { productId: id } });
       return { id, status: 'deleted' };
     } catch (error) {
       throw new HttpException(
