@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { ProductTypeTopping } from 'src/product-type-toppings/entities/product-type-topping.entity';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
 export class Topping {
@@ -8,4 +9,10 @@ export class Topping {
   toppingName: string;
   @Column({ type: 'float' })
   toppingPrice: number;
+
+  @OneToMany(
+    () => ProductTypeTopping,
+    (productTypeTopping) => productTypeTopping.topping,
+  )
+  productTypeToppings: ProductTypeTopping[];
 }

@@ -10,6 +10,7 @@ import { ProductTypesModule } from './product-types/product-types.module';
 import { ToppingsModule } from './toppings/toppings.module';
 import { ProductType } from './product-types/entities/product-type.entity';
 import { Topping } from './toppings/entities/topping.entity';
+import { ProductTypeToppingsModule } from './product-type-toppings/product-type-toppings.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { Topping } from './toppings/entities/topping.entity';
     ProductsModule,
     ProductTypesModule,
     ToppingsModule,
+    ProductTypeToppingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
