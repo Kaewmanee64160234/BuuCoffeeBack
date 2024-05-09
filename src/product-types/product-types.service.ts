@@ -22,7 +22,7 @@ export class ProductTypesService {
       const newProductType = new ProductType();
       newProductType.productTypeName = createProductTypeDto.productTypeName;
       newProductType.product = product;
-
+      newProductType.productTypePrice = createProductTypeDto.productTypePrice;
       return this.productTypeRepository.save(newProductType);
     } catch (error) {
       throw new HttpException(
@@ -34,7 +34,7 @@ export class ProductTypesService {
 
   findAll() {
     try {
-      return this.productRepository.find();
+      return this.productTypeRepository.find();
     } catch (error) {
       throw new HttpException(
         'Failed to fetch product types',

@@ -5,6 +5,7 @@ import { Product } from './entities/product.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { Category } from 'src/categories/entities/category.entity';
+import { ProductType } from 'src/product-types/entities/product-type.entity';
 
 @Injectable()
 export class ProductsService {
@@ -13,26 +14,55 @@ export class ProductsService {
     private productRepository: Repository<Product>,
     @InjectRepository(Category)
     private categoryRepository: Repository<Category>,
+    @InjectRepository(ProductType)
+    private productTypeRepository: Repository<ProductType>,
   ) {}
 
   async create(createProductDto: CreateProductDto) {
     try {
-      //find category by id
+      // Find category by id
       const category = await this.categoryRepository.findOne({
         where: { categoryId: createProductDto.categoryId },
       });
       if (!category) {
         throw new HttpException('Category not found', HttpStatus.NOT_FOUND);
       }
+
       const newProduct = new Product();
       newProduct.productName = createProductDto.productName;
       newProduct.productPrice = createProductDto.productPrice;
-      newProduct.productImage = Buffer.from(
-        createProductDto.productImage,
-      ).toString('base64');
+
+      // Check if productImage is defined before converting to base64
+      if (createProductDto.productImage) {
+        newProduct.productImage = Buffer.from(
+          createProductDto.productImage,
+        ).toString('base64');
+      }
+
       newProduct.category = category;
-      return await this.productRepository.save(newProduct);
+
+      const newProduct_ = await this.productRepository.save(newProduct);
+
+      // Add product types if provided
+      if (
+        createProductDto.productTypes &&
+        createProductDto.productTypes.length > 0
+      ) {
+        for (const productType of createProductDto.productTypes) {
+          const newProductType = new ProductType();
+          newProductType.productTypeName = productType.productTypeName;
+          newProductType.product = newProduct;
+          newProductType.productTypePrice = productType.productTypePrice;
+          await this.productTypeRepository.save(newProductType); // Save product type
+        }
+      }
+
+      return this.productRepository.findOne({
+        where: { productId: newProduct_.productId },
+        relations: ['category', 'productTypes'],
+      });
     } catch (error) {
+      console.log(error);
       throw new HttpException(
         'Failed to create product',
         HttpStatus.BAD_REQUEST,
