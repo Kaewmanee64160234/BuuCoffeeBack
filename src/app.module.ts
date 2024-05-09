@@ -6,6 +6,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { Category } from './categories/entities/category.entity';
 import { ProductsModule } from './products/products.module';
 import { Product } from './products/entities/product.entity';
+import { ProductTypesModule } from './product-types/product-types.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { Product } from './products/entities/product.entity';
     }),
     CategoriesModule,
     ProductsModule,
+    ProductTypesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
