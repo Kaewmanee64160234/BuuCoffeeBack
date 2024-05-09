@@ -11,6 +11,7 @@ import { ToppingsModule } from './toppings/toppings.module';
 import { ProductType } from './product-types/entities/product-type.entity';
 import { Topping } from './toppings/entities/topping.entity';
 import { ProductTypeToppingsModule } from './product-type-toppings/product-type-toppings.module';
+import { ProductTypeTopping } from './product-type-toppings/entities/product-type-topping.entity';
 
 @Module({
   imports: [
@@ -21,7 +22,7 @@ import { ProductTypeToppingsModule } from './product-type-toppings/product-type-
       username: 'root',
       password: '',
       database: 'buucoffee',
-      entities: [Category, Product, ProductType, Topping],
+      entities: [Category, Product, ProductType, Topping, ProductTypeTopping],
       synchronize: true,
     }),
     CategoriesModule,
