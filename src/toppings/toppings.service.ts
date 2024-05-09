@@ -1,10 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateToppingDto } from './dto/create-topping.dto';
 import { UpdateToppingDto } from './dto/update-topping.dto';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { Topping } from './entities/topping.entity';
-import { Product } from 'src/products/entities/product.entity';
 
 @Injectable()
 export class ToppingsService {
@@ -21,7 +20,10 @@ export class ToppingsService {
       newTopping.toppingPrice = createToppingDto.toppingPrice;
       return this.toppingRepository.save(newTopping);
     } catch (error) {
-      throw new Error(error);
+      throw new HttpException(
+        'Failed to create topping',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -29,7 +31,10 @@ export class ToppingsService {
     try {
       return this.toppingRepository.find();
     } catch (error) {
-      throw new Error(error);
+      throw new HttpException(
+        'Failed to delete product',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -37,7 +42,10 @@ export class ToppingsService {
     try {
       return this.toppingRepository.findOne({ where: { toppingId: id } });
     } catch (error) {
-      throw new Error(error);
+      throw new HttpException(
+        'Failed to create topping',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -51,11 +59,16 @@ export class ToppingsService {
         throw new Error('Topping not found');
       }
       //update topping
-      topping.toppingName = updateToppingDto.toppingName;
-      topping.toppingPrice = updateToppingDto.toppingPrice;
-      return this.toppingRepository.save(topping);
+      const updatedTopping = await this.toppingRepository.save({
+        ...topping,
+        ...updateToppingDto,
+      });
+      return updatedTopping;
     } catch (error) {
-      throw new Error(error);
+      throw new HttpException(
+        'Failed to create topping',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -63,7 +76,10 @@ export class ToppingsService {
     try {
       return this.toppingRepository.delete({ toppingId: id });
     } catch (error) {
-      throw new Error(error);
+      throw new HttpException(
+        'Failed to create topping',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 }
