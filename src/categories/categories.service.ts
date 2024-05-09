@@ -1,26 +1,91 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Category } from './entities/category.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class CategoriesService {
+  constructor(
+    @InjectRepository(Category)
+    private categoryrRepository: Repository<Category>,
+  ) {}
   create(createCategoryDto: CreateCategoryDto) {
-    return 'This action adds a new category';
+    try {
+      const newCategory = new Category();
+      newCategory.categoryName = createCategoryDto.categoryName;
+      newCategory.haveTopping = createCategoryDto.haveTopping;
+
+      return this.categoryrRepository.save(newCategory);
+    } catch (error) {
+      throw new HttpException(
+        'Failed to create category',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
   }
 
   findAll() {
-    return `This action returns all categories`;
+    try {
+      return this.categoryrRepository.find();
+    } catch (error) {
+      throw new HttpException(
+        'Failed to fetch categories',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} category`;
+  async findOne(id: number) {
+    try {
+      //find if not found throw error
+      const category = await this.categoryrRepository.findOne({
+        where: { categoryId: id },
+      });
+      if (!category) {
+        throw new HttpException('Category not found', HttpStatus.NOT_FOUND);
+      }
+      return category;
+    } catch (error) {
+      throw new HttpException(
+        'Failed to fetch category',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
   }
 
-  update(id: number, updateCategoryDto: UpdateCategoryDto) {
-    return `This action updates a #${id} category`;
+  async update(id: number, updateCategoryDto: UpdateCategoryDto) {
+    try {
+      const category = await this.categoryrRepository.findOne({
+        where: { categoryId: id },
+      });
+      if (!category) {
+        throw new HttpException('Category not found', HttpStatus.NOT_FOUND);
+      }
+      return this.categoryrRepository.update(id, updateCategoryDto);
+    } catch (error) {
+      throw new HttpException(
+        'Failed to update category',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
   }
 
   remove(id: number) {
-    return `This action removes a #${id} category`;
+    try {
+      const category = this.categoryrRepository.findOne({
+        where: { categoryId: id },
+      });
+      if (!category) {
+        throw new HttpException('Category not found', HttpStatus.NOT_FOUND);
+      }
+      return this.categoryrRepository.delete(id);
+    } catch (error) {
+      throw new HttpException(
+        'Failed to delete category',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
   }
 }
