@@ -1,5 +1,7 @@
-import { Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Product } from 'src/products/entities/product.entity';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
+@Entity()
 export class Category {
   @PrimaryGeneratedColumn()
   categoryId: number;
@@ -9,4 +11,7 @@ export class Category {
 
   @Column({ default: false })
   haveTopping: boolean;
+
+  @OneToMany(() => Product, (product) => product.category)
+  products: Product[];
 }
