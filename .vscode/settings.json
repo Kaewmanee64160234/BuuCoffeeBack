@@ -4,6 +4,8 @@
     },
     "eslint.validate": ["javascript"],
     "files.eol": "\n",
-    "editor.tabSize": 2
+    "editor.tabSize": 2,
+    "cSpell.words": [
+        "typeorm"
+    ]
    }
-  
