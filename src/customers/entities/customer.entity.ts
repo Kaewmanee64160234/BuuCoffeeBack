@@ -1,14 +1,12 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 @Entity()
-export class User {
+export class Customer {
   @PrimaryGeneratedColumn()
-  userId: number;
+  customerId: number;
   @Column()
-  userName: string;
+  customerName: string;
   @Column()
-  userPassword: string;
+  customerNumberOfStamp: number;
   @Column()
-  userRole: string;
-  @Column()
-  userEmail: string;
+  customerPhone: string;
 }

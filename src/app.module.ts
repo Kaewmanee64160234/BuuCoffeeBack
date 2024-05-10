@@ -14,6 +14,8 @@ import { ProductTypeToppingsModule } from './product-type-toppings/product-type-
 import { ProductTypeTopping } from './product-type-toppings/entities/product-type-topping.entity';
 import { UsersModule } from './users/users.module';
 import { User } from './users/entities/user.entity';
+import { CustomersModule } from './customers/customers.module';
+import { Customer } from './customers/entities/customer.entity';
 
 @Module({
   imports: [
@@ -31,6 +33,7 @@ import { User } from './users/entities/user.entity';
         Topping,
         ProductTypeTopping,
         User,
+        Customer,
       ],
       synchronize: true,
     }),
@@ -40,6 +43,7 @@ import { User } from './users/entities/user.entity';
     ToppingsModule,
     ProductTypeToppingsModule,
     UsersModule,
+    CustomersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

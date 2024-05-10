@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { emit } from 'process';
 import { User } from './entities/user.entity';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Like, Repository } from 'typeorm';
@@ -48,10 +47,7 @@ export class UsersService {
       }
       return user;
     } catch (error) {
-      throw new HttpException(
-        'Failed to fetch category',
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new HttpException('Failed to fetch user', HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -65,10 +61,7 @@ export class UsersService {
       }
       return this.usersRepository.update(id, updateUserDto);
     } catch (error) {
-      throw new HttpException(
-        'Failed to update category',
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new HttpException('Failed to update user', HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -82,10 +75,7 @@ export class UsersService {
       }
       return this.usersRepository.delete(id);
     } catch (error) {
-      throw new HttpException(
-        'Failed to update category',
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new HttpException('Failed to update user', HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -101,6 +91,7 @@ export class UsersService {
       console.log(e);
     }
   }
+
   async confirmWithPassword(createUserDto: CreateUserDto) {
     const user = await this.usersRepository.findOne({
       where: { userPassword: createUserDto.userPassword },
