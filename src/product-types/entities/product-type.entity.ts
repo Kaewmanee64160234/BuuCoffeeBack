@@ -17,6 +17,9 @@ export class ProductType {
   @Column()
   productTypeName: string;
 
+  @Column({ type: 'numeric' })
+  productTypePrice: number;
+
   @ManyToOne(() => Product, (product) => product.productTypes)
   product: Product;
 

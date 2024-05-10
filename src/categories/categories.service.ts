@@ -60,10 +60,15 @@ export class CategoriesService {
       const category = await this.categoryrRepository.findOne({
         where: { categoryId: id },
       });
+      console.log(updateCategoryDto);
       if (!category) {
         throw new HttpException('Category not found', HttpStatus.NOT_FOUND);
       }
-      return this.categoryrRepository.update(id, updateCategoryDto);
+
+      return this.categoryrRepository.save({
+        ...category,
+        ...updateCategoryDto,
+      });
     } catch (error) {
       throw new HttpException(
         'Failed to update category',
@@ -72,15 +77,15 @@ export class CategoriesService {
     }
   }
 
-  remove(id: number) {
+  async remove(id: number) {
     try {
-      const category = this.categoryrRepository.findOne({
+      const category = await this.categoryrRepository.findOne({
         where: { categoryId: id },
       });
       if (!category) {
         throw new HttpException('Category not found', HttpStatus.NOT_FOUND);
       }
-      return this.categoryrRepository.delete(id);
+      return await this.categoryrRepository.remove(category);
     } catch (error) {
       throw new HttpException(
         'Failed to delete category',

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class CreateToppingDto {
   @IsNotEmpty()
@@ -6,6 +6,6 @@ export class CreateToppingDto {
   toppingName: string;
 
   @IsNotEmpty()
-  @IsString()
+  @IsNumber()
   toppingPrice: number;
 }

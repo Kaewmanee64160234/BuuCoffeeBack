@@ -1,4 +1,5 @@
 import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { ProductType } from 'src/product-types/entities/product-type.entity';
 
 export class CreateProductDto {
   @IsString()
@@ -14,4 +15,6 @@ export class CreateProductDto {
   @IsNumber()
   @IsNotEmpty()
   categoryId: number;
+
+  productTypes: ProductType[];
 }

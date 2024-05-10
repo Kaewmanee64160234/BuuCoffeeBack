@@ -72,9 +72,16 @@ export class ToppingsService {
     }
   }
 
-  remove(id: number) {
+  async remove(id: number) {
     try {
-      return this.toppingRepository.delete({ toppingId: id });
+      const topping = await this.toppingRepository.findOne({
+        where: { toppingId: id },
+      });
+      if (!topping) {
+        throw new Error('Topping not found');
+      }
+      await this.toppingRepository.remove(topping);
+      return topping;
     } catch (error) {
       throw new HttpException(
         'Failed to create topping',

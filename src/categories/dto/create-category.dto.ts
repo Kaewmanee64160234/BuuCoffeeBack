@@ -8,7 +8,6 @@ import {
 
 export class CreateCategoryDto {
   @IsString()
-  @IsNotEmpty()
   @MinLength(3)
   @MaxLength(50)
   categoryName: string;
