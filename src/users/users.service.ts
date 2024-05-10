@@ -3,75 +3,118 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { emit } from 'process';
 import { User } from './entities/user.entity';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, Like, Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
+import { HttpException, HttpStatus } from '@nestjs/common';
 
-const users: User[] = [
-  {
-    id: 1,
-    name: 'addmin',
-    password: 'pass@123',
-    role: 'rice shop employee',
-    email: 'pornchitar@gmail.com',
-  },
-  {
-    id: 2,
-    name: 'user1',
-    password: 'pass@123',
-    role: 'coffee shop employee',
-    email: 'pp@gmail.com',
-  },
-];
 let userId = 0;
 @Injectable()
 export class UsersService {
+  constructor(
+    @InjectRepository(User) private usersRepository: Repository<User>,
+  ) {}
+
   create(createUserDto: CreateUserDto) {
-    const newUser = new User();
-    newUser.id = userId++;
-    newUser.name = createUserDto.name;
-    newUser.password = createUserDto.password;
-    newUser.role = createUserDto.role;
-    newUser.email = createUserDto.email;
-    users.push(newUser);
-    return newUser;
+    try {
+      const newUser = new User();
+      newUser.userId = userId++;
+      newUser.userName = createUserDto.userName;
+      newUser.userPassword = createUserDto.userPassword;
+      newUser.userRole = createUserDto.userRole;
+      newUser.userEmail = createUserDto.userEmail;
+
+      return this.usersRepository.save(newUser);
+    } catch (error) {
+      throw new HttpException('Failed to create user', HttpStatus.BAD_REQUEST);
+    }
   }
 
   findAll() {
-    return users;
+    try {
+      return this.usersRepository.find();
+    } catch (error) {
+      throw new HttpException('Failed to fetch users', HttpStatus.BAD_REQUEST);
+    }
   }
 
-  findOne(id: number) {
-    const index = users.findIndex((user) => {
-      return user.id === id;
-    });
-    if (index < 0) {
-      throw new NotFoundException();
+  async findOne(id: number) {
+    try {
+      const user = this.usersRepository.findOne({
+        where: { userId: id },
+      });
+      if (!user) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+      return user;
+    } catch (error) {
+      throw new HttpException(
+        'Failed to fetch category',
+        HttpStatus.BAD_REQUEST,
+      );
     }
-    return users[index];
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    const index = users.findIndex((user) => {
-      return user.id === id;
-    });
-    if (index < 0) {
-      throw new NotFoundException();
+  async update(id: number, updateUserDto: UpdateUserDto) {
+    try {
+      const user = this.usersRepository.findOne({
+        where: { userId: id },
+      });
+      if (!user) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+      return this.usersRepository.update(id, updateUserDto);
+    } catch (error) {
+      throw new HttpException(
+        'Failed to update category',
+        HttpStatus.BAD_REQUEST,
+      );
     }
-    const updateUser: User = {
-      ...users[index],
-      ...updateUserDto,
-    };
-    users[index] = updateUser;
-    return users[index];
   }
 
   remove(id: number) {
-    const index = users.findIndex((user) => {
-      return user.id === id;
-    });
-    if (index < 0) {
-      throw new NotFoundException();
+    try {
+      const user = this.usersRepository.findOne({
+        where: { userId: id },
+      });
+      if (!user) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+      return this.usersRepository.delete(id);
+    } catch (error) {
+      throw new HttpException(
+        'Failed to update category',
+        HttpStatus.BAD_REQUEST,
+      );
     }
-    const deleteUser = users[index];
-    users.splice(index, 1);
-    return deleteUser;
+  }
+
+  findUserByName(name: string) {
+    try {
+      const user = this.usersRepository.findOne({
+        where: { userName: name },
+        relations: ['user'],
+        order: { userName: 'ASC' },
+      });
+      return user;
+    } catch (e) {
+      console.log(e);
+    }
+  }
+  async confirmWithPassword(createUserDto: CreateUserDto) {
+    const user = await this.usersRepository.findOne({
+      where: { userPassword: createUserDto.userPassword },
+    });
+    const isMatch = await bcrypt.compare(
+      createUserDto.userPassword,
+      user.userPassword,
+    );
+    if (isMatch) {
+      return {
+        status: true,
+      };
+    } else {
+      throw new NotFoundException('Your password is not matches');
+    }
   }
 }
