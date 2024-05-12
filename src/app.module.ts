@@ -16,7 +16,8 @@ import { UsersModule } from './users/users.module';
 import { User } from './users/entities/user.entity';
 import { CustomersModule } from './customers/customers.module';
 import { Customer } from './customers/entities/customer.entity';
-
+import { IngredientsModule } from './ingredients/ingredients.module';
+import { Ingredient } from './ingredients/entities/ingredient.entity';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -34,6 +35,7 @@ import { Customer } from './customers/entities/customer.entity';
         ProductTypeTopping,
         User,
         Customer,
+        Ingredient,
       ],
       synchronize: true,
     }),
@@ -44,6 +46,7 @@ import { Customer } from './customers/entities/customer.entity';
     ProductTypeToppingsModule,
     UsersModule,
     CustomersModule,
+    IngredientsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
