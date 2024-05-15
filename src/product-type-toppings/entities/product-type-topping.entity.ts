@@ -1,9 +1,10 @@
 import { ProductType } from 'src/product-types/entities/product-type.entity';
+import { ReceiptItem } from 'src/receipt-item/entities/receipt-item.entity';
 import { Topping } from 'src/toppings/entities/topping.entity';
 import {
   Column,
   Entity,
-  ManyToMany,
+  OneToMany,
   ManyToOne,
   PrimaryColumn,
   PrimaryGeneratedColumn,
@@ -25,4 +26,10 @@ export class ProductTypeTopping {
 
   @ManyToOne(() => Topping, (topping) => topping.productTypeToppings)
   topping: Topping;
+
+  @ManyToOne(
+    () => ReceiptItem,
+    (receiptItem) => receiptItem.productTypeToppings,
+  )
+  receiptItem: ReceiptItem;
 }

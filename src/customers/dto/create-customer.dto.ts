@@ -4,7 +4,6 @@ export class CreateCustomerDto {
   @Length(3, 64)
   customerName: string;
   @IsNotEmpty()
-  @Length(3, 64)
   customerNumberOfStamp: number;
   @IsNotEmpty()
   @IsPhoneNumber('TH')

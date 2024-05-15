@@ -1,4 +1,11 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { Reciept } from 'src/reciept/entities/reciept.entity';
 @Entity()
 export class User {
   @PrimaryGeneratedColumn()
@@ -11,4 +18,6 @@ export class User {
   userRole: string;
   @Column()
   userEmail: string;
+  @ManyToOne(() => Reciept, (reciept) => reciept.user)
+  reciepts: Reciept[];
 }

@@ -19,7 +19,7 @@ export class Product {
   @Column({ type: 'float' })
   productPrice: number;
 
-  @Column({ default: 'no-image.jpg' })
+  @Column({ default: 'no-image.jpg', nullable: true })
   productImage: string;
 
   @ManyToOne(() => Category, (category) => category.products)

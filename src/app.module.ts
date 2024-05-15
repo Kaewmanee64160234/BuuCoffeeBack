@@ -16,6 +16,12 @@ import { UsersModule } from './users/users.module';
 import { User } from './users/entities/user.entity';
 import { CustomersModule } from './customers/customers.module';
 import { Customer } from './customers/entities/customer.entity';
+import { RecieptModule } from './reciept/reciept.module';
+import { Reciept } from './reciept/entities/reciept.entity';
+import { ReceiptItemModule } from './receipt-item/receipt-item.module';
+import { ReceiptItem } from './receipt-item/entities/receipt-item.entity';
+import { ReceiptPromotionsModule } from './receipt-promotions/receipt-promotions.module';
+import { ReceiptPromotion } from './receipt-promotions/entities/receipt-promotion.entity';
 
 @Module({
   imports: [
@@ -34,6 +40,9 @@ import { Customer } from './customers/entities/customer.entity';
         ProductTypeTopping,
         User,
         Customer,
+        Reciept,
+        ReceiptItem,
+        ReceiptPromotion,
       ],
       synchronize: true,
     }),
@@ -44,6 +53,9 @@ import { Customer } from './customers/entities/customer.entity';
     ProductTypeToppingsModule,
     UsersModule,
     CustomersModule,
+    RecieptModule,
+    ReceiptItemModule,
+    ReceiptPromotionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

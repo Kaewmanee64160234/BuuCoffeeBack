@@ -1,28 +1,28 @@
 import { Module } from '@nestjs/common';
-import { CategoriesService } from './categories.service';
-import { CategoriesController } from './categories.controller';
+import { ReceiptItemService } from './receipt-item.service';
+import { ReceiptItemController } from './receipt-item.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Category } from './entities/category.entity';
+import { ReceiptItem } from './entities/receipt-item.entity';
 import { Reciept } from 'src/reciept/entities/reciept.entity';
 import { ProductType } from 'src/product-types/entities/product-type.entity';
-import { ReceiptItem } from 'src/receipt-item/entities/receipt-item.entity';
 import { Product } from 'src/products/entities/product.entity';
 import { ProductTypeTopping } from 'src/product-type-toppings/entities/product-type-topping.entity';
 import { Topping } from 'src/toppings/entities/topping.entity';
+import { Category } from 'src/categories/entities/category.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
-      Category,
       Reciept,
       ProductType,
       Product,
       ReceiptItem,
       ProductTypeTopping,
       Topping,
+      Category,
     ]),
   ],
-  controllers: [CategoriesController],
-  providers: [CategoriesService],
+  controllers: [ReceiptItemController],
+  providers: [ReceiptItemService],
 })
-export class CategoriesModule {}
+export class ReceiptItemModule {}
