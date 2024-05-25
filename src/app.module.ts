@@ -16,7 +16,6 @@ import { UsersModule } from './users/users.module';
 import { User } from './users/entities/user.entity';
 import { CustomersModule } from './customers/customers.module';
 import { Customer } from './customers/entities/customer.entity';
-<<<<<<< HEAD
 import { RecieptModule } from './reciept/reciept.module';
 import { Reciept } from './reciept/entities/reciept.entity';
 import { ReceiptItemModule } from './receipt-item/receipt-item.module';
@@ -43,13 +42,10 @@ import { Ingredient } from './ingredients/entities/ingredient.entity';
         ProductTypeTopping,
         User,
         Customer,
-<<<<<<< HEAD
         Reciept,
         ReceiptItem,
         ReceiptPromotion,
-=======
         Ingredient,
->>>>>>> a71b2aa08c92bb60ca228041c06d56bff606dffc
       ],
       synchronize: true,
     }),
@@ -60,13 +56,10 @@ import { Ingredient } from './ingredients/entities/ingredient.entity';
     ProductTypeToppingsModule,
     UsersModule,
     CustomersModule,
-<<<<<<< HEAD
     RecieptModule,
     ReceiptItemModule,
     ReceiptPromotionsModule,
-=======
     IngredientsModule,
->>>>>>> a71b2aa08c92bb60ca228041c06d56bff606dffc
   ],
   controllers: [AppController],
   providers: [AppService],
