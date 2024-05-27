@@ -1,4 +1,5 @@
 import { IsNotEmpty } from 'class-validator';
+import { CreateIngredientDto } from 'src/ingredients/dto/create-ingredient.dto';
 
 export class CreateRecipeDto {
   @IsNotEmpty()
@@ -6,4 +7,8 @@ export class CreateRecipeDto {
 
   @IsNotEmpty()
   quantity: number;
+
+  recipeId: number;
+
+  ingredient: CreateIngredientDto;
 }
