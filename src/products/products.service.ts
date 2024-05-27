@@ -76,6 +76,30 @@ export class ProductsService {
     });
   }
 
+  // uploadImage
+  async uploadImage(productId: number, fileName: string) {
+    try {
+      console.log('productId', productId);
+      const product = await this.productRepository.findOne({
+        where: { productId: +productId },
+      });
+      if (!product) {
+        throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
+      }
+      const updatedProduct = await this.productRepository.save({
+        ...product,
+        productImage: fileName,
+      });
+      return updatedProduct;
+    } catch (error) {
+      console.log(error);
+      throw new HttpException(
+        'Failed to upload image',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   async findAll() {
     try {
       return await this.productRepository.find();
