@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Recipe } from 'src/recipes/entities/recipe.entity';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 @Entity()
 export class Ingredient {
   @PrimaryGeneratedColumn()
@@ -17,4 +18,7 @@ export class Ingredient {
   quantityInStock: number;
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   quantityPerUnit: number;
+  @Column()
+  @OneToMany(() => Recipe, (recipe) => recipe.ingredient)
+  recipes: Recipe[];
 }

@@ -11,7 +11,9 @@ describe('ReceiptPromotionsController', () => {
       providers: [ReceiptPromotionsService],
     }).compile();
 
-    controller = module.get<ReceiptPromotionsController>(ReceiptPromotionsController);
+    controller = module.get<ReceiptPromotionsController>(
+      ReceiptPromotionsController,
+    );
   });
 
   it('should be defined', () => {
