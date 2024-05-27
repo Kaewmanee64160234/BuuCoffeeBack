@@ -26,6 +26,7 @@ import { ReceiptPromotion } from './receipt-promotions/entities/receipt-promotio
 import { IngredientsModule } from './ingredients/ingredients.module';
 import { Ingredient } from './ingredients/entities/ingredient.entity';
 import { RecipesModule } from './recipes/recipes.module';
+import { Recipe } from './recipes/entities/recipe.entity';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -47,6 +48,7 @@ import { RecipesModule } from './recipes/recipes.module';
         ReceiptItem,
         ReceiptPromotion,
         Ingredient,
+        Recipe,
       ],
       synchronize: true,
     }),

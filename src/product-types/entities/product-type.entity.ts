@@ -10,7 +10,6 @@ import {
   PrimaryGeneratedColumn,
   Unique,
 } from 'typeorm';
-
 @Entity()
 export class ProductType {
   @PrimaryGeneratedColumn()
@@ -28,9 +27,10 @@ export class ProductType {
   @OneToMany(
     () => ProductTypeTopping,
     (productTypeTopping) => productTypeTopping.productType,
+    { cascade: true },
   )
   productTypeToppings: ProductTypeTopping[];
-  // oneToOne recipes
-  @OneToOne(() => Recipe, (recipe) => recipe.productType)
-  recipe: Recipe;
+
+  @OneToMany(() => Recipe, (recipe) => recipe.productType) // Change this line
+  recipes: Recipe[]; // Change this line
 }

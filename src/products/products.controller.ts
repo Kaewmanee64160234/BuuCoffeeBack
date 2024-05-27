@@ -8,6 +8,9 @@ import {
   Delete,
   UploadedFile,
   UseInterceptors,
+  UsePipes,
+  ValidationPipe,
+  BadRequestException,
 } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -22,12 +25,8 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Post()
-  @UseInterceptors(FileInterceptor('imageFile')) // 'imageFile' is the name of the file input in the form
-  async createProduct(
-    @Body() createProductDto: CreateProductDto,
-    @UploadedFile() imageFile: Express.Multer.File,
-  ) {
-    return this.productsService.create(createProductDto, imageFile);
+  async createProduct(@Body() createProductDto: CreateProductDto) {
+    return this.productsService.create(createProductDto);
   }
 
   @Get()

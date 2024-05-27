@@ -13,15 +13,12 @@ export class Recipe {
   @PrimaryGeneratedColumn()
   recipeId: number;
 
-  @Column()
-  productId: number;
-
   @ManyToOne(() => Ingredient, (ingredient) => ingredient.recipes)
   ingredient: Ingredient;
 
   @Column()
   quantity: number;
 
-  @OneToOne(() => ProductType, (productType) => productType.recipe)
+  @ManyToOne(() => ProductType, (productType) => productType.recipes) // Change this line
   productType: ProductType;
 }
