@@ -1,10 +1,12 @@
 import { ProductTypeTopping } from 'src/product-type-toppings/entities/product-type-topping.entity';
 import { Product } from 'src/products/entities/product.entity';
+import { Recipe } from 'src/recipes/entities/recipe.entity';
 import {
   Column,
   Entity,
   ManyToOne,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
   Unique,
 } from 'typeorm';
@@ -28,4 +30,7 @@ export class ProductType {
     (productTypeTopping) => productTypeTopping.productType,
   )
   productTypeToppings: ProductTypeTopping[];
+  // oneToOne recipes
+  @OneToOne(() => Recipe, (recipe) => recipe.productType)
+  recipe: Recipe;
 }

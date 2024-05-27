@@ -18,7 +18,6 @@ export class Ingredient {
   quantityInStock: number;
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   quantityPerUnit: number;
-  @Column()
   @OneToMany(() => Recipe, (recipe) => recipe.ingredient)
   recipes: Recipe[];
 }

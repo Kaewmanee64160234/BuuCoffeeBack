@@ -1,5 +1,12 @@
 import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { ProductType } from 'src/product-types/entities/product-type.entity';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  OneToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
 @Entity()
 export class Recipe {
@@ -9,10 +16,12 @@ export class Recipe {
   @Column()
   productId: number;
 
-  @Column()
   @ManyToOne(() => Ingredient, (ingredient) => ingredient.recipes)
   ingredient: Ingredient;
 
   @Column()
   quantity: number;
+
+  @OneToOne(() => ProductType, (productType) => productType.recipe)
+  productType: ProductType;
 }

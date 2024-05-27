@@ -5,7 +5,7 @@ export class CreateRecipeDto {
   productId: number;
 
   @IsNotEmpty()
-  ingradientId: number;
+  ingredientId: number;
 
   @IsNotEmpty()
   quantity: number;
