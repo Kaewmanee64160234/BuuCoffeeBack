@@ -142,7 +142,7 @@ export class ProductsService {
 
   async findAll() {
     try {
-      return await this.productRepository.find();
+      return await this.productRepository.find({ relations: ['productTypes'] });
     } catch (error) {
       throw new HttpException(
         'Failed to retrieve products',
