@@ -112,7 +112,7 @@ export class ProductsService {
 
     return this.productRepository.findOne({
       where: { productId: savedProduct.productId },
-      relations: ['productTypes', 'productTypes.recipes'],
+      relations: ['productTypes', 'productTypes.recipes', 'category'],
     });
   }
 
@@ -142,7 +142,9 @@ export class ProductsService {
 
   async findAll() {
     try {
-      return await this.productRepository.find({ relations: ['productTypes'] });
+      return await this.productRepository.find({
+        relations: ['productTypes', 'category'],
+      });
     } catch (error) {
       throw new HttpException(
         'Failed to retrieve products',
@@ -293,6 +295,27 @@ export class ProductsService {
     } catch (error) {
       throw new HttpException(
         'Failed to delete product',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  //get product by category name
+  async getProductByCategoryName(categoryName: string) {
+    try {
+      const category = await this.categoryRepository.findOne({
+        where: { categoryName: categoryName },
+      });
+      if (!category) {
+        throw new HttpException('Category not found', HttpStatus.NOT_FOUND);
+      }
+      return await this.productRepository.find({
+        where: { category: { categoryId: category.categoryId } },
+        relations: ['productTypes', 'productTypes.recipes', 'category'],
+      });
+    } catch (error) {
+      throw new HttpException(
+        'Failed to retrieve products',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

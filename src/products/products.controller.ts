@@ -8,9 +8,7 @@ import {
   Delete,
   UploadedFile,
   UseInterceptors,
-  UsePipes,
-  ValidationPipe,
-  BadRequestException,
+  Res,
 } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -22,7 +20,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import { extname } from 'path';
-
+import { Response, Request } from 'express';
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
@@ -70,5 +68,18 @@ export class ProductsController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.productsService.remove(+id);
+  }
+
+  // getProductByCategoryName
+  @Get('category/:categoryName')
+  getProductByCategoryName(@Param('categoryName') categoryName: string) {
+    return this.productsService.getProductByCategoryName(categoryName);
+  }
+
+  //getImage
+  @Get(':id/image')
+  async getImage(@Param('id') id: string, @Res() res: Response) {
+    const product = await this.productsService.findOne(+id);
+    res.sendFile(product.productImage, { root: './product_images' });
   }
 }
