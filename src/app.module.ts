@@ -22,9 +22,18 @@ import { ReceiptItemModule } from './receipt-item/receipt-item.module';
 import { ReceiptItem } from './receipt-item/entities/receipt-item.entity';
 import { ReceiptPromotionsModule } from './receipt-promotions/receipt-promotions.module';
 import { ReceiptPromotion } from './receipt-promotions/entities/receipt-promotion.entity';
-
 import { IngredientsModule } from './ingredients/ingredients.module';
 import { Ingredient } from './ingredients/entities/ingredient.entity';
+import { RecipesModule } from './recipes/recipes.module';
+import { Recipe } from './recipes/entities/recipe.entity';
+import { ImportingredientsModule } from './importingredients/importingredients.module';
+import { ImportingredientitemsModule } from './importingredientitems/importingredientitems.module';
+import { Importingredient } from './importingredients/entities/importingredient.entity';
+import { Importingredientitem } from './importingredientitems/entities/importingredientitem.entity';
+import { CheckingredientsModule } from './checkingredients/checkingredients.module';
+import { Checkingredient } from './checkingredients/entities/checkingredient.entity';
+import { CheckingredientitemsModule } from './checkingredientitems/checkingredientitems.module';
+import { Checkingredientitem } from './checkingredientitems/entities/checkingredientitem.entity';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -46,6 +55,11 @@ import { Ingredient } from './ingredients/entities/ingredient.entity';
         ReceiptItem,
         ReceiptPromotion,
         Ingredient,
+        Recipe,
+        Importingredientitem,
+        Importingredient,
+        Checkingredient,
+        Checkingredientitem,
       ],
       synchronize: true,
     }),
@@ -60,6 +74,11 @@ import { Ingredient } from './ingredients/entities/ingredient.entity';
     ReceiptItemModule,
     ReceiptPromotionsModule,
     IngredientsModule,
+    RecipesModule,
+    ImportingredientsModule,
+    ImportingredientitemsModule,
+    CheckingredientsModule,
+    CheckingredientitemsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

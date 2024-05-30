@@ -9,6 +9,8 @@ import { Reciept } from 'src/reciept/entities/reciept.entity';
 import { ReceiptItem } from 'src/receipt-item/entities/receipt-item.entity';
 import { ProductTypeTopping } from 'src/product-type-toppings/entities/product-type-topping.entity';
 import { Topping } from 'src/toppings/entities/topping.entity';
+import { Recipe } from 'src/recipes/entities/recipe.entity';
+import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { Topping } from 'src/toppings/entities/topping.entity';
       ReceiptItem,
       ProductTypeTopping,
       Topping,
+      Recipe,
+      Ingredient,
     ]),
   ],
   controllers: [ProductsController],

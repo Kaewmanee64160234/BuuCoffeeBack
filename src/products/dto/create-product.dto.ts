@@ -1,4 +1,11 @@
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
+import { CreateProductTypeDto } from 'src/product-types/dto/create-product-type.dto';
 import { ProductType } from 'src/product-types/entities/product-type.entity';
 
 export class CreateProductDto {
@@ -14,7 +21,7 @@ export class CreateProductDto {
 
   @IsNumber()
   @IsNotEmpty()
-  categoryId: number;
+  categoryId: string;
 
-  productTypes: ProductType[];
+  productTypes: CreateProductTypeDto[];
 }

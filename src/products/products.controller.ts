@@ -8,6 +8,7 @@ import {
   Delete,
   UploadedFile,
   UseInterceptors,
+  Res,
 } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -16,18 +17,37 @@ import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-
+import { diskStorage } from 'multer';
+import { v4 as uuidv4 } from 'uuid';
+import { extname } from 'path';
+import { Response, Request } from 'express';
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Post()
-  @UseInterceptors(FileInterceptor('imageFile')) // 'imageFile' is the name of the file input in the form
-  async createProduct(
-    @Body() createProductDto: CreateProductDto,
-    @UploadedFile() imageFile: Express.Multer.File,
+  async createProduct(@Body() createProductDto: CreateProductDto) {
+    return this.productsService.create(createProductDto);
+  }
+
+  //uplode image product file
+  @Post('upload/:productId')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './product_images',
+        filename: (req, file, cb) => {
+          const name = uuidv4();
+          return cb(null, name + extname(file.originalname));
+        },
+      }),
+    }),
+  )
+  uploadImage(
+    @Param('productId') id: string,
+    @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.productsService.create(createProductDto, imageFile);
+    return this.productsService.uploadImage(+id, file.filename);
   }
 
   @Get()
@@ -48,5 +68,18 @@ export class ProductsController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.productsService.remove(+id);
+  }
+
+  // getProductByCategoryName
+  @Get('category/:categoryName')
+  getProductByCategoryName(@Param('categoryName') categoryName: string) {
+    return this.productsService.getProductByCategoryName(categoryName);
+  }
+
+  //getImage
+  @Get(':id/image')
+  async getImage(@Param('id') id: string, @Res() res: Response) {
+    const product = await this.productsService.findOne(+id);
+    res.sendFile(product.productImage, { root: './product_images' });
   }
 }
