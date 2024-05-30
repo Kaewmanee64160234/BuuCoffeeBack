@@ -32,14 +32,6 @@ export class ImportingredientsController {
     return this.importingredientsService.findOne(+id);
   }
 
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateImportingredientDto: UpdateImportingredientDto,
-  ) {
-    return this.importingredientsService.update(+id, updateImportingredientDto);
-  }
-
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.importingredientsService.remove(+id);

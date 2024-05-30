@@ -6,6 +6,7 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  JoinColumn,
 } from 'typeorm';
 @Entity()
 export class Importingredient {
@@ -20,6 +21,7 @@ export class Importingredient {
   @Column()
   total: number;
   @ManyToOne(() => User, (user) => user.importingredients)
+  @JoinColumn({ name: 'userId' })
   user: User;
   @OneToMany(
     () => Importingredientitem,

@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateImportingredientDto } from './dto/create-importingredient.dto';
-import { UpdateImportingredientDto } from './dto/update-importingredient.dto';
 import { Importingredient } from './entities/importingredient.entity';
 import { Repository } from 'typeorm';
 import { Importingredientitem } from 'src/importingredientitems/entities/importingredientitem.entity';
 import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 import { User } from 'src/users/entities/user.entity';
+import { HttpException, HttpStatus } from '@nestjs/common';
 
 @Injectable()
 export class ImportingredientsService {
@@ -21,7 +21,9 @@ export class ImportingredientsService {
     private userRepository: Repository<User>,
   ) {}
   async create(createImportingredientDto: CreateImportingredientDto) {
-    const user = await this.userRepository.findOneBy({});
+    const user = await this.userRepository.findOneBy({
+      userId: createImportingredientDto.userId,
+    });
     if (!user) {
       throw new Error('User not found');
     }
@@ -69,19 +71,52 @@ export class ImportingredientsService {
       relations: ['importingredientitem'],
     });
   }
+
   findAll() {
-    return `This action returns all importingredients`;
+    try {
+      return this.importingredientRepository.find();
+    } catch (error) {
+      console.error(error);
+    }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} importingredient`;
+  async findOne(id: number) {
+    try {
+      const importingredient = await this.importingredientRepository.findOne({
+        where: { importID: id },
+      });
+      if (!importingredient) {
+        throw new HttpException(
+          'importingredient not found',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      return importingredient;
+    } catch (error) {
+      throw new HttpException(
+        'Failed to fetch reciept',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
   }
 
-  update(id: number, updateImportingredientDto: UpdateImportingredientDto) {
-    return `This action updates a #${id} importingredient`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} importingredient`;
+  async remove(id: number) {
+    try {
+      const importingredient = await this.importingredientRepository.findOne({
+        where: { importID: id },
+      });
+      if (!importingredient) {
+        throw new HttpException(
+          'importingredient not found',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      return await this.importingredientRepository.remove(importingredient);
+    } catch (error) {
+      throw new HttpException(
+        'Failed to delete importingredient',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
   }
 }
