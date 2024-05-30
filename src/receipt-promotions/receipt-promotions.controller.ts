@@ -1,11 +1,21 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { ReceiptPromotionsService } from './receipt-promotions.service';
 import { CreateReceiptPromotionDto } from './dto/create-receipt-promotion.dto';
 import { UpdateReceiptPromotionDto } from './dto/update-receipt-promotion.dto';
 
 @Controller('receipt-promotions')
 export class ReceiptPromotionsController {
-  constructor(private readonly receiptPromotionsService: ReceiptPromotionsService) {}
+  constructor(
+    private readonly receiptPromotionsService: ReceiptPromotionsService,
+  ) {}
 
   @Post()
   create(@Body() createReceiptPromotionDto: CreateReceiptPromotionDto) {
@@ -23,7 +33,10 @@ export class ReceiptPromotionsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateReceiptPromotionDto: UpdateReceiptPromotionDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateReceiptPromotionDto: UpdateReceiptPromotionDto,
+  ) {
     return this.receiptPromotionsService.update(+id, updateReceiptPromotionDto);
   }
 

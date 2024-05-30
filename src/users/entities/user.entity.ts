@@ -18,6 +18,6 @@ export class User {
   userRole: string;
   @Column()
   userEmail: string;
-  @ManyToOne(() => Reciept, (reciept) => reciept.user)
+  @OneToMany(() => Reciept, (reciept) => reciept.user)
   reciepts: Reciept[];
 }
