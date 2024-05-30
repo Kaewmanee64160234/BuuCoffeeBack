@@ -7,6 +7,7 @@ import {
 } from 'typeorm';
 import { Reciept } from 'src/reciept/entities/reciept.entity';
 import { Importingredient } from 'src/importingredients/entities/importingredient.entity';
+import { Checkingredient } from 'src/checkingredients/entities/checkingredient.entity';
 @Entity()
 export class User {
   @PrimaryGeneratedColumn()
@@ -26,4 +27,6 @@ export class User {
     (importingredient) => importingredient.user,
   )
   importingredients: Importingredient[];
+  @OneToMany(() => Checkingredient, (checkingredient) => checkingredient.user)
+  checkingredients: Checkingredient[];
 }

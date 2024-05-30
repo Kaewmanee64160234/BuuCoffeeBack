@@ -30,6 +30,10 @@ import { ImportingredientsModule } from './importingredients/importingredients.m
 import { ImportingredientitemsModule } from './importingredientitems/importingredientitems.module';
 import { Importingredient } from './importingredients/entities/importingredient.entity';
 import { Importingredientitem } from './importingredientitems/entities/importingredientitem.entity';
+import { CheckingredientsModule } from './checkingredients/checkingredients.module';
+import { Checkingredient } from './checkingredients/entities/checkingredient.entity';
+import { CheckingredientitemsModule } from './checkingredientitems/checkingredientitems.module';
+import { Checkingredientitem } from './checkingredientitems/entities/checkingredientitem.entity';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -54,6 +58,8 @@ import { Importingredientitem } from './importingredientitems/entities/importing
         Recipe,
         Importingredientitem,
         Importingredient,
+        Checkingredient,
+        Checkingredientitem,
       ],
       synchronize: true,
     }),
@@ -71,6 +77,8 @@ import { Importingredientitem } from './importingredientitems/entities/importing
     RecipesModule,
     ImportingredientsModule,
     ImportingredientitemsModule,
+    CheckingredientsModule,
+    CheckingredientitemsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -84,6 +84,7 @@ export class ImportingredientsService {
     try {
       const importingredient = await this.importingredientRepository.findOne({
         where: { importID: id },
+        relations: ['user', 'importingredientitem'],
       });
       if (!importingredient) {
         throw new HttpException(
