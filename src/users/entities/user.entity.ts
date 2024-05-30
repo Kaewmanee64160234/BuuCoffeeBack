@@ -6,6 +6,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Reciept } from 'src/reciept/entities/reciept.entity';
+import { Importingredient } from 'src/importingredients/entities/importingredient.entity';
 @Entity()
 export class User {
   @PrimaryGeneratedColumn()
@@ -20,4 +21,9 @@ export class User {
   userEmail: string;
   @ManyToOne(() => Reciept, (reciept) => reciept.user)
   reciepts: Reciept[];
+  @OneToMany(
+    () => Importingredient,
+    (importingredient) => importingredient.user,
+  )
+  importingredients: Importingredient[];
 }

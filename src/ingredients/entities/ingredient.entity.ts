@@ -1,3 +1,4 @@
+import { Importingredientitem } from 'src/importingredientitems/entities/importingredientitem.entity';
 import { Recipe } from 'src/recipes/entities/recipe.entity';
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 @Entity()
@@ -20,4 +21,9 @@ export class Ingredient {
   quantityPerUnit: number;
   @OneToMany(() => Recipe, (recipe) => recipe.ingredient)
   recipes: Recipe[];
+  @OneToMany(
+    () => Importingredientitem,
+    (importingredientitem) => importingredientitem.ingredient,
+  )
+  importingredientitem: Importingredientitem[];
 }

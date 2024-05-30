@@ -22,11 +22,14 @@ import { ReceiptItemModule } from './receipt-item/receipt-item.module';
 import { ReceiptItem } from './receipt-item/entities/receipt-item.entity';
 import { ReceiptPromotionsModule } from './receipt-promotions/receipt-promotions.module';
 import { ReceiptPromotion } from './receipt-promotions/entities/receipt-promotion.entity';
-
 import { IngredientsModule } from './ingredients/ingredients.module';
 import { Ingredient } from './ingredients/entities/ingredient.entity';
 import { RecipesModule } from './recipes/recipes.module';
 import { Recipe } from './recipes/entities/recipe.entity';
+import { ImportingredientsModule } from './importingredients/importingredients.module';
+import { ImportingredientitemsModule } from './importingredientitems/importingredientitems.module';
+import { Importingredient } from './importingredients/entities/importingredient.entity';
+import { Importingredientitem } from './importingredientitems/entities/importingredientitem.entity';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -49,6 +52,8 @@ import { Recipe } from './recipes/entities/recipe.entity';
         ReceiptPromotion,
         Ingredient,
         Recipe,
+        Importingredientitem,
+        Importingredient,
       ],
       synchronize: true,
     }),
@@ -64,6 +69,8 @@ import { Recipe } from './recipes/entities/recipe.entity';
     ReceiptPromotionsModule,
     IngredientsModule,
     RecipesModule,
+    ImportingredientsModule,
+    ImportingredientitemsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
