@@ -6,8 +6,9 @@ import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 export class Ingredient {
   @PrimaryGeneratedColumn()
   IngredientId: number;
-  @Column({ default: 'no-image.jpg' })
+  @Column({ nullable: true, default: null })
   IngredientImage: string;
+
   @Column()
   nameIngredient: string;
   @Column()
