@@ -11,7 +11,9 @@ describe('CheckingredientitemsController', () => {
       providers: [CheckingredientitemsService],
     }).compile();
 
-    controller = module.get<CheckingredientitemsController>(CheckingredientitemsController);
+    controller = module.get<CheckingredientitemsController>(
+      CheckingredientitemsController,
+    );
   });
 
   it('should be defined', () => {

@@ -12,6 +12,8 @@ import {
 export class ReceiptItem {
   @PrimaryGeneratedColumn()
   receiptItemId: number;
+  @Column({ type: 'numeric' })
+  quantity: number;
   @Column()
   receiptSubTotal: number;
   @ManyToOne(() => Reciept, (reciept) => reciept.receiptItems)

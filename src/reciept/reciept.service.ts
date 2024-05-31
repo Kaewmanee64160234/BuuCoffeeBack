@@ -78,28 +78,41 @@ export class RecieptService {
               totalProductTopping += Number(
                 topping.toppingPrice * productTypeToppingDto.quantity,
               );
-              // console.log(
-              //   topping.toppingPrice + '*' + productTypeToppingDto.quantity,
-              // );
-              // console.log('ราคาท็อปปิ้ง*จำนวนท็อปปิ้ง' + totalProductTopping);
+              ////////////////
+              console.log(
+                topping.toppingPrice + '*' + productTypeToppingDto.quantity,
+              );
+              console.log('ราคาท็อปปิ้ง*จำนวนท็อปปิ้ง' + totalProductTopping);
             }
-            totalProductTopping +=
-              Number(productType.product.productPrice) +
-              Number(productType.productTypePrice);
-            // console.log(
-            //   productType.product.productPrice +
-            //     '+' +
-            //     productType.productTypePrice,
-            // );
-            // console.log('รวมราคาตามประเภทร้อนเย็นปั่น' + totalProductTopping);
+            // totalProductTopping += Number(totalProductTopping);
+            // //////////////////////////
+            // console.log('รวมราคาท็อปปิ้ง' + totalProductTopping);
           } else {
             totalProductTopping += Number(productType.product.productPrice);
-            // console.log(
-            //   totalProductTopping + '+' + productType.product.productPrice,
-            // );
-            // console.log('ราคารวมท็อปปิ้ง+ราคารวมสินค้า' + totalProductTopping);
+            //////////////////////////////
+            console.log(
+              totalProductTopping + '+' + productType.product.productPrice,
+            );
+            console.log('ราคารวมท็อปปิ้ง+ราคารวมสินค้า' + totalProductTopping);
           }
-
+          // totalProductTopping +=
+          //   Number(productType.product.productPrice) +
+          //   Number(productType.productTypePrice);
+          // ////////////////////////
+          // console.log(
+          //   productType.product.productPrice +
+          //     '+' +
+          //     productType.productTypePrice,
+          // );
+          // console.log('รวมราคาตามประเภทร้อนเย็นปั่น' + totalProductTopping);
+          const productPrice = Number(productType.product.productPrice);
+          const productTypePrice = Number(productType.productTypePrice);
+          totalProductTopping += productPrice + productTypePrice;
+          console.log('ราคาสินค้า: ' + productPrice);
+          console.log(
+            'ราคาแบบสินค้า (เช่น ร้อน เย็น ปั่น): ' + productTypePrice,
+          );
+          console.log('ราคารวม: ' + totalProductTopping);
           // Save the new product type topping to the database
           await this.productTypeToppingRepository.save(newProductTypeTopping);
         }
