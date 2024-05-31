@@ -4,6 +4,6 @@ import { CheckingredientitemsController } from './checkingredientitems.controlle
 
 @Module({
   controllers: [CheckingredientitemsController],
-  providers: [CheckingredientitemsService]
+  providers: [CheckingredientitemsService],
 })
 export class CheckingredientitemsModule {}

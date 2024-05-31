@@ -16,5 +16,9 @@ export class CreateRecieptDto {
   receiptStatus: string;
 
   @IsNotEmpty()
+  @Length(3, 64)
+  receiptType: string;
+
+  @IsNotEmpty()
   receiptItems: CreateReceiptItemDto[];
 }
