@@ -32,13 +32,13 @@ export class ImportingredientsService {
     importingredient.date = createImportingredientDto.date;
     importingredient.discount = createImportingredientDto.discount;
     importingredient.store = createImportingredientDto.store;
-    importingredient.total = 0;
+    importingredient.total = createImportingredientDto.total;
 
     const savedImportingredient = await this.importingredientRepository.save(
       importingredient,
     );
 
-    let total = 0;
+    // let total = 0;
     for (const importItemDto of createImportingredientDto.importingredientitem) {
       const ingredient = await this.ingredientRepository.findOneBy({
         IngredientId: importItemDto.ingredientId,
@@ -54,8 +54,7 @@ export class ImportingredientsService {
       importingredientitem.ingredient = ingredient;
       importingredientitem.pricePerUnit = importItemDto.pricePerUnit;
       importingredientitem.Quantity = importItemDto.Quantity;
-      total += importItemDto.pricePerUnit * importItemDto.Quantity;
-
+      // total += importItemDto.pricePerUnit * importItemDto.Quantity;
       await this.importingredientitemRepository.save(importingredientitem);
 
       // Update the quantity in stock for the ingredient
@@ -63,7 +62,7 @@ export class ImportingredientsService {
       await this.ingredientRepository.save(ingredient);
     }
 
-    savedImportingredient.total = total - savedImportingredient.discount;
+    // savedImportingredient.total = total - savedImportingredient.discount;
     await this.importingredientRepository.save(savedImportingredient);
 
     return await this.importingredientRepository.findOne({
