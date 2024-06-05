@@ -12,6 +12,9 @@ import {
 } from 'typeorm';
 @Entity()
 export class ProductType {
+  static productTypePrice(productTypePrice: any) {
+    throw new Error('Method not implemented.');
+  }
   @PrimaryGeneratedColumn()
   productTypeId: number;
 
@@ -33,4 +36,5 @@ export class ProductType {
 
   @OneToMany(() => Recipe, (recipe) => recipe.productType) // Change this line
   recipes: Recipe[]; // Change this line
+  static product: any;
 }

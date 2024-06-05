@@ -1,5 +1,7 @@
+import { Customer } from 'src/customers/entities/customer.entity';
 import { ProductTypeTopping } from 'src/product-type-toppings/entities/product-type-topping.entity';
 import { Reciept } from 'src/reciept/entities/reciept.entity';
+import { User } from 'src/users/entities/user.entity';
 import {
   Column,
   Entity,
@@ -18,6 +20,8 @@ export class ReceiptItem {
   receiptSubTotal: number;
   @ManyToOne(() => Reciept, (reciept) => reciept.receiptItems)
   reciept: Reciept;
+  user: User;
+  customer: Customer;
 
   @OneToMany(
     () => ProductTypeTopping,

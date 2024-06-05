@@ -22,6 +22,7 @@ export class UsersService {
       newUser.userPassword = createUserDto.userPassword;
       newUser.userRole = createUserDto.userRole;
       newUser.userEmail = createUserDto.userEmail;
+      newUser.userStatus = createUserDto.userStatus;
 
       return this.usersRepository.save(newUser);
     } catch (error) {

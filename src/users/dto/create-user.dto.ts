@@ -1,5 +1,9 @@
 import { IsNotEmpty, Length, Matches, IsEmail } from 'class-validator';
+import { CreateRecieptDto } from 'src/reciept/dto/create-reciept.dto';
 export class CreateUserDto {
+  @IsNotEmpty()
+  userId: number;
+
   @IsNotEmpty()
   @Length(3, 64)
   userName: string;
@@ -18,4 +22,11 @@ export class CreateUserDto {
   @Length(3, 64)
   @IsEmail()
   userEmail: string;
+
+  @IsNotEmpty()
+  @Length(3, 64)
+  userStatus: string;
+
+  @IsNotEmpty()
+  reciept: CreateRecieptDto[];
 }

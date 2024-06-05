@@ -29,4 +29,6 @@ export class Reciept {
   receiptItems: ReceiptItem[];
   @ManyToOne(() => User, (user) => user.reciepts)
   user: User;
+  @ManyToOne(() => Customer, (customer) => customer.reciept)
+  customer: Customer;
 }

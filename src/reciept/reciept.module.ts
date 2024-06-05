@@ -9,6 +9,9 @@ import { ReceiptItem } from 'src/receipt-item/entities/receipt-item.entity';
 import { ProductTypeTopping } from 'src/product-type-toppings/entities/product-type-topping.entity';
 import { Topping } from 'src/toppings/entities/topping.entity';
 import { Category } from 'src/categories/entities/category.entity';
+import { User } from 'src/users/entities/user.entity';
+import { Customer } from 'src/customers/entities/customer.entity';
+import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 
 @Module({
   imports: [
@@ -20,6 +23,9 @@ import { Category } from 'src/categories/entities/category.entity';
       ProductTypeTopping,
       Topping,
       Category,
+      User,
+      Customer,
+      Ingredient,
     ]),
   ],
   controllers: [RecieptController],

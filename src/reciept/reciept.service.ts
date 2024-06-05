@@ -4,6 +4,10 @@ import { CreateRecieptDto } from './dto/create-reciept.dto';
 import { UpdateRecieptDto } from './dto/update-reciept.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Reciept } from './entities/reciept.entity';
+import { User } from 'src/users/entities/user.entity';
+import { CreateUserDto } from 'src/users/dto/create-user.dto';
+import { Customer } from 'src/customers/entities/customer.entity';
+import { CreateCustomerDto } from 'src/customers/dto/create-customer.dto';
 import { Repository } from 'typeorm';
 import { CreateProductTypeDto } from 'src/product-types/dto/create-product-type.dto';
 import { CreateProductTypeToppingDto } from 'src/product-type-toppings/dto/create-product-type-topping.dto';
@@ -12,6 +16,7 @@ import { Product } from 'src/products/entities/product.entity';
 import { ProductTypeTopping } from 'src/product-type-toppings/entities/product-type-topping.entity';
 import { Topping } from 'src/toppings/entities/topping.entity';
 import { ReceiptItem } from 'src/receipt-item/entities/receipt-item.entity';
+import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 
 @Injectable()
 export class RecieptService {
@@ -28,10 +33,35 @@ export class RecieptService {
     private productRepository: Repository<Product>,
     @InjectRepository(Topping)
     private toppingRepository: Repository<Topping>,
+    @InjectRepository(Ingredient)
+    private ingredieintRepository: Repository<Ingredient>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+    @InjectRepository(Customer)
+    private customerRepository: Repository<Customer>,
   ) {}
 
   async create(createRecieptDto: CreateRecieptDto) {
     try {
+      const [userDto] = createRecieptDto.user;
+
+      // Find the user by userId from userDto
+      const user = await this.userRepository.findOneBy({
+        userId: userDto.userId, // assuming the correct property name is 'id' in the user repository
+      });
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      const [customerDto] = createRecieptDto.customer;
+
+      // Find the user by userId from userDto
+      const customer = await this.customerRepository.findOneBy({
+        customerId: customerDto.customerId, // assuming the correct property name is 'id' in the user repository
+      });
+      if (!customer) {
+        throw new Error('User not found');
+      }
       // Create new receipt
       const newReciept = this.recieptRepository.create({
         receiptTotalPrice: createRecieptDto.receiptTotalPrice,
@@ -134,13 +164,34 @@ export class RecieptService {
       // Fetch the newly created receipt with relations
       return await this.recieptRepository.findOne({
         where: { receiptId: receiptFinish.receiptId },
-        relations: ['receiptItems', 'receiptItems.productTypeToppings'],
+        relations: [
+          'receiptItems',
+          'receiptItems.productTypeToppings',
+          'userId',
+          'customerId',
+        ],
       });
     } catch (error) {
       console.error(error);
       throw new Error('Error creating receipt');
     }
   }
+
+  // async updateStock(productType, quantity) {
+  //   try {
+  //     const product = await this.productRepository.findOne({
+  //       where: { productId: productType.product.productId },
+  //     });
+
+  //     if (product) {
+  //       product.productTypes.this.ingredieintRepository -= quantity; // ลดจำนวนวัตถุดิบในสต็อก
+  //       await this.productRepository.save(product);
+  //       console.log('อัปเดตจำนวนวัตถุดิบในสต็อก: ' + product.ingredieint);
+  //     }
+  //   } catch (error) {
+  //     console.error('Error updating stock:', error);
+  //   }
+  // }
 
   findAll() {
     try {

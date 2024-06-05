@@ -20,12 +20,16 @@ export class User {
   userRole: string;
   @Column()
   userEmail: string;
+  @Column()
+  userStatus: string;
   @OneToMany(() => Reciept, (reciept) => reciept.user)
   reciepts: Reciept[];
+  user: User;
   @OneToMany(
     () => Importingredient,
     (importingredient) => importingredient.user,
   )
+  @OneToMany(() => Reciept, (reciept) => reciept.customer)
   importingredients: Importingredient[];
   @OneToMany(() => Checkingredient, (checkingredient) => checkingredient.user)
   checkingredients: Checkingredient[];
