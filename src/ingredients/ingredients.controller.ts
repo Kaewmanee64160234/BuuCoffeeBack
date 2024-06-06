@@ -91,6 +91,7 @@ export class IngredientsController {
     @Body() updateIngredientDto: UpdateIngredientDto,
     @UploadedFile() imageFile: Express.Multer.File,
   ) {
+    // เรียกใช้คำสั่ง update จาก IngredientsService
     return this.ingredientsService.update(+id, updateIngredientDto, imageFile);
   }
 
