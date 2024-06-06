@@ -32,7 +32,7 @@ export class IngredientsService {
         // Check if filename exists
         newIngredient.IngredientImage = imageFile.filename; // Save filename instead of base64 string
       } else {
-        newIngredient.IngredientImage = null;
+        newIngredient.IngredientImage = 'no-image.png';
       }
 
       return await this.ingredientRepository.save(newIngredient);
