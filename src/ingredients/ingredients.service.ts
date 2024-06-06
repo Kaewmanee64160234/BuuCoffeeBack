@@ -29,7 +29,6 @@ export class IngredientsService {
       newIngredient.quantityPerUnit = createIngredientDto.quantityPerUnit;
 
       if (imageFile && imageFile.filename) {
-        // Check if filename exists
         newIngredient.IngredientImage = imageFile.filename; // Save filename instead of base64 string
       } else {
         newIngredient.IngredientImage = 'no-image.png';
@@ -110,8 +109,6 @@ export class IngredientsService {
       if (!ingredient) {
         throw new HttpException('Ingredient not found', HttpStatus.NOT_FOUND);
       }
-
-      // ลบรูปภาพเก่าออกจาก destination folder
       if (
         imageFile &&
         imageFile.filename &&
@@ -148,6 +145,16 @@ export class IngredientsService {
       });
       if (!ingredient) {
         throw new HttpException('Ingredient not found', HttpStatus.NOT_FOUND);
+      }
+      if (
+        ingredient.IngredientImage &&
+        ingredient.IngredientImage !== 'no-image.png'
+      ) {
+        const imagePath = path.join(
+          './ingredient_images',
+          ingredient.IngredientImage,
+        );
+        fs.unlinkSync(imagePath);
       }
       await this.ingredientRepository.delete(id);
     } catch (error) {
