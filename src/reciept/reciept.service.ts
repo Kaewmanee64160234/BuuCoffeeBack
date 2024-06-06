@@ -61,6 +61,12 @@ export class RecieptService {
       if (!customer) {
         throw new Error('Customer not found');
       }
+
+      let storeStatus = 'ร้านข้าว';
+      if (user.userRole === 'coffee shop employee') {
+        storeStatus = 'ร้านกาแฟ';
+      }
+
       // Create new receipt
       const newReciept = this.recieptRepository.create({
         receiptTotalPrice: createRecieptDto.receiptTotalPrice,
@@ -69,6 +75,7 @@ export class RecieptService {
         receiptStatus: createRecieptDto.receiptStatus,
         user: user,
         customer: customer,
+        storeStatus: storeStatus,
       });
 
       // Save new receipt to the database
@@ -185,6 +192,27 @@ export class RecieptService {
     } catch (error) {
       console.error(error);
       throw new Error('Error creating receipt');
+    }
+  }
+
+  async cancelReceipt(id: number) {
+    try {
+      const reciept = await this.recieptRepository.findOne({
+        where: { receiptId: id },
+      });
+      if (!reciept) {
+        throw new HttpException('Reciept not found', HttpStatus.NOT_FOUND);
+      }
+
+      reciept.receiptStatus = 'cancel';
+
+      return await this.recieptRepository.save(reciept);
+    } catch (error) {
+      console.error(error);
+      throw new HttpException(
+        'Failed to cancel receipt',
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 
