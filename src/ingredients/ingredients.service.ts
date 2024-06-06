@@ -50,7 +50,6 @@ export class IngredientsService {
     fileName: string,
   ): Promise<Ingredient> {
     try {
-      console.log('IngredientId', ingredientId);
       const ingredient = await this.ingredientRepository.findOne({
         where: { IngredientId: +ingredientId },
       });
@@ -102,7 +101,7 @@ export class IngredientsService {
   async update(
     id: number,
     updateIngredientDto: UpdateIngredientDto,
-    imageFile?: Express.Multer.File, // Make imageFile optional
+    imageFile?: Express.Multer.File,
   ): Promise<Ingredient> {
     try {
       const ingredient = await this.ingredientRepository.findOne({
@@ -112,13 +111,22 @@ export class IngredientsService {
         throw new HttpException('Ingredient not found', HttpStatus.NOT_FOUND);
       }
 
-      // Check if imageFile and its filename exist
-      if (imageFile && imageFile.filename) {
-        // Save the new filename to IngredientImage
-        updateIngredientDto.IngredientImage = imageFile.filename;
+      // ลบรูปภาพเก่าออกจาก destination folder
+      if (
+        imageFile &&
+        imageFile.filename &&
+        ingredient.IngredientImage !== 'no-image.png'
+      ) {
+        const oldImagePath = path.join(
+          './ingredient_images',
+          ingredient.IngredientImage,
+        );
+        fs.unlinkSync(oldImagePath);
       }
 
-      // Merge the updated data with the existing ingredient
+      if (imageFile && imageFile.filename) {
+        updateIngredientDto.IngredientImage = imageFile.filename;
+      }
       const updatedIngredient = await this.ingredientRepository.save({
         ...ingredient,
         ...updateIngredientDto,
@@ -132,6 +140,7 @@ export class IngredientsService {
       );
     }
   }
+
   async remove(id: number): Promise<void> {
     try {
       const ingredient = await this.ingredientRepository.findOne({
