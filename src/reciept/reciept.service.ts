@@ -42,25 +42,24 @@ export class RecieptService {
   ) {}
 
   async create(createRecieptDto: CreateRecieptDto) {
+    console.log(createRecieptDto);
     try {
-      const [userDto] = createRecieptDto.user;
-
       // Find the user by userId from userDto
-      const user = await this.userRepository.findOneBy({
-        userId: userDto.userId, // assuming the correct property name is 'id' in the user repository
+      const user = await this.userRepository.findOne({
+        where: { userId: createRecieptDto.userId }, // assuming the correct property name is 'id' in the user repository
       });
-      if (!user) {
+      console.log(user);
+      if (user == null) {
         throw new Error('User not found');
       }
 
-      const [customerDto] = createRecieptDto.customer;
-
       // Find the user by userId from userDto
-      const customer = await this.customerRepository.findOneBy({
-        customerId: customerDto.customerId, // assuming the correct property name is 'id' in the user repository
+      const customer = await this.customerRepository.findOne({
+        where: { customerId: createRecieptDto.customerId }, // assuming the correct property name is 'id' in the user repository
       });
+      console.log(customer);
       if (!customer) {
-        throw new Error('User not found');
+        throw new Error('Customer not found');
       }
       // Create new receipt
       const newReciept = this.recieptRepository.create({
@@ -68,17 +67,28 @@ export class RecieptService {
         receiptTotalDiscount: createRecieptDto.receiptTotalDiscount,
         receiptNetPrice: createRecieptDto.receiptNetPrice,
         receiptStatus: createRecieptDto.receiptStatus,
+        user: user,
+        customer: customer,
       });
 
       // Save new receipt to the database
       const recieptSave = await this.recieptRepository.save(newReciept);
-
       // Loop through each receipt item in the DTO
       for (const receiptItemDto of createRecieptDto.receiptItems) {
+        if (isNaN(receiptItemDto.quantity) || receiptItemDto.quantity < 0) {
+          receiptItemDto.quantity = 0;
+        }
+
+        receiptItemDto.quantity = receiptItemDto.quantity + 1;
+
+        if (isNaN(receiptItemDto.quantity) || receiptItemDto.quantity < 0) {
+          throw new Error('Invalid quantity value after increment');
+        }
         const newRecieptItem = this.recieptItemRepository.create({
+          quantity: receiptItemDto.quantity,
           reciept: recieptSave,
         });
-
+        console.log(newRecieptItem);
         // Save the new receipt item to the database
         const recieptItemSave = await this.recieptItemRepository.save(
           newRecieptItem,
@@ -91,7 +101,8 @@ export class RecieptService {
             where: { productTypeId: productTypeToppingDto.productTypeId },
             relations: ['product', 'product.category'],
           });
-
+          console.log(productType);
+          console.log(productType.product.category);
           const newProductTypeTopping =
             this.productTypeToppingRepository.create({
               quantity: productTypeToppingDto.quantity,
@@ -167,8 +178,8 @@ export class RecieptService {
         relations: [
           'receiptItems',
           'receiptItems.productTypeToppings',
-          'userId',
-          'customerId',
+          'user',
+          'customer',
         ],
       });
     } catch (error) {

@@ -26,94 +26,106 @@ export class ProductsService {
   ) {}
 
   async create(createProductDto: CreateProductDto): Promise<Product> {
-    const { productName, productPrice, categoryId, productTypes } =
-      createProductDto;
+    try {
+      const { productName, productPrice, categoryId, productTypes } =
+        createProductDto;
 
-    const category = await this.categoryRepository.findOne({
-      where: { categoryId: +categoryId },
-    });
-    if (!category) {
-      throw new HttpException('Category not found', HttpStatus.NOT_FOUND);
-    }
+      console.log(createProductDto);
 
-    const newProduct = new Product();
-    newProduct.productName = productName;
-    newProduct.productPrice = productPrice;
-    newProduct.category = category;
+      const category = await this.categoryRepository.findOne({
+        where: { categoryId: +categoryId },
+      });
+      if (!category) {
+        throw new HttpException('Category not found', HttpStatus.NOT_FOUND);
+      }
 
-    const savedProduct = await this.productRepository.save(newProduct);
-    if (category.haveTopping === true) {
-      if (productTypes && productTypes.length > 0) {
-        for (const typeDto of productTypes) {
-          const newProductType = new ProductType();
-          newProductType.productTypeName = typeDto.productTypeName;
-          newProductType.productTypePrice = typeDto.productTypePrice;
-          newProductType.product = savedProduct;
+      const newProduct = new Product();
+      newProduct.productName = productName;
+      newProduct.productPrice = productPrice;
+      newProduct.category = category;
 
-          const savedProductType = await this.productTypeRepository.save(
-            newProductType,
-          );
+      const savedProduct = await this.productRepository.save(newProduct);
+      console.log(savedProduct);
+      if (category.haveTopping === true) {
+        console.log(productTypes);
+        if (productTypes && productTypes.length > 0) {
+          for (const typeDto of productTypes) {
+            const newProductType = new ProductType();
+            newProductType.productTypeName = typeDto.productTypeName;
+            newProductType.productTypePrice = typeDto.productTypePrice;
+            newProductType.product = savedProduct;
 
-          if (typeDto.recipes) {
-            for (const recipeDto of typeDto.recipes) {
-              const ingredient = await this.ingredientRepository.findOne({
-                where: { IngredientId: +recipeDto.ingredientId },
-              });
-              if (!ingredient) {
-                throw new HttpException(
-                  'Ingredient not found',
-                  HttpStatus.NOT_FOUND,
-                );
-              }
-
-              const newRecipe = new Recipe();
-              newRecipe.quantity = recipeDto.quantity;
-              newRecipe.ingredient = ingredient;
-              newRecipe.productType = savedProductType;
-
-              await this.recipeRepository.save(newRecipe);
-            }
-          } else {
-            throw new HttpException(
-              'Recipe is required',
-              HttpStatus.BAD_REQUEST,
+            const savedProductType = await this.productTypeRepository.save(
+              newProductType,
             );
+
+            if (typeDto.recipes) {
+              for (const recipeDto of typeDto.recipes) {
+                const ingredient = await this.ingredientRepository.findOne({
+                  where: { IngredientId: +recipeDto.ingredientId },
+                });
+                if (!ingredient) {
+                  throw new HttpException(
+                    'Ingredient not found',
+                    HttpStatus.NOT_FOUND,
+                  );
+                }
+
+                const newRecipe = new Recipe();
+                newRecipe.quantity = recipeDto.quantity;
+                newRecipe.ingredient = ingredient;
+                newRecipe.productType = savedProductType;
+
+                await this.recipeRepository.save(newRecipe);
+              }
+            } else {
+              throw new HttpException(
+                'Recipe is required',
+                HttpStatus.BAD_REQUEST,
+              );
+            }
           }
+        } else {
+          throw new HttpException(
+            'Product type is required',
+            HttpStatus.BAD_REQUEST,
+          );
         }
       } else {
-        throw new HttpException(
-          'Product type is required',
-          HttpStatus.BAD_REQUEST,
+        //create ingredin
+        const ingredient = new Ingredient();
+        ingredient.nameIngredient = productName;
+        ingredient.minimun = 10;
+        ingredient.unit = 'piece';
+        ingredient.quantityInStock = 10;
+        ingredient.quantityPerUnit = 1;
+        const ing = await this.ingredientRepository.save(ingredient);
+        //create product type and recipe
+        const newProductType = new ProductType();
+        newProductType.productTypeName = '';
+        newProductType.productTypePrice = 0;
+        newProductType.product = savedProduct;
+        const savedProductType = await this.productTypeRepository.save(
+          newProductType,
         );
+        const newRecipe = new Recipe();
+        newRecipe.quantity = 1;
+        newRecipe.ingredient = ing;
+        newRecipe.productType = savedProductType;
+        await this.recipeRepository.save(newRecipe);
       }
-    } else {
-      //create ingredin
-      const ingredient = new Ingredient();
-      ingredient.nameIngredient = productName;
-      ingredient.minimun = 10;
-      ingredient.unit = 'piece';
-      ingredient.quantityInStock = 10;
-      ingredient.quantityPerUnit = 1;
-      const ing = await this.ingredientRepository.save(ingredient);
-      //create product type and recipe
-      const newProductType = new ProductType();
-      newProductType.productTypeName = '';
-      newProductType.productTypePrice = 0;
-      newProductType.product = savedProduct;
-      const savedProductType = await this.productTypeRepository.save(
-        newProductType,
-      );
-      const newRecipe = new Recipe();
-      newRecipe.quantity = 1;
-      newRecipe.ingredient = ing;
-      newRecipe.productType = savedProductType;
-      await this.recipeRepository.save(newRecipe);
-    }
 
-    return this.productRepository.findOne({
-      where: { productId: savedProduct.productId },
-      relations: ['productTypes', 'productTypes.recipes', 'category'],
-    });
+      return this.productRepository.findOne({
+        where: { productId: savedProduct.productId },
+        relations: ['productTypes', 'productTypes.recipes', 'category'],
+      });
+    } catch (error) {
+      console.log(error);
+      throw new HttpException(
+        'Failed to upload image',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   // uploadImage
