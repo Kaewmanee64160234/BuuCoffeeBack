@@ -13,12 +13,14 @@ export class Recipe {
   @PrimaryGeneratedColumn()
   recipeId: number;
 
-  @ManyToOne(() => Ingredient, (ingredient) => ingredient.recipes)
-  ingredient: Ingredient;
-
   @Column()
   quantity: number;
 
-  @ManyToOne(() => ProductType, (productType) => productType.recipes) // Change this line
+  @ManyToOne(() => ProductType, (productType) => productType.recipes, {
+    onDelete: 'CASCADE',
+  })
   productType: ProductType;
+
+  @ManyToOne(() => Ingredient, { eager: true })
+  ingredient: Ingredient;
 }

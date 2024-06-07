@@ -9,6 +9,7 @@ import {
   UploadedFile,
   UseInterceptors,
   Res,
+  BadRequestException,
 } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -38,7 +39,7 @@ export class ProductsController {
         destination: './product_images',
         filename: (req, file, cb) => {
           const name = uuidv4();
-          return cb(null, name + extname(file.originalname));
+          return cb(null, `${name}${extname(file.originalname)}`);
         },
       }),
     }),
@@ -47,6 +48,12 @@ export class ProductsController {
     @Param('productId') id: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
+    console.log('File:', file);
+    if (!file) {
+      console.error('File upload attempt without file.');
+      throw new BadRequestException('No file uploaded');
+    }
+    console.log('Uploaded file:', file.filename);
     return this.productsService.uploadImage(+id, file.filename);
   }
 

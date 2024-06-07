@@ -12,6 +12,8 @@ export class CreateIngredientDto {
 
   IngredientImage: string;
 
+  ingredientId: number;
+
   @IsString()
   @IsNotEmpty()
   supplier: string;

@@ -53,6 +53,10 @@ export class ProductsService {
           const savedProductType = await this.productTypeRepository.save(
             newProductType,
           );
+          const savedProductType_ = await this.productTypeRepository.findOne({
+            where: { productTypeId: savedProductType.productTypeId },
+            relations: ['recipe', 'recipe.Ingredient'],
+          });
 
           if (typeDto.recipes) {
             for (const recipeDto of typeDto.recipes) {
@@ -69,7 +73,7 @@ export class ProductsService {
               const newRecipe = new Recipe();
               newRecipe.quantity = recipeDto.quantity;
               newRecipe.ingredient = ingredient;
-              newRecipe.productType = savedProductType;
+              newRecipe.productType = savedProductType_;
 
               await this.recipeRepository.save(newRecipe);
             }
@@ -194,25 +198,34 @@ export class ProductsService {
     product.productPrice =
       updateProductDto.productPrice || product.productPrice;
     product.productImage =
-      updateProductDto.productImage || product.productImage; // Assuming productImage is a URL or string path
+      updateProductDto.productImage || product.productImage;
 
     if (product.category?.haveTopping) {
+      const existingProductTypes = product.productTypes || [];
+      const updatedProductTypes = new Map<string, ProductType>();
+      const updatedRecipeIds = new Set<number>();
+
+      // Update or create product types and their recipes
       for (const typeDto of updateProductDto.productTypes || []) {
-        let productType = product.productTypes.find(
-          (pt) => pt.productTypeId === typeDto.productTypeId,
+        let productType = existingProductTypes.find(
+          (pt) => pt.productTypeName === typeDto.productTypeName,
         );
 
         if (!productType) {
-          productType = new ProductType(); // Create new if it doesn't exist
+          productType = new ProductType();
           productType.product = product;
+          productType.productTypeName = typeDto.productTypeName;
+          productType.productTypePrice = typeDto.productTypePrice;
+          productType.recipes = []; // Initialize the recipes array
+          productType = await this.productTypeRepository.save(productType);
+          product.productTypes.push(productType); // Add to the product's productTypes
+        } else {
+          productType.productTypeName = typeDto.productTypeName;
+          productType.productTypePrice = typeDto.productTypePrice;
+          await this.productTypeRepository.save(productType);
         }
 
-        productType.productTypeName = typeDto.productTypeName;
-        productType.productTypePrice = typeDto.productTypePrice;
-
-        const savedProductType = await this.productTypeRepository.save(
-          productType,
-        );
+        updatedProductTypes.set(productType.productTypeName, productType);
 
         for (const recipeDto of typeDto.recipes || []) {
           const ingredient = await this.ingredientRepository.findOne({
@@ -226,19 +239,41 @@ export class ProductsService {
             );
           }
 
-          let recipe = savedProductType.recipes.find(
-            (r) => r.recipeId === recipeDto.recipeId,
+          let recipe = productType.recipes.find(
+            (r) => r.ingredient.IngredientId === recipeDto.ingredientId,
           );
 
           if (!recipe) {
-            recipe = new Recipe(); // Create new if it doesn't exist
-            recipe.productType = savedProductType;
+            recipe = new Recipe();
+            recipe.productType = productType;
           }
 
           recipe.quantity = recipeDto.quantity;
           recipe.ingredient = ingredient;
 
           await this.recipeRepository.save(recipe);
+          updatedRecipeIds.add(recipe.recipeId);
+        }
+      }
+
+      // Remove old recipes that are not in the updated list
+      for (const existingProductType of existingProductTypes) {
+        for (const recipe of existingProductType.recipes) {
+          if (!updatedRecipeIds.has(recipe.recipeId)) {
+            await this.recipeRepository.remove(recipe);
+          }
+        }
+      }
+
+      // Remove old product types that are not in the updated list
+      for (const existingProductType of existingProductTypes) {
+        if (!updatedProductTypes.has(existingProductType.productTypeName)) {
+          // Remove related recipes first
+          await this.recipeRepository.delete({
+            productType: existingProductType,
+          });
+          // Remove the product type
+          await this.productTypeRepository.remove(existingProductType);
         }
       }
     } else {
@@ -248,6 +283,11 @@ export class ProductsService {
             updateProductDto.productTypes[0].recipes[0].ingredientId,
         },
       });
+
+      if (!ingredient) {
+        throw new HttpException('Ingredient not found', HttpStatus.NOT_FOUND);
+      }
+
       ingredient.nameIngredient = product.productName;
       ingredient.minimun =
         updateProductDto.productTypes[0].recipes[0].ingredient.minimun;
@@ -257,20 +297,27 @@ export class ProductsService {
         updateProductDto.productTypes[0].recipes[0].ingredient.quantityInStock;
       ingredient.quantityPerUnit =
         updateProductDto.productTypes[0].recipes[0].ingredient.quantityPerUnit;
+
       await this.ingredientRepository.save(ingredient);
-      // recipe
+
       const recipe = await this.recipeRepository.findOne({
         where: {
           recipeId: updateProductDto.productTypes[0].recipes[0].recipeId,
         },
       });
-      recipe.quantity = updateProductDto.productTypes[0].recipes[0].quantity;
 
+      if (!recipe) {
+        throw new HttpException('Recipe not found', HttpStatus.NOT_FOUND);
+      }
+
+      recipe.quantity = updateProductDto.productTypes[0].recipes[0].quantity;
       recipe.ingredient = ingredient;
+
       await this.recipeRepository.save(recipe);
     }
 
     await this.productRepository.save(product);
+
     return this.productRepository.findOne({
       where: { productId: id },
       relations: [
