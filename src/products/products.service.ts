@@ -53,15 +53,16 @@ export class ProductsService {
           const savedProductType = await this.productTypeRepository.save(
             newProductType,
           );
+
           const savedProductType_ = await this.productTypeRepository.findOne({
             where: { productTypeId: savedProductType.productTypeId },
-            relations: ['recipe', 'recipe.Ingredient'],
+            relations: ['recipes', 'recipes.ingredient'],
           });
 
           if (typeDto.recipes) {
             for (const recipeDto of typeDto.recipes) {
               const ingredient = await this.ingredientRepository.findOne({
-                where: { IngredientId: +recipeDto.ingredientId },
+                where: { IngredientId: +recipeDto.IngredientId },
               });
               if (!ingredient) {
                 throw new HttpException(
@@ -91,7 +92,7 @@ export class ProductsService {
         );
       }
     } else {
-      //create ingredin
+      // Create ingredient
       const ingredient = new Ingredient();
       ingredient.nameIngredient = productName;
       ingredient.minimun = 10;
@@ -99,7 +100,8 @@ export class ProductsService {
       ingredient.quantityInStock = 10;
       ingredient.quantityPerUnit = 1;
       const ing = await this.ingredientRepository.save(ingredient);
-      //create product type and recipe
+
+      // Create product type and recipe
       const newProductType = new ProductType();
       newProductType.productTypeName = '';
       newProductType.productTypePrice = 0;
@@ -107,6 +109,7 @@ export class ProductsService {
       const savedProductType = await this.productTypeRepository.save(
         newProductType,
       );
+
       const newRecipe = new Recipe();
       newRecipe.quantity = 1;
       newRecipe.ingredient = ing;
@@ -147,7 +150,12 @@ export class ProductsService {
   async findAll() {
     try {
       return await this.productRepository.find({
-        relations: ['productTypes', 'category'],
+        relations: [
+          'productTypes',
+          'category',
+          'productTypes.recipes',
+          'productTypes.recipes.ingredient',
+        ],
       });
     } catch (error) {
       throw new HttpException(
@@ -203,9 +211,7 @@ export class ProductsService {
     if (product.category?.haveTopping) {
       const existingProductTypes = product.productTypes || [];
       const updatedProductTypes = new Map<string, ProductType>();
-      const updatedRecipeIds = new Set<number>();
 
-      // Update or create product types and their recipes
       for (const typeDto of updateProductDto.productTypes || []) {
         let productType = existingProductTypes.find(
           (pt) => pt.productTypeName === typeDto.productTypeName,
@@ -216,9 +222,9 @@ export class ProductsService {
           productType.product = product;
           productType.productTypeName = typeDto.productTypeName;
           productType.productTypePrice = typeDto.productTypePrice;
-          productType.recipes = []; // Initialize the recipes array
+          productType.recipes = [];
           productType = await this.productTypeRepository.save(productType);
-          product.productTypes.push(productType); // Add to the product's productTypes
+          product.productTypes.push(productType);
         } else {
           productType.productTypeName = typeDto.productTypeName;
           productType.productTypePrice = typeDto.productTypePrice;
@@ -227,9 +233,12 @@ export class ProductsService {
 
         updatedProductTypes.set(productType.productTypeName, productType);
 
+        const existingRecipes = productType.recipes || [];
+        const updatedRecipes = new Map<number, Recipe>();
+
         for (const recipeDto of typeDto.recipes || []) {
           const ingredient = await this.ingredientRepository.findOne({
-            where: { IngredientId: recipeDto.ingredientId },
+            where: { IngredientId: recipeDto.ingredient.IngredientId },
           });
 
           if (!ingredient) {
@@ -239,27 +248,28 @@ export class ProductsService {
             );
           }
 
-          let recipe = productType.recipes.find(
-            (r) => r.ingredient.IngredientId === recipeDto.ingredientId,
+          let recipe = existingRecipes.find(
+            (r) =>
+              r.ingredient.IngredientId === recipeDto.ingredient.IngredientId,
           );
 
           if (!recipe) {
             recipe = new Recipe();
             recipe.productType = productType;
+            recipe.ingredient = ingredient;
+            productType.recipes.push(recipe);
           }
 
           recipe.quantity = recipeDto.quantity;
           recipe.ingredient = ingredient;
 
-          await this.recipeRepository.save(recipe);
-          updatedRecipeIds.add(recipe.recipeId);
+          recipe = await this.recipeRepository.save(recipe);
+          updatedRecipes.set(recipe.recipeId, recipe);
         }
-      }
 
-      // Remove old recipes that are not in the updated list
-      for (const existingProductType of existingProductTypes) {
-        for (const recipe of existingProductType.recipes) {
-          if (!updatedRecipeIds.has(recipe.recipeId)) {
+        // Remove old recipes that are not in the updated list
+        for (const recipe of existingRecipes) {
+          if (!updatedRecipes.has(recipe.recipeId)) {
             await this.recipeRepository.remove(recipe);
           }
         }
@@ -268,52 +278,61 @@ export class ProductsService {
       // Remove old product types that are not in the updated list
       for (const existingProductType of existingProductTypes) {
         if (!updatedProductTypes.has(existingProductType.productTypeName)) {
-          // Remove related recipes first
           await this.recipeRepository.delete({
             productType: existingProductType,
           });
-          // Remove the product type
           await this.productTypeRepository.remove(existingProductType);
         }
       }
     } else {
-      const ingredient = await this.ingredientRepository.findOne({
-        where: {
-          IngredientId:
-            updateProductDto.productTypes[0].recipes[0].ingredientId,
-        },
-      });
+      for (const typeDto of updateProductDto.productTypes) {
+        const productType = product.productTypes.find(
+          (pt) => pt.productTypeName === typeDto.productTypeName,
+        );
+        if (productType) {
+          const existingRecipes = productType.recipes;
+          const updatedRecipes = new Map<number, Recipe>();
 
-      if (!ingredient) {
-        throw new HttpException('Ingredient not found', HttpStatus.NOT_FOUND);
+          for (const recipeDto of typeDto.recipes) {
+            console.log(recipeDto);
+            const ingredient = await this.ingredientRepository.findOne({
+              where: { IngredientId: recipeDto.ingredient.IngredientId },
+            });
+
+            if (!ingredient) {
+              throw new HttpException(
+                'Ingredient not found',
+                HttpStatus.NOT_FOUND,
+              );
+            }
+
+            let recipe = existingRecipes.find(
+              (r) =>
+                r.ingredient.IngredientId === recipeDto.ingredient.IngredientId,
+            );
+
+            if (!recipe) {
+              recipe = new Recipe();
+              recipe.productType = productType;
+              recipe.ingredient = ingredient;
+              productType.recipes.push(recipe);
+            }
+
+            recipe.quantity = recipeDto.quantity;
+            recipe.ingredient = ingredient;
+
+            recipe = await this.recipeRepository.save(recipe);
+            updatedRecipes.set(recipe.recipeId, recipe);
+          }
+
+          // Remove old recipes that are not in the updated list
+          for (const recipe of existingRecipes) {
+            if (!updatedRecipes.has(recipe.recipeId)) {
+              await this.recipeRepository.remove(recipe);
+            }
+          }
+        }
       }
-
-      ingredient.nameIngredient = product.productName;
-      ingredient.minimun =
-        updateProductDto.productTypes[0].recipes[0].ingredient.minimun;
-      ingredient.unit =
-        updateProductDto.productTypes[0].recipes[0].ingredient.unit;
-      ingredient.quantityInStock =
-        updateProductDto.productTypes[0].recipes[0].ingredient.quantityInStock;
-      ingredient.quantityPerUnit =
-        updateProductDto.productTypes[0].recipes[0].ingredient.quantityPerUnit;
-
-      await this.ingredientRepository.save(ingredient);
-
-      const recipe = await this.recipeRepository.findOne({
-        where: {
-          recipeId: updateProductDto.productTypes[0].recipes[0].recipeId,
-        },
-      });
-
-      if (!recipe) {
-        throw new HttpException('Recipe not found', HttpStatus.NOT_FOUND);
-      }
-
-      recipe.quantity = updateProductDto.productTypes[0].recipes[0].quantity;
-      recipe.ingredient = ingredient;
-
-      await this.recipeRepository.save(recipe);
     }
 
     await this.productRepository.save(product);

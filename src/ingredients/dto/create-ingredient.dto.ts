@@ -12,7 +12,7 @@ export class CreateIngredientDto {
 
   IngredientImage: string;
 
-  ingredientId: number;
+  IngredientId: number;
 
   @IsString()
   @IsNotEmpty()
