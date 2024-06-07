@@ -94,11 +94,11 @@ export class ProductsService {
       } else {
         //create ingredin
         const ingredient = new Ingredient();
-        ingredient.nameIngredient = productName;
-        ingredient.minimun = 10;
-        ingredient.unit = 'piece';
-        ingredient.quantityInStock = 10;
-        ingredient.quantityPerUnit = 1;
+        ingredient.ingredientName = productName;
+        ingredient.igredientMinimun = 10;
+        ingredient.igredientUnit = 'piece';
+        ingredient.igredientQuantityInStock = 10;
+        ingredient.igredientQuantityPerUnit = 1;
         const ing = await this.ingredientRepository.save(ingredient);
         //create product type and recipe
         const newProductType = new ProductType();
@@ -260,15 +260,15 @@ export class ProductsService {
             updateProductDto.productTypes[0].recipes[0].ingredientId,
         },
       });
-      ingredient.nameIngredient = product.productName;
-      ingredient.minimun =
-        updateProductDto.productTypes[0].recipes[0].ingredient.minimun;
-      ingredient.unit =
-        updateProductDto.productTypes[0].recipes[0].ingredient.unit;
-      ingredient.quantityInStock =
-        updateProductDto.productTypes[0].recipes[0].ingredient.quantityInStock;
-      ingredient.quantityPerUnit =
-        updateProductDto.productTypes[0].recipes[0].ingredient.quantityPerUnit;
+      ingredient.ingredientName = product.productName;
+      ingredient.igredientMinimun =
+        updateProductDto.productTypes[0].recipes[0].ingredient.igredientMinimun;
+      ingredient.igredientUnit =
+        updateProductDto.productTypes[0].recipes[0].ingredient.igredientUnit;
+      ingredient.igredientQuantityInStock =
+        updateProductDto.productTypes[0].recipes[0].ingredient.igredientQuantityInStock;
+      ingredient.igredientQuantityPerUnit =
+        updateProductDto.productTypes[0].recipes[0].ingredient.igredientQuantityPerUnit;
       await this.ingredientRepository.save(ingredient);
       // recipe
       const recipe = await this.recipeRepository.findOne({

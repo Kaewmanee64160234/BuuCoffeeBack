@@ -21,17 +21,21 @@ export class IngredientsService {
   ): Promise<Ingredient> {
     try {
       const newIngredient = new Ingredient();
-      newIngredient.nameIngredient = createIngredientDto.nameIngredient;
-      newIngredient.supplier = createIngredientDto.supplier;
-      newIngredient.minimun = createIngredientDto.minimun;
-      newIngredient.unit = createIngredientDto.unit;
-      newIngredient.quantityInStock = 0;
-      newIngredient.quantityPerUnit = createIngredientDto.quantityPerUnit;
+      newIngredient.ingredientName = createIngredientDto.ingredientName;
+      newIngredient.igredientSupplier = createIngredientDto.igredientSupplier;
+      newIngredient.igredientMinimun = createIngredientDto.igredientMinimun;
+      newIngredient.igredientUnit = createIngredientDto.igredientUnit;
+      newIngredient.igredientQuantityInStock = 0;
+      newIngredient.igredientRemining = 0;
+      newIngredient.igredientQuantityPerUnit =
+        createIngredientDto.igredientQuantityPerUnit;
+      newIngredient.igredientQuantityPerSubUnit =
+        createIngredientDto.igredientQuantityPerSubUnit;
 
       if (imageFile && imageFile.filename) {
-        newIngredient.IngredientImage = imageFile.filename; // Save filename instead of base64 string
+        newIngredient.igredientImage = imageFile.filename; // Save filename instead of base64 string
       } else {
-        newIngredient.IngredientImage = 'no-image.png';
+        newIngredient.igredientImage = 'no-image.png';
       }
 
       return await this.ingredientRepository.save(newIngredient);
@@ -112,17 +116,17 @@ export class IngredientsService {
       if (
         imageFile &&
         imageFile.filename &&
-        ingredient.IngredientImage !== 'no-image.png'
+        ingredient.igredientImage !== 'no-image.png'
       ) {
         const oldImagePath = path.join(
           './ingredient_images',
-          ingredient.IngredientImage,
+          ingredient.igredientImage,
         );
         fs.unlinkSync(oldImagePath);
       }
 
       if (imageFile && imageFile.filename) {
-        updateIngredientDto.IngredientImage = imageFile.filename;
+        updateIngredientDto.igredientImage = imageFile.filename;
       }
       const updatedIngredient = await this.ingredientRepository.save({
         ...ingredient,
@@ -147,12 +151,12 @@ export class IngredientsService {
         throw new HttpException('Ingredient not found', HttpStatus.NOT_FOUND);
       }
       if (
-        ingredient.IngredientImage &&
-        ingredient.IngredientImage !== 'no-image.png'
+        ingredient.igredientImage &&
+        ingredient.igredientImage !== 'no-image.png'
       ) {
         const imagePath = path.join(
           './ingredient_images',
-          ingredient.IngredientImage,
+          ingredient.igredientImage,
         );
         fs.unlinkSync(imagePath);
       }
