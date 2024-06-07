@@ -192,6 +192,7 @@ export class ProductsService {
     id: number,
     updateProductDto: UpdateProductDto,
   ): Promise<Product> {
+    console.log('Update Product DTO:', updateProductDto); // Debug log
     const product = await this.productRepository.findOne({
       where: { productId: id },
       relations: ['productTypes', 'productTypes.recipes', 'category'],
@@ -208,7 +209,27 @@ export class ProductsService {
     product.productImage =
       updateProductDto.productImage || product.productImage;
 
-    if (product.category?.haveTopping) {
+    // Update category
+    const categoryId = Number(updateProductDto.category.categoryId);
+    if (isNaN(categoryId)) {
+      throw new HttpException('Invalid Category ID', HttpStatus.BAD_REQUEST);
+    }
+    const category = await this.categoryRepository.findOne({
+      where: { categoryId },
+    });
+
+    if (!category) {
+      throw new HttpException('Category not found', HttpStatus.NOT_FOUND);
+    }
+
+    // Check if category haveTopping has changed
+    const hadTopping = product.category?.haveTopping;
+    const hasTopping = category.haveTopping;
+
+    product.category = category;
+
+    if (hasTopping) {
+      // Handle case when category has topping
       const existingProductTypes = product.productTypes || [];
       const updatedProductTypes = new Map<string, ProductType>();
 
@@ -221,13 +242,25 @@ export class ProductsService {
           productType = new ProductType();
           productType.product = product;
           productType.productTypeName = typeDto.productTypeName;
-          productType.productTypePrice = typeDto.productTypePrice;
+          productType.productTypePrice = Number(typeDto.productTypePrice);
+          if (isNaN(productType.productTypePrice)) {
+            throw new HttpException(
+              'Invalid Product Type Price',
+              HttpStatus.BAD_REQUEST,
+            );
+          }
           productType.recipes = [];
           productType = await this.productTypeRepository.save(productType);
           product.productTypes.push(productType);
         } else {
           productType.productTypeName = typeDto.productTypeName;
-          productType.productTypePrice = typeDto.productTypePrice;
+          productType.productTypePrice = Number(typeDto.productTypePrice);
+          if (isNaN(productType.productTypePrice)) {
+            throw new HttpException(
+              'Invalid Product Type Price',
+              HttpStatus.BAD_REQUEST,
+            );
+          }
           await this.productTypeRepository.save(productType);
         }
 
@@ -237,8 +270,16 @@ export class ProductsService {
         const updatedRecipes = new Map<number, Recipe>();
 
         for (const recipeDto of typeDto.recipes || []) {
+          const ingredientId = Number(recipeDto.ingredient.IngredientId);
+          if (isNaN(ingredientId)) {
+            throw new HttpException(
+              'Invalid Ingredient ID',
+              HttpStatus.BAD_REQUEST,
+            );
+          }
+
           const ingredient = await this.ingredientRepository.findOne({
-            where: { IngredientId: recipeDto.ingredient.IngredientId },
+            where: { IngredientId: ingredientId },
           });
 
           if (!ingredient) {
@@ -249,8 +290,7 @@ export class ProductsService {
           }
 
           let recipe = existingRecipes.find(
-            (r) =>
-              r.ingredient.IngredientId === recipeDto.ingredient.IngredientId,
+            (r) => r.ingredient.IngredientId === ingredientId,
           );
 
           if (!recipe) {
@@ -260,8 +300,13 @@ export class ProductsService {
             productType.recipes.push(recipe);
           }
 
-          recipe.quantity = recipeDto.quantity;
-          recipe.ingredient = ingredient;
+          recipe.quantity = Number(recipeDto.quantity);
+          if (isNaN(recipe.quantity)) {
+            throw new HttpException(
+              'Invalid Recipe Quantity',
+              HttpStatus.BAD_REQUEST,
+            );
+          }
 
           recipe = await this.recipeRepository.save(recipe);
           updatedRecipes.set(recipe.recipeId, recipe);
@@ -285,54 +330,45 @@ export class ProductsService {
         }
       }
     } else {
-      for (const typeDto of updateProductDto.productTypes) {
-        const productType = product.productTypes.find(
-          (pt) => pt.productTypeName === typeDto.productTypeName,
-        );
-        if (productType) {
-          const existingRecipes = productType.recipes;
-          const updatedRecipes = new Map<number, Recipe>();
-
-          for (const recipeDto of typeDto.recipes) {
-            console.log(recipeDto);
-            const ingredient = await this.ingredientRepository.findOne({
-              where: { IngredientId: recipeDto.ingredient.IngredientId },
-            });
-
-            if (!ingredient) {
-              throw new HttpException(
-                'Ingredient not found',
-                HttpStatus.NOT_FOUND,
-              );
-            }
-
-            let recipe = existingRecipes.find(
-              (r) =>
-                r.ingredient.IngredientId === recipeDto.ingredient.IngredientId,
-            );
-
-            if (!recipe) {
-              recipe = new Recipe();
-              recipe.productType = productType;
-              recipe.ingredient = ingredient;
-              productType.recipes.push(recipe);
-            }
-
-            recipe.quantity = recipeDto.quantity;
-            recipe.ingredient = ingredient;
-
-            recipe = await this.recipeRepository.save(recipe);
-            updatedRecipes.set(recipe.recipeId, recipe);
-          }
-
-          // Remove old recipes that are not in the updated list
-          for (const recipe of existingRecipes) {
-            if (!updatedRecipes.has(recipe.recipeId)) {
-              await this.recipeRepository.remove(recipe);
-            }
-          }
+      // If the category does not have topping, clear existing product types and recipes
+      if (hadTopping) {
+        // Clear existing product types and recipes
+        for (const existingProductType of product.productTypes) {
+          await this.recipeRepository.delete({
+            productType: existingProductType,
+          });
+          await this.productTypeRepository.remove(existingProductType);
         }
+        product.productTypes = [];
       }
+
+      // Create a new ingredient from the product name
+      const newIngredient = new Ingredient();
+      newIngredient.nameIngredient = product.productName;
+      newIngredient.minimun = 10;
+      newIngredient.unit = 'piece';
+      newIngredient.quantityInStock = 10;
+      newIngredient.quantityPerUnit = 1;
+      const savedIngredient = await this.ingredientRepository.save(
+        newIngredient,
+      );
+
+      // Create a single product type and recipe for the product
+      const newProductType = new ProductType();
+      newProductType.productTypeName = '';
+      newProductType.productTypePrice = 0;
+      newProductType.product = product;
+
+      const savedProductType = await this.productTypeRepository.save(
+        newProductType,
+      );
+
+      const newRecipe = new Recipe();
+      newRecipe.quantity = 1;
+      newRecipe.ingredient = savedIngredient;
+      newRecipe.productType = savedProductType;
+
+      await this.recipeRepository.save(newRecipe);
     }
 
     await this.productRepository.save(product);
@@ -359,6 +395,7 @@ export class ProductsService {
       await this.productTypeRepository.delete({ product: { productId: id } });
       return { id, status: 'deleted' };
     } catch (error) {
+      console.log(error);
       throw new HttpException(
         'Failed to delete product',
         HttpStatus.INTERNAL_SERVER_ERROR,

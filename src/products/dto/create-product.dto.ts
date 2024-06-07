@@ -5,6 +5,7 @@ import {
   IsString,
   ValidateNested,
 } from 'class-validator';
+import { Category } from 'src/categories/entities/category.entity';
 import { CreateProductTypeDto } from 'src/product-types/dto/create-product-type.dto';
 import { ProductType } from 'src/product-types/entities/product-type.entity';
 
@@ -22,6 +23,7 @@ export class CreateProductDto {
   @IsNumber()
   @IsNotEmpty()
   categoryId: string;
+  category: Category;
 
   productTypes: CreateProductTypeDto[];
 }
