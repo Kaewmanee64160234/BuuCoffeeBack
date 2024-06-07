@@ -17,7 +17,7 @@ export class RecipesService {
   async create(createRecipeDto: CreateRecipeDto) {
     try {
       const ingredient = await this.ingredientRepository.findOne({
-        where: { IngredientId: +createRecipeDto.ingredientId },
+        where: { ingredientId: +createRecipeDto.ingredientId },
       });
       if (!ingredient) {
         throw new HttpException('Ingredient not found', HttpStatus.NOT_FOUND);
@@ -61,7 +61,7 @@ export class RecipesService {
         throw new HttpException('Recipe not found', HttpStatus.NOT_FOUND);
       }
       const ingredient = await this.ingredientRepository.findOne({
-        where: { IngredientId: recipe.ingredient.IngredientId },
+        where: { ingredientId: recipe.ingredient.ingredientId },
       });
       if (!ingredient) {
         throw new HttpException('Ingredient not found', HttpStatus.NOT_FOUND);

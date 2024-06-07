@@ -62,7 +62,7 @@ export class ProductsService {
             if (typeDto.recipes) {
               for (const recipeDto of typeDto.recipes) {
                 const ingredient = await this.ingredientRepository.findOne({
-                  where: { IngredientId: +recipeDto.ingredientId },
+                  where: { ingredientId: +recipeDto.ingredientId },
                 });
                 if (!ingredient) {
                   throw new HttpException(
@@ -228,7 +228,7 @@ export class ProductsService {
 
         for (const recipeDto of typeDto.recipes || []) {
           const ingredient = await this.ingredientRepository.findOne({
-            where: { IngredientId: recipeDto.ingredientId },
+            where: { ingredientId: recipeDto.ingredientId },
           });
 
           if (!ingredient) {
@@ -256,7 +256,7 @@ export class ProductsService {
     } else {
       const ingredient = await this.ingredientRepository.findOne({
         where: {
-          IngredientId:
+          ingredientId:
             updateProductDto.productTypes[0].recipes[0].ingredientId,
         },
       });

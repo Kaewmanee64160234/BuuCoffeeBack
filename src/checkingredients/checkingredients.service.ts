@@ -38,7 +38,7 @@ export class CheckingredientsService {
 
     for (const itemDto of createCheckingredientDto.checkingredientitems) {
       const ingredient = await this.ingredientRepository.findOneBy({
-        IngredientId: itemDto.ingredientId,
+        ingredientId: itemDto.ingredientId,
       });
 
       if (!ingredient) {

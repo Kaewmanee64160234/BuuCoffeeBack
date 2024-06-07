@@ -41,7 +41,7 @@ export class ImportingredientsService {
     // let total = 0;
     for (const importItemDto of createImportingredientDto.importingredientitem) {
       const ingredient = await this.ingredientRepository.findOneBy({
-        IngredientId: importItemDto.ingredientId,
+        ingredientId: importItemDto.ingredientId,
       });
       if (!ingredient) {
         throw new Error(

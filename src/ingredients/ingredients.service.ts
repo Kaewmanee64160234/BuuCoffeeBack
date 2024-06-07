@@ -54,7 +54,7 @@ export class IngredientsService {
   ): Promise<Ingredient> {
     try {
       const ingredient = await this.ingredientRepository.findOne({
-        where: { IngredientId: +ingredientId },
+        where: { ingredientId: +ingredientId },
       });
       if (!ingredient) {
         throw new HttpException('Ingredient not found', HttpStatus.NOT_FOUND);
@@ -87,7 +87,7 @@ export class IngredientsService {
   async findOne(id: number): Promise<Ingredient> {
     try {
       const ingredient = await this.ingredientRepository.findOne({
-        where: { IngredientId: id },
+        where: { ingredientId: id },
       });
       if (!ingredient) {
         throw new HttpException('Ingredient not found', HttpStatus.NOT_FOUND);
@@ -108,7 +108,7 @@ export class IngredientsService {
   ): Promise<Ingredient> {
     try {
       const ingredient = await this.ingredientRepository.findOne({
-        where: { IngredientId: id },
+        where: { ingredientId: id },
       });
       if (!ingredient) {
         throw new HttpException('Ingredient not found', HttpStatus.NOT_FOUND);
@@ -145,7 +145,7 @@ export class IngredientsService {
   async remove(id: number): Promise<void> {
     try {
       const ingredient = await this.ingredientRepository.findOne({
-        where: { IngredientId: id },
+        where: { ingredientId: id },
       });
       if (!ingredient) {
         throw new HttpException('Ingredient not found', HttpStatus.NOT_FOUND);
