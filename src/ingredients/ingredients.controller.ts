@@ -9,6 +9,7 @@ import {
   UploadedFile,
   UseInterceptors,
   Res,
+  Query,
 } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -65,8 +66,8 @@ export class IngredientsController {
   }
 
   @Get()
-  findAll() {
-    return this.ingredientsService.findAll();
+  findAll(@Query() query) {
+    return this.ingredientsService.findAll(query);
   }
 
   @Get(':id')

@@ -1,6 +1,6 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { CreateIngredientDto } from './dto/create-ingredient.dto';
 import { UpdateIngredientDto } from './dto/update-ingredient.dto';
 import { Ingredient } from './entities/ingredient.entity';
@@ -47,6 +47,28 @@ export class IngredientsService {
       );
     }
   }
+  async findAll(query): Promise<Paginate> {
+    const page = query.page || 1;
+    const take = query.take || 10;
+    const skip = (page - 1) * take;
+    const keyword = query.keyword || '';
+    const orderBy = query.orderBy || 'ingredientName';
+    const order = query.order || 'ASC';
+    const currentPage = page;
+    const [result, total] = await this.ingredientRepository.findAndCount({
+      where: { ingredientName: Like(`%${keyword}%`) },
+      order: { [orderBy]: order },
+      take: take,
+      skip: skip,
+    });
+    const lastPage = Math.ceil(total / take);
+    return {
+      data: result,
+      count: total,
+      currentPage: currentPage,
+      lastPage: lastPage,
+    };
+  }
 
   async uploadImage(
     ingredientId: number,
@@ -73,16 +95,16 @@ export class IngredientsService {
     }
   }
 
-  async findAll(): Promise<Ingredient[]> {
-    try {
-      return await this.ingredientRepository.find();
-    } catch (error) {
-      throw new HttpException(
-        'Failed to retrieve ingredients',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
+  // async findAll(): Promise<Ingredient[]> {
+  //   try {
+  //     return await this.ingredientRepository.find();
+  //   } catch (error) {
+  //     throw new HttpException(
+  //       'Failed to retrieve ingredients',
+  //       HttpStatus.INTERNAL_SERVER_ERROR,
+  //     );
+  //   }
+  // }
 
   async findOne(id: number): Promise<Ingredient> {
     try {
