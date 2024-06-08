@@ -57,6 +57,36 @@ export class ProductsController {
     return this.productsService.uploadImage(+id, file.filename);
   }
 
+  // uplode update image product file
+  @Post('update-image/:productId')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './product_images',
+        filename: (req, file, cb) => {
+          const name = uuidv4();
+          return cb(null, `${name}${extname(file.originalname)}`);
+        },
+      }),
+    }),
+  )
+  async updateImage(
+    @Param('productId') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    console.log('File:', file);
+    if (!file) {
+      console.error('File upload attempt without file.');
+      throw new BadRequestException('No file uploaded');
+    }
+    console.log('Uploaded file:', file.filename);
+    const product = await this.productsService.findOne(+id);
+    const imagePath = path.join('./product_images', product.productImage);
+    console.log('Image path:', imagePath);
+    await promisify(fs.unlink)(imagePath);
+    return this.productsService.uploadImage(+id, file.filename);
+  }
+
   @Get()
   findAll() {
     return this.productsService.findAll();

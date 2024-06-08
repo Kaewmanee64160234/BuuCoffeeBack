@@ -29,8 +29,14 @@ export class ProductsService {
     const { productName, productPrice, categoryId, productTypes } =
       createProductDto;
 
+    // Parse and validate categoryId
+    const parsedCategoryId = Number(categoryId);
+    if (isNaN(parsedCategoryId)) {
+      throw new HttpException('Invalid category ID', HttpStatus.BAD_REQUEST);
+    }
+
     const category = await this.categoryRepository.findOne({
-      where: { categoryId: +categoryId },
+      where: { categoryId: parsedCategoryId },
     });
     if (!category) {
       throw new HttpException('Category not found', HttpStatus.NOT_FOUND);
@@ -38,31 +44,44 @@ export class ProductsService {
 
     const newProduct = new Product();
     newProduct.productName = productName;
-    newProduct.productPrice = productPrice;
+    newProduct.productPrice = Number(productPrice);
+    if (isNaN(newProduct.productPrice)) {
+      throw new HttpException('Invalid product price', HttpStatus.BAD_REQUEST);
+    }
     newProduct.category = category;
 
     const savedProduct = await this.productRepository.save(newProduct);
+
     if (category.haveTopping === true) {
       if (productTypes && productTypes.length > 0) {
         for (const typeDto of productTypes) {
           const newProductType = new ProductType();
           newProductType.productTypeName = typeDto.productTypeName;
-          newProductType.productTypePrice = typeDto.productTypePrice;
+          newProductType.productTypePrice = Number(typeDto.productTypePrice);
+          if (isNaN(newProductType.productTypePrice)) {
+            throw new HttpException(
+              'Invalid product type price',
+              HttpStatus.BAD_REQUEST,
+            );
+          }
           newProductType.product = savedProduct;
 
           const savedProductType = await this.productTypeRepository.save(
             newProductType,
           );
 
-          const savedProductType_ = await this.productTypeRepository.findOne({
-            where: { productTypeId: savedProductType.productTypeId },
-            relations: ['recipes', 'recipes.ingredient'],
-          });
-
           if (typeDto.recipes) {
             for (const recipeDto of typeDto.recipes) {
+              const parsedIngredientId = Number(recipeDto.IngredientId);
+              if (isNaN(parsedIngredientId)) {
+                throw new HttpException(
+                  'Invalid ingredient ID',
+                  HttpStatus.BAD_REQUEST,
+                );
+              }
+
               const ingredient = await this.ingredientRepository.findOne({
-                where: { IngredientId: +recipeDto.IngredientId },
+                where: { IngredientId: parsedIngredientId },
               });
               if (!ingredient) {
                 throw new HttpException(
@@ -72,9 +91,15 @@ export class ProductsService {
               }
 
               const newRecipe = new Recipe();
-              newRecipe.quantity = recipeDto.quantity;
+              newRecipe.quantity = Number(recipeDto.quantity);
+              if (isNaN(newRecipe.quantity)) {
+                throw new HttpException(
+                  'Invalid recipe quantity',
+                  HttpStatus.BAD_REQUEST,
+                );
+              }
               newRecipe.ingredient = ingredient;
-              newRecipe.productType = savedProductType_;
+              newRecipe.productType = savedProductType;
 
               await this.recipeRepository.save(newRecipe);
             }
