@@ -296,7 +296,7 @@ export class ProductsService {
         const updatedRecipes = new Map<number, Recipe>();
 
         for (const recipeDto of typeDto.recipes || []) {
-          const ingredientId = Number(recipeDto.ingredient.IngredientId);
+          const ingredientId = Number(recipeDto.ingredient.ingredientId);
           if (isNaN(ingredientId)) {
             throw new HttpException(
               'Invalid Ingredient ID',
