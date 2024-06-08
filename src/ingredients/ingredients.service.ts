@@ -22,20 +22,20 @@ export class IngredientsService {
     try {
       const newIngredient = new Ingredient();
       newIngredient.ingredientName = createIngredientDto.ingredientName;
-      newIngredient.igredientSupplier = createIngredientDto.igredientSupplier;
-      newIngredient.igredientMinimun = createIngredientDto.igredientMinimun;
-      newIngredient.igredientUnit = createIngredientDto.igredientUnit;
-      newIngredient.igredientQuantityInStock = 0;
-      newIngredient.igredientRemining = 0;
-      newIngredient.igredientQuantityPerUnit =
+      newIngredient.ingredientSupplier = createIngredientDto.igredientSupplier;
+      newIngredient.ingredientMinimun = createIngredientDto.igredientMinimun;
+      newIngredient.ingredientUnit = createIngredientDto.igredientUnit;
+      newIngredient.ingredientQuantityInStock = 0;
+      newIngredient.ingredientRemining = 0;
+      newIngredient.ingredientQuantityPerUnit =
         createIngredientDto.igredientQuantityPerUnit;
-      newIngredient.igredientQuantityPerSubUnit =
+      newIngredient.ingredientQuantityPerSubUnit =
         createIngredientDto.igredientQuantityPerSubUnit;
 
       if (imageFile && imageFile.filename) {
-        newIngredient.igredientImage = imageFile.filename; // Save filename instead of base64 string
+        newIngredient.ingredientImage = imageFile.filename; // Save filename instead of base64 string
       } else {
-        newIngredient.igredientImage = 'no-image.png';
+        newIngredient.ingredientImage = 'no-image.png';
       }
 
       return await this.ingredientRepository.save(newIngredient);
@@ -116,11 +116,11 @@ export class IngredientsService {
       if (
         imageFile &&
         imageFile.filename &&
-        ingredient.igredientImage !== 'no-image.png'
+        ingredient.ingredientImage !== 'no-image.png'
       ) {
         const oldImagePath = path.join(
           './ingredient_images',
-          ingredient.igredientImage,
+          ingredient.ingredientImage,
         );
         fs.unlinkSync(oldImagePath);
       }
@@ -151,12 +151,12 @@ export class IngredientsService {
         throw new HttpException('Ingredient not found', HttpStatus.NOT_FOUND);
       }
       if (
-        ingredient.igredientImage &&
-        ingredient.igredientImage !== 'no-image.png'
+        ingredient.ingredientImage &&
+        ingredient.ingredientImage !== 'no-image.png'
       ) {
         const imagePath = path.join(
           './ingredient_images',
-          ingredient.igredientImage,
+          ingredient.ingredientImage,
         );
         fs.unlinkSync(imagePath);
       }

@@ -120,12 +120,12 @@ export class ProductsService {
       // Create ingredient
       const ingredient = new Ingredient();
       ingredient.ingredientName = productName;
-      ingredient.igredientMinimun = 10;
-      ingredient.igredientUnit = 'piece';
-      ingredient.igredientQuantityInStock = 10;
-      ingredient.igredientQuantityPerUnit = 1;
-      ingredient.igredientQuantityPerSubUnit = 'piece';
-      ingredient.igredientRemining = 0;
+      ingredient.ingredientMinimun = 10;
+      ingredient.ingredientUnit = 'piece';
+      ingredient.ingredientQuantityInStock = 10;
+      ingredient.ingredientQuantityPerUnit = 1;
+      ingredient.ingredientQuantityPerSubUnit = 'piece';
+      ingredient.ingredientRemining = 0;
 
       const ing = await this.ingredientRepository.save(ingredient);
 
@@ -373,12 +373,12 @@ export class ProductsService {
       // Create a new ingredient from the product name
       const newIngredient = new Ingredient();
       newIngredient.ingredientName = product.productName;
-      newIngredient.igredientMinimun = 10;
-      newIngredient.igredientUnit = 'piece';
-      newIngredient.igredientQuantityInStock = 10;
-      newIngredient.igredientQuantityPerUnit = 1;
-      newIngredient.igredientQuantityPerSubUnit = 'piece';
-      newIngredient.igredientRemining = 0;
+      newIngredient.ingredientMinimun = 10;
+      newIngredient.ingredientUnit = 'piece';
+      newIngredient.ingredientQuantityInStock = 10;
+      newIngredient.ingredientQuantityPerUnit = 1;
+      newIngredient.ingredientQuantityPerSubUnit = 'piece';
+      newIngredient.ingredientRemining = 0;
       const savedIngredient = await this.ingredientRepository.save(
         newIngredient,
       );

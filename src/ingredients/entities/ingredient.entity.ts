@@ -7,23 +7,23 @@ export class Ingredient {
   @PrimaryGeneratedColumn()
   ingredientId: number;
   @Column({ nullable: true, default: null })
-  igredientImage: string;
+  ingredientImage: string;
   @Column()
   ingredientName: string;
   @Column()
-  igredientSupplier: string;
+  ingredientSupplier: string;
   @Column()
-  igredientMinimun: number;
+  ingredientMinimun: number;
   @Column()
-  igredientUnit: string;
+  ingredientUnit: string;
   @Column()
-  igredientQuantityInStock: number;
+  ingredientQuantityInStock: number;
   @Column({ type: 'decimal', precision: 10, scale: 2 })
-  igredientQuantityPerUnit: number;
+  ingredientQuantityPerUnit: number;
   @Column()
-  igredientQuantityPerSubUnit: string;
+  ingredientQuantityPerSubUnit: string;
   @Column({ type: 'decimal', precision: 10, scale: 2 })
-  igredientRemining: number;
+  ingredientRemining: number;
   @OneToMany(() => Recipe, (recipe) => recipe.ingredient)
   recipes: Recipe[];
   @OneToMany(

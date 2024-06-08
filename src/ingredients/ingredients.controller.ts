@@ -103,6 +103,6 @@ export class IngredientsController {
   @Get(':id/image')
   async getImage(@Param('id') id: string, @Res() res: Response) {
     const ingredient = await this.ingredientsService.findOne(+id);
-    res.sendFile(ingredient.igredientImage, { root: './ingredient_images' });
+    res.sendFile(ingredient.ingredientImage, { root: './ingredient_images' });
   }
 }

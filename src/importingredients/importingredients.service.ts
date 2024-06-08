@@ -58,7 +58,7 @@ export class ImportingredientsService {
       await this.importingredientitemRepository.save(importingredientitem);
 
       // Update the quantity in stock for the ingredient
-      ingredient.igredientQuantityInStock += importItemDto.Quantity;
+      ingredient.ingredientQuantityInStock += importItemDto.Quantity;
       await this.ingredientRepository.save(ingredient);
     }
 
