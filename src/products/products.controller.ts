@@ -11,6 +11,7 @@ import {
   Res,
   BadRequestException,
   NotFoundException,
+  Query,
 } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -24,6 +25,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { extname, join } from 'path';
 import { Response, Request } from 'express';
 import { rename, unlink } from 'fs';
+import { Product } from './entities/product.entity';
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
@@ -106,6 +108,15 @@ export class ProductsController {
       await promisify(unlink)(tempImagePath);
       throw new BadRequestException('Error updating image');
     }
+  }
+
+  @Get('paginate')
+  async getProducts(
+    @Query('page') page = 1,
+    @Query('limit') limit = 5,
+    @Query('search') search = '',
+  ): Promise<{ data: Product[]; total: number }> {
+    return this.productsService.getProducts(page, limit, search);
   }
 
   @Get()
