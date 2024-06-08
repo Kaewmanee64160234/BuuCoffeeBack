@@ -26,7 +26,7 @@ export class CreateRecieptDto {
   receiptItems: CreateReceiptItemDto[];
 
   @IsNotEmpty()
-  user: CreateUserDto[];
+  userId: number;
   @IsNotEmpty()
-  customer: CreateCustomerDto[];
+  customerId: number;
 }

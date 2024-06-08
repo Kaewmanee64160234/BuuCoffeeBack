@@ -23,6 +23,9 @@ export class Reciept {
   receiptStatus: string;
   @Column()
   receiptType: string;
+  @Column()
+  storeStatus: string;
+
   @OneToMany(() => ReceiptItem, (receiptItem) => receiptItem.reciept, {
     cascade: true,
   })

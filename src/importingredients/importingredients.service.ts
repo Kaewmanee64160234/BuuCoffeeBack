@@ -41,7 +41,7 @@ export class ImportingredientsService {
     // let total = 0;
     for (const importItemDto of createImportingredientDto.importingredientitem) {
       const ingredient = await this.ingredientRepository.findOneBy({
-        IngredientId: importItemDto.ingredientId,
+        ingredientId: importItemDto.ingredientId,
       });
       if (!ingredient) {
         throw new Error(
@@ -58,7 +58,7 @@ export class ImportingredientsService {
       await this.importingredientitemRepository.save(importingredientitem);
 
       // Update the quantity in stock for the ingredient
-      ingredient.quantityInStock += importItemDto.Quantity;
+      ingredient.igredientQuantityInStock += importItemDto.Quantity;
       await this.ingredientRepository.save(ingredient);
     }
 

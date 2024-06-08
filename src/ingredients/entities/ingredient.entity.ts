@@ -5,22 +5,25 @@ import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 @Entity()
 export class Ingredient {
   @PrimaryGeneratedColumn()
-  IngredientId: number;
+  ingredientId: number;
   @Column({ nullable: true, default: null })
-  IngredientImage: string;
-
+  igredientImage: string;
   @Column()
-  nameIngredient: string;
+  ingredientName: string;
   @Column()
-  supplier: string;
+  igredientSupplier: string;
   @Column()
-  minimun: number;
+  igredientMinimun: number;
   @Column()
-  unit: string;
+  igredientUnit: string;
   @Column()
-  quantityInStock: number;
+  igredientQuantityInStock: number;
   @Column({ type: 'decimal', precision: 10, scale: 2 })
-  quantityPerUnit: number;
+  igredientQuantityPerUnit: number;
+  @Column()
+  igredientQuantityPerSubUnit: string;
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  igredientRemining: number;
   @OneToMany(() => Recipe, (recipe) => recipe.ingredient)
   recipes: Recipe[];
   @OneToMany(

@@ -5,6 +5,7 @@ import {
   IsString,
   ValidateNested,
 } from 'class-validator';
+import { CreateCategoryDto } from 'src/categories/dto/create-category.dto';
 import { CreateRecipeDto } from 'src/recipes/dto/create-recipe.dto';
 
 export class CreateProductTypeDto {

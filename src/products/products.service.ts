@@ -81,7 +81,7 @@ export class ProductsService {
               }
 
               const ingredient = await this.ingredientRepository.findOne({
-                where: { IngredientId: parsedIngredientId },
+                where: { ingredientId: parsedIngredientId },
               });
               if (!ingredient) {
                 throw new HttpException(
@@ -119,11 +119,14 @@ export class ProductsService {
     } else {
       // Create ingredient
       const ingredient = new Ingredient();
-      ingredient.nameIngredient = productName;
-      ingredient.minimun = 10;
-      ingredient.unit = 'piece';
-      ingredient.quantityInStock = 10;
-      ingredient.quantityPerUnit = 1;
+      ingredient.ingredientName = productName;
+      ingredient.igredientMinimun = 10;
+      ingredient.igredientUnit = 'piece';
+      ingredient.igredientQuantityInStock = 10;
+      ingredient.igredientQuantityPerUnit = 1;
+      ingredient.igredientQuantityPerSubUnit = 'piece';
+      ingredient.igredientRemining = 0;
+
       const ing = await this.ingredientRepository.save(ingredient);
 
       // Create product type and recipe
@@ -304,7 +307,7 @@ export class ProductsService {
           }
 
           const ingredient = await this.ingredientRepository.findOne({
-            where: { IngredientId: ingredientId },
+            where: { ingredientId: ingredientId },
           });
 
           if (!ingredient) {
@@ -315,7 +318,7 @@ export class ProductsService {
           }
 
           let recipe = existingRecipes.find(
-            (r) => r.ingredient.IngredientId === ingredientId,
+            (r) => r.ingredient.ingredientId === ingredientId,
           );
 
           if (!recipe) {
@@ -369,11 +372,13 @@ export class ProductsService {
 
       // Create a new ingredient from the product name
       const newIngredient = new Ingredient();
-      newIngredient.nameIngredient = product.productName;
-      newIngredient.minimun = 10;
-      newIngredient.unit = 'piece';
-      newIngredient.quantityInStock = 10;
-      newIngredient.quantityPerUnit = 1;
+      newIngredient.ingredientName = product.productName;
+      newIngredient.igredientMinimun = 10;
+      newIngredient.igredientUnit = 'piece';
+      newIngredient.igredientQuantityInStock = 10;
+      newIngredient.igredientQuantityPerUnit = 1;
+      newIngredient.igredientQuantityPerSubUnit = 'piece';
+      newIngredient.igredientRemining = 0;
       const savedIngredient = await this.ingredientRepository.save(
         newIngredient,
       );

@@ -91,6 +91,7 @@ export class IngredientsController {
     @Body() updateIngredientDto: UpdateIngredientDto,
     @UploadedFile() imageFile: Express.Multer.File,
   ) {
+    // เรียกใช้คำสั่ง update จาก IngredientsService
     return this.ingredientsService.update(+id, updateIngredientDto, imageFile);
   }
 
@@ -102,6 +103,6 @@ export class IngredientsController {
   @Get(':id/image')
   async getImage(@Param('id') id: string, @Res() res: Response) {
     const ingredient = await this.ingredientsService.findOne(+id);
-    res.sendFile(ingredient.IngredientImage, { root: './ingredient_images' });
+    res.sendFile(ingredient.igredientImage, { root: './ingredient_images' });
   }
 }
