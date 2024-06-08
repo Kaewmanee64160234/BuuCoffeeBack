@@ -10,6 +10,7 @@ import {
   UseInterceptors,
   Res,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -20,8 +21,9 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { v4 as uuidv4 } from 'uuid';
-import { extname } from 'path';
+import { extname, join } from 'path';
 import { Response, Request } from 'express';
+import { rename, unlink } from 'fs';
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
@@ -57,15 +59,14 @@ export class ProductsController {
     return this.productsService.uploadImage(+id, file.filename);
   }
 
-  // uplode update image product file
   @Post('update-image/:productId')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
         destination: './product_images',
         filename: (req, file, cb) => {
-          const name = uuidv4();
-          return cb(null, `${name}${extname(file.originalname)}`);
+          const tempName = `${uuidv4()}${extname(file.originalname)}`;
+          cb(null, tempName); // Save with a temporary name
         },
       }),
     }),
@@ -74,17 +75,37 @@ export class ProductsController {
     @Param('productId') id: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    console.log('File:', file);
     if (!file) {
-      console.error('File upload attempt without file.');
       throw new BadRequestException('No file uploaded');
     }
-    console.log('Uploaded file:', file.filename);
+
     const product = await this.productsService.findOne(+id);
-    const imagePath = path.join('./product_images', product.productImage);
-    console.log('Image path:', imagePath);
-    await promisify(fs.unlink)(imagePath);
-    return this.productsService.uploadImage(+id, file.filename);
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    const oldImagePath = join('./product_images', product.productImage);
+    const tempImagePath = join('./product_images', file.filename);
+    const newImagePath = join('./product_images', product.productImage);
+
+    try {
+      // Rename the temporary file to the old file name
+      await promisify(rename)(tempImagePath, newImagePath);
+
+      // Update the product's image information in the database if needed
+      await this.productsService.uploadImage(+id, product.productImage);
+
+      // Optionally, you can remove the old image if necessary
+      // await promisify(unlink)(oldImagePath);
+
+      console.log('Image updated successfully:', newImagePath);
+      return { message: 'Image updated successfully' };
+    } catch (error) {
+      console.error('Error updating image:', error);
+      // Cleanup in case of error
+      await promisify(unlink)(tempImagePath);
+      throw new BadRequestException('Error updating image');
+    }
   }
 
   @Get()

@@ -234,8 +234,6 @@ export class ProductsService {
     product.productName = updateProductDto.productName || product.productName;
     product.productPrice =
       updateProductDto.productPrice || product.productPrice;
-    product.productImage =
-      updateProductDto.productImage || product.productImage;
 
     // Update category
     const categoryId = Number(updateProductDto.category.categoryId);
