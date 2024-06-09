@@ -10,34 +10,34 @@ export class CreateIngredientDto {
   @IsNotEmpty()
   ingredientName: string;
 
-  igredientImage: string;
+  ingredientImage: string;
 
   IngredientId: number;
 
   @IsString()
   @IsNotEmpty()
-  igredientSupplier: string;
+  ingredientSupplier: string;
 
   @IsNumber()
   @IsNotEmpty()
-  igredientMinimun: number;
+  ingredientMinimun: number;
 
   @IsString()
   @IsNotEmpty()
-  igredientUnit: string;
+  ingredientUnit: string;
   @IsString()
   @IsNotEmpty()
-  igredientQuantityPerSubUnit: string;
+  ingredientQuantityPerSubUnit: string;
 
   @IsNumber()
   @IsNotEmpty()
-  igredientQuantityInStock: number;
+  ingredientQuantityInStock: number;
 
   @IsNumber()
   @IsNotEmpty()
-  igredientQuantityPerUnit: number;
+  ingredientQuantityPerUnit: number;
 
   @IsNumber()
   @IsNotEmpty()
-  igredientRemining: number;
+  ingredientRemining: number;
 }
