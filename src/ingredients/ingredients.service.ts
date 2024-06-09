@@ -22,15 +22,15 @@ export class IngredientsService {
     try {
       const newIngredient = new Ingredient();
       newIngredient.ingredientName = createIngredientDto.ingredientName;
-      newIngredient.ingredientSupplier = createIngredientDto.igredientSupplier;
-      newIngredient.ingredientMinimun = createIngredientDto.igredientMinimun;
-      newIngredient.ingredientUnit = createIngredientDto.igredientUnit;
+      newIngredient.ingredientSupplier = createIngredientDto.ingredientSupplier;
+      newIngredient.ingredientMinimun = createIngredientDto.ingredientMinimun;
+      newIngredient.ingredientUnit = createIngredientDto.ingredientUnit;
       newIngredient.ingredientQuantityInStock = 0;
       newIngredient.ingredientRemining = 0;
       newIngredient.ingredientQuantityPerUnit =
-        createIngredientDto.igredientQuantityPerUnit;
+        createIngredientDto.ingredientQuantityPerUnit;
       newIngredient.ingredientQuantityPerSubUnit =
-        createIngredientDto.igredientQuantityPerSubUnit;
+        createIngredientDto.ingredientQuantityPerSubUnit;
 
       if (imageFile && imageFile.filename) {
         newIngredient.ingredientImage = imageFile.filename; // Save filename instead of base64 string
@@ -163,7 +163,7 @@ export class IngredientsService {
       }
 
       if (imageFile && imageFile.filename) {
-        updateIngredientDto.igredientImage = imageFile.filename;
+        updateIngredientDto.ingredientImage = imageFile.filename;
       }
       const updatedIngredient = await this.ingredientRepository.save({
         ...ingredient,
