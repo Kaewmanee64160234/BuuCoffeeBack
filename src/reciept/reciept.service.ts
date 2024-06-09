@@ -83,10 +83,8 @@ export class RecieptService {
       // Loop through each receipt item in the DTO
       for (const receiptItemDto of createRecieptDto.receiptItems) {
         if (isNaN(receiptItemDto.quantity) || receiptItemDto.quantity < 0) {
-          receiptItemDto.quantity = 0;
+          receiptItemDto.quantity = 1;
         }
-
-        receiptItemDto.quantity = receiptItemDto.quantity + 1;
 
         if (isNaN(receiptItemDto.quantity) || receiptItemDto.quantity < 0) {
           throw new Error('Invalid quantity value after increment');
