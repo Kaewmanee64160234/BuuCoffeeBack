@@ -8,6 +8,7 @@ export class CreateReceiptItemDto {
   @IsNotEmpty()
   @IsNumber()
   quantity: number;
+  receiptItemId: number;
 
   productTypeToppings: CreateProductTypeToppingDto[];
 }
