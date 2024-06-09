@@ -16,10 +16,10 @@ export class Promotion {
   @Column({ length: 50 })
   promotionType: string;
 
-  @Column('decimal')
+  @Column('decimal', { nullable: true })
   discountValue: number;
 
-  @Column('int')
+  @Column('int', { nullable: true })
   conditionQuantity: number;
 
   @Column('int', { nullable: true })
@@ -37,8 +37,11 @@ export class Promotion {
   @Column('date')
   startDate: Date;
 
-  @Column('date')
+  @Column('date', { nullable: true })
   endDate: Date;
+
+  @Column({ default: false })
+  noEndDate: boolean;
 
   @OneToMany(
     () => ReceiptPromotion,

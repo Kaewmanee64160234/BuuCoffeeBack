@@ -7,52 +7,61 @@ import {
   Min,
   MaxLength,
   IsDecimal,
+  IsBoolean,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
+export enum PromotionType {
+  DISCOUNT_PRICE = 'discountPrice',
+  BUY_ONE_GET_ONE = 'buy1get1',
+  USE_POINTS = 'usePoints',
+  DISCOUNT_PERCENTAGE = 'discountPercentage',
+}
 export class CreatePromotionDto {
   @IsString()
-  @MaxLength(255)
   promotionName: string;
 
-  @IsString()
-  @IsOptional()
-  @MaxLength(255)
-  promotionDescription?: string;
-
-  @IsString()
-  @MaxLength(50)
-  promotionType: string;
-
-  @IsNumber()
-  discountValue: number;
-
-  @IsInt()
-  conditionQuantity: number;
-
-  @IsInt()
-  @IsOptional()
-  buyProductId?: number;
-
-  @IsInt()
-  @IsOptional()
-  freeProductId?: number;
-
-  @IsDecimal()
-  @IsOptional()
-  conditionValue1?: number;
-
-  @IsDecimal()
-  @IsOptional()
-  conditionValue2?: number;
+  @IsEnum(PromotionType)
+  promotionType: PromotionType;
 
   @IsDate()
-  @Type(() => Date)
   startDate: Date;
 
+  @IsOptional()
   @IsDate()
-  @Type(() => Date)
-  endDate: Date;
+  endDate?: Date;
+
+  @IsOptional()
+  @IsNumber()
+  discountValue?: number;
+
+  @IsOptional()
+  @IsNumber()
+  conditionQuantity?: number;
+
+  @IsOptional()
+  @IsNumber()
+  buyProductId?: number;
+
+  @IsOptional()
+  @IsNumber()
+  freeProductId?: number;
+
+  @IsOptional()
+  @IsNumber()
+  conditionValue1?: number;
+
+  @IsOptional()
+  @IsNumber()
+  conditionValue2?: number;
+
+  @IsString()
+  description: string;
+
+  @IsOptional()
+  @IsBoolean()
+  noEndDate?: boolean;
 }
 
 export class QueryPromotionDto {
