@@ -8,27 +8,36 @@ import {
 export class CreateIngredientDto {
   @IsString()
   @IsNotEmpty()
-  nameIngredient: string;
+  ingredientName: string;
 
-  IngredientImage: string;
+  igredientImage: string;
 
-  @IsString()
-  @IsNotEmpty()
-  supplier: string;
-
-  @IsNumber()
-  @IsNotEmpty()
-  minimun: number;
+  IngredientId: number;
 
   @IsString()
   @IsNotEmpty()
-  unit: string;
+  igredientSupplier: string;
 
   @IsNumber()
   @IsNotEmpty()
-  quantityInStock: number;
+  igredientMinimun: number;
+
+  @IsString()
+  @IsNotEmpty()
+  igredientUnit: string;
+  @IsString()
+  @IsNotEmpty()
+  igredientQuantityPerSubUnit: string;
 
   @IsNumber()
   @IsNotEmpty()
-  quantityPerUnit: number;
+  igredientQuantityInStock: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  igredientQuantityPerUnit: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  igredientRemining: number;
 }

@@ -38,7 +38,7 @@ export class CheckingredientsService {
 
     for (const itemDto of createCheckingredientDto.checkingredientitems) {
       const ingredient = await this.ingredientRepository.findOneBy({
-        IngredientId: itemDto.ingredientId,
+        ingredientId: itemDto.ingredientId,
       });
 
       if (!ingredient) {
@@ -55,7 +55,7 @@ export class CheckingredientsService {
       await this.checkingredientitemRepository.save(checkingredientitem);
 
       // Update the quantity in stock for the ingredient
-      ingredient.quantityInStock = itemDto.UsedQuantity;
+      ingredient.ingredientQuantityInStock = itemDto.UsedQuantity;
       await this.ingredientRepository.save(ingredient);
     }
 

@@ -24,9 +24,6 @@ export class ProductType {
   @Column({ type: 'numeric' })
   productTypePrice: number;
 
-  @ManyToOne(() => Product, (product) => product.productTypes)
-  product: Product;
-
   @OneToMany(
     () => ProductTypeTopping,
     (productTypeTopping) => productTypeTopping.productType,
@@ -34,7 +31,11 @@ export class ProductType {
   )
   productTypeToppings: ProductTypeTopping[];
 
-  @OneToMany(() => Recipe, (recipe) => recipe.productType) // Change this line
-  recipes: Recipe[]; // Change this line
-  static product: any;
+  @ManyToOne(() => Product, (product) => product.productTypes, {
+    onDelete: 'CASCADE',
+  })
+  product: Product;
+
+  @OneToMany(() => Recipe, (recipe) => recipe.productType, { cascade: true })
+  recipes: Recipe[];
 }

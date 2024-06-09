@@ -3,7 +3,7 @@ import { CreateIngredientDto } from 'src/ingredients/dto/create-ingredient.dto';
 
 export class CreateRecipeDto {
   @IsNotEmpty()
-  ingredientId: number;
+  IngredientId: number;
 
   @IsNotEmpty()
   quantity: number;
