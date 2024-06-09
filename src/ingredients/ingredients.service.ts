@@ -1,6 +1,6 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { CreateIngredientDto } from './dto/create-ingredient.dto';
 import { UpdateIngredientDto } from './dto/update-ingredient.dto';
 import { Ingredient } from './entities/ingredient.entity';
@@ -48,6 +48,37 @@ export class IngredientsService {
     }
   }
 
+  async findAll(query): Promise<Paginate> {
+    try {
+      const page = query.page || 1;
+      const take = query.take || 10;
+      const skip = (page - 1) * take;
+      const keyword = query.keyword || '';
+      const orderBy = query.orderBy || 'ingredientName';
+      const order = query.order || 'ASC';
+      const currentPage = page;
+      const [result, total] = await this.ingredientRepository.findAndCount({
+        where: { ingredientName: Like(`%${keyword}%`) },
+        order: { [orderBy]: order },
+        take: take,
+        skip: skip,
+      });
+      const lastPage = Math.ceil(total / take);
+      return {
+        data: result,
+        count: total,
+        currentPage: currentPage,
+        lastPage: lastPage,
+      };
+    } catch (error) {
+      console.error('Failed to retrieve ingredients', error);
+      throw new HttpException(
+        'Failed to retrieve ingredients',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   async uploadImage(
     ingredientId: number,
     fileName: string,
@@ -61,7 +92,7 @@ export class IngredientsService {
       }
       const updatedIngredient = await this.ingredientRepository.save({
         ...ingredient,
-        IngredientImage: fileName,
+        ingredientImage: fileName,
       });
       return updatedIngredient;
     } catch (error) {
@@ -73,10 +104,15 @@ export class IngredientsService {
     }
   }
 
-  async findAll(): Promise<Ingredient[]> {
+  async searchByName(ingredientName: string): Promise<Ingredient[]> {
     try {
-      return await this.ingredientRepository.find();
+      return await this.ingredientRepository.find({
+        where: {
+          ingredientName: Like(`%${ingredientName}%`),
+        },
+      });
     } catch (error) {
+      console.error('Failed to retrieve ingredients', error);
       throw new HttpException(
         'Failed to retrieve ingredients',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -94,6 +130,7 @@ export class IngredientsService {
       }
       return ingredient;
     } catch (error) {
+      console.error('Failed to retrieve ingredient', error);
       throw new HttpException(
         'Failed to retrieve ingredient',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -135,6 +172,7 @@ export class IngredientsService {
 
       return updatedIngredient;
     } catch (error) {
+      console.error('Failed to update Ingredient', error);
       throw new HttpException(
         'Failed to update Ingredient',
         HttpStatus.BAD_REQUEST,
@@ -162,6 +200,7 @@ export class IngredientsService {
       }
       await this.ingredientRepository.delete(id);
     } catch (error) {
+      console.error('Failed to delete Ingredient', error);
       throw new HttpException(
         'Failed to delete Ingredient',
         HttpStatus.BAD_REQUEST,

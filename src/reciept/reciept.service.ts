@@ -34,7 +34,7 @@ export class RecieptService {
     @InjectRepository(Topping)
     private toppingRepository: Repository<Topping>,
     @InjectRepository(Ingredient)
-    private ingredieintRepository: Repository<Ingredient>,
+    private ingredientRepository: Repository<Ingredient>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
     @InjectRepository(Customer)
@@ -83,10 +83,8 @@ export class RecieptService {
       // Loop through each receipt item in the DTO
       for (const receiptItemDto of createRecieptDto.receiptItems) {
         if (isNaN(receiptItemDto.quantity) || receiptItemDto.quantity < 0) {
-          receiptItemDto.quantity = 0;
+          receiptItemDto.quantity = 1;
         }
-
-        receiptItemDto.quantity = receiptItemDto.quantity + 1;
 
         if (isNaN(receiptItemDto.quantity) || receiptItemDto.quantity < 0) {
           throw new Error('Invalid quantity value after increment');
@@ -178,6 +176,59 @@ export class RecieptService {
 
       // Save the final receipt to the database
       const receiptFinish = await this.recieptRepository.save(recieptSave);
+      for (const receiptItemDto of createRecieptDto.receiptItems) {
+        const receiptItem = await this.recieptItemRepository.findOne({
+          where: { receiptItemId: receiptItemDto.receiptItemId },
+          relations: [
+            'productTypeToppings',
+            'productTypeToppings.productType',
+            'productTypeToppings.productType.recipes',
+            'productTypeToppings.productType.recipes.ingredient',
+          ],
+        });
+
+        if (receiptItem && receiptItem.productTypeToppings) {
+          for (const productTypeTopping of receiptItem.productTypeToppings) {
+            if (
+              productTypeTopping.productType &&
+              productTypeTopping.productType.recipes
+            ) {
+              for (const recipe of productTypeTopping.productType.recipes) {
+                const ingredient = recipe.ingredient;
+                if (ingredient) {
+                  const oldRemaining = ingredient.ingredientRemining;
+                  ingredient.ingredientRemining = Math.round(
+                    ingredient.ingredientRemining,
+                  );
+                  ingredient.ingredientRemining +=
+                    receiptItemDto.quantity * recipe.quantity;
+                  console.log(
+                    'Updating ingredient: ',
+                    ingredient.ingredientName,
+                  );
+                  console.log('Old remaining: ', oldRemaining);
+
+                  if (
+                    ingredient.ingredientRemining >
+                    ingredient.ingredientQuantityPerUnit
+                  ) {
+                    ingredient.ingredientRemining -=
+                      ingredient.ingredientQuantityPerUnit;
+                    ingredient.ingredientQuantityInStock -= 1;
+                    console.log(
+                      'Stock reduced for ingredient: ',
+                      ingredient.ingredientName,
+                    );
+                  }
+
+                  console.log('New remaining: ', ingredient.ingredientRemining);
+                  await this.ingredientRepository.save(ingredient);
+                }
+              }
+            }
+          }
+        }
+      }
 
       // Fetch the newly created receipt with relations
       return await this.recieptRepository.findOne({

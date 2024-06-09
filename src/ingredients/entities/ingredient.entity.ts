@@ -18,11 +18,11 @@ export class Ingredient {
   ingredientUnit: string;
   @Column()
   ingredientQuantityInStock: number;
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({ type: 'decimal', precision: 5, scale: 2 })
   ingredientQuantityPerUnit: number;
   @Column()
   ingredientQuantityPerSubUnit: string;
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({ type: 'decimal', precision: 5, scale: 2 })
   ingredientRemining: number;
   @OneToMany(() => Recipe, (recipe) => recipe.ingredient)
   recipes: Recipe[];

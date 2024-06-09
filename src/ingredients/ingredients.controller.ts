@@ -9,6 +9,8 @@ import {
   UploadedFile,
   UseInterceptors,
   Res,
+  Query,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -21,11 +23,20 @@ import { diskStorage } from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import { extname } from 'path';
 import { Response, Request } from 'express';
+import { Ingredient } from './entities/ingredient.entity';
 
 @Controller('ingredients')
 export class IngredientsController {
   constructor(private readonly ingredientsService: IngredientsService) {}
-
+  @Get('search')
+  async search(@Query('name') name: string): Promise<Ingredient[]> {
+    try {
+      return await this.ingredientsService.searchByName(name);
+    } catch (error) {
+      console.error('Failed to search ingredients', error);
+      throw new InternalServerErrorException('Failed to search ingredients');
+    }
+  }
   @Post()
   @UseInterceptors(
     FileInterceptor('imageFile', {
@@ -65,8 +76,8 @@ export class IngredientsController {
   }
 
   @Get()
-  findAll() {
-    return this.ingredientsService.findAll();
+  findAll(@Query() query) {
+    return this.ingredientsService.findAll(query);
   }
 
   @Get(':id')

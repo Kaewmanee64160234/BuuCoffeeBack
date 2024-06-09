@@ -13,7 +13,7 @@ export class Recipe {
   @PrimaryGeneratedColumn()
   recipeId: number;
 
-  @Column()
+  @Column({ type: 'decimal', precision: 5, scale: 2 })
   quantity: number;
 
   @ManyToOne(() => ProductType, (productType) => productType.recipes, {
