@@ -1,4 +1,6 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { ReceiptPromotion } from 'src/receipt-promotions/entities/receipt-promotion.entity';
+import { Reciept } from 'src/reciept/entities/reciept.entity';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
 export class Promotion {
@@ -37,4 +39,10 @@ export class Promotion {
 
   @Column('date')
   endDate: Date;
+
+  @OneToMany(
+    () => ReceiptPromotion,
+    (receiptPromotion) => receiptPromotion.promotion,
+  )
+  receiptPromotions: ReceiptPromotion[];
 }

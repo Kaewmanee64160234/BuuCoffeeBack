@@ -36,6 +36,7 @@ import { CheckingredientitemsModule } from './checkingredientitems/checkingredie
 import { Checkingredientitem } from './checkingredientitems/entities/checkingredientitem.entity';
 import { PromotionsModule } from './promotions/promotions.module';
 import { Promotion } from './promotions/entities/promotion.entity';
+
 @Module({
   imports: [
     TypeOrmModule.forRoot({
