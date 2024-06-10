@@ -2,8 +2,9 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateToppingDto } from './dto/create-topping.dto';
 import { UpdateToppingDto } from './dto/update-topping.dto';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Like, Repository } from 'typeorm';
 import { Topping } from './entities/topping.entity';
+import { Category } from 'src/categories/entities/category.entity';
 
 @Injectable()
 export class ToppingsService {
@@ -88,5 +89,21 @@ export class ToppingsService {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  async getToppings(
+    page: number,
+    limit: number,
+    search: string,
+  ): Promise<{ data: Topping[]; total: number }> {
+    const whereCondition = search ? { toppingName: Like(`%${search}%`) } : {};
+
+    const [data, total] = await this.toppingRepository.findAndCount({
+      skip: (page - 1) * limit,
+      take: limit,
+      where: whereCondition,
+    });
+
+    return { data, total };
   }
 }

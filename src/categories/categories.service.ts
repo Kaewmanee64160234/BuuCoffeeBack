@@ -3,7 +3,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Category } from './entities/category.entity';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 
 @Injectable()
 export class CategoriesService {
@@ -92,5 +92,11 @@ export class CategoriesService {
         HttpStatus.BAD_REQUEST,
       );
     }
+  }
+
+  async searchCategories(search: string): Promise<Category[]> {
+    return this.categoryrRepository.find({
+      where: { categoryName: Like(`%${search}%`) },
+    });
   }
 }

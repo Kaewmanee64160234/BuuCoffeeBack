@@ -1,26 +1,39 @@
 import { Injectable } from '@nestjs/common';
 import { CreateReceiptPromotionDto } from './dto/create-receipt-promotion.dto';
 import { UpdateReceiptPromotionDto } from './dto/update-receipt-promotion.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { ReceiptPromotion } from './entities/receipt-promotion.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class ReceiptPromotionsService {
-  create(createReceiptPromotionDto: CreateReceiptPromotionDto) {
-    return 'This action adds a new receiptPromotion';
+  constructor(
+    @InjectRepository(ReceiptPromotion)
+    private receiptPromotionRepository: Repository<ReceiptPromotion>,
+  ) {}
+
+  findAll(): Promise<ReceiptPromotion[]> {
+    return this.receiptPromotionRepository.find();
   }
 
-  findAll() {
-    return `This action returns all receiptPromotions`;
+  findOne(id: number): Promise<ReceiptPromotion> {
+    return this.receiptPromotionRepository.findOneBy({ receiptPromId: id });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} receiptPromotion`;
+  create(
+    receiptPromotion: CreateReceiptPromotionDto,
+  ): Promise<ReceiptPromotion> {
+    return this.receiptPromotionRepository.save(receiptPromotion);
   }
 
-  update(id: number, updateReceiptPromotionDto: UpdateReceiptPromotionDto) {
-    return `This action updates a #${id} receiptPromotion`;
+  async update(
+    id: number,
+    receiptPromotion: UpdateReceiptPromotionDto,
+  ): Promise<void> {
+    await this.receiptPromotionRepository.update(id, receiptPromotion);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} receiptPromotion`;
+  async remove(id: number): Promise<void> {
+    await this.receiptPromotionRepository.delete(id);
   }
 }

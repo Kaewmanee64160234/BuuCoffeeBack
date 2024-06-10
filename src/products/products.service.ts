@@ -1,6 +1,6 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { Product } from './entities/product.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -296,7 +296,7 @@ export class ProductsService {
         const updatedRecipes = new Map<number, Recipe>();
 
         for (const recipeDto of typeDto.recipes || []) {
-          const ingredientId = Number(recipeDto.ingredient.IngredientId);
+          const ingredientId = Number(recipeDto.ingredient.ingredientId);
           if (isNaN(ingredientId)) {
             throw new HttpException(
               'Invalid Ingredient ID',
@@ -450,5 +450,27 @@ export class ProductsService {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  async getProducts(
+    page: number,
+    limit: number,
+    search: string,
+  ): Promise<{ data: Product[]; total: number }> {
+    const whereCondition = search ? { productName: Like(`%${search}%`) } : {};
+
+    const [data, total] = await this.productRepository.findAndCount({
+      skip: (page - 1) * limit,
+      take: limit,
+      where: whereCondition,
+      relations: [
+        'category',
+        'productTypes',
+        'productTypes.recipes',
+        'productTypes.recipes.ingredient',
+      ],
+    });
+
+    return { data, total };
   }
 }

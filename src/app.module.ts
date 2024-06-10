@@ -34,6 +34,11 @@ import { CheckingredientsModule } from './checkingredients/checkingredients.modu
 import { Checkingredient } from './checkingredients/entities/checkingredient.entity';
 import { CheckingredientitemsModule } from './checkingredientitems/checkingredientitems.module';
 import { Checkingredientitem } from './checkingredientitems/entities/checkingredientitem.entity';
+import { PromotionsModule } from './promotions/promotions.module';
+import { Promotion } from './promotions/entities/promotion.entity';
+import { CashiersModule } from './cashiers/cashiers.module';
+import { Cashier } from './cashiers/entities/cashier.entity';
+
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -60,6 +65,8 @@ import { Checkingredientitem } from './checkingredientitems/entities/checkingred
         Importingredient,
         Checkingredient,
         Checkingredientitem,
+        Promotion,
+        Cashier,
       ],
       synchronize: true,
     }),
@@ -79,6 +86,8 @@ import { Checkingredientitem } from './checkingredientitems/entities/checkingred
     ImportingredientitemsModule,
     CheckingredientsModule,
     CheckingredientitemsModule,
+    PromotionsModule,
+    CashiersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

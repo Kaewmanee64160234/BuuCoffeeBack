@@ -1,6 +1,5 @@
 import { ReceiptItem } from 'src/receipt-item/entities/receipt-item.entity';
 import { Customer } from 'src/customers/entities/customer.entity';
-import { ReceiptPromotion } from 'src/receipt-promotions/entities/receipt-promotion.entity';
 import { User } from 'src/users/entities/user.entity';
 import {
   Column,
@@ -9,6 +8,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { ReceiptPromotion } from 'src/receipt-promotions/entities/receipt-promotion.entity';
 @Entity()
 export class Reciept {
   @PrimaryGeneratedColumn()
@@ -34,4 +34,9 @@ export class Reciept {
   user: User;
   @ManyToOne(() => Customer, (customer) => customer.reciept)
   customer: Customer;
+  @OneToMany(
+    () => ReceiptPromotion,
+    (receiptPromotion) => receiptPromotion.receipt,
+  )
+  receiptPromotions: ReceiptPromotion[];
 }
