@@ -65,6 +65,8 @@ export class RecieptService {
       let storeStatus = 'ร้านข้าว';
       if (user.userRole === 'coffee shop employee') {
         storeStatus = 'ร้านกาแฟ';
+      } else if (user.userRole === 'manager') {
+        storeStatus = 'ผู้จัดการร้าน';
       }
 
       // Create new receipt
