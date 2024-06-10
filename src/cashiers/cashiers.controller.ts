@@ -41,9 +41,4 @@ export class CashiersController {
   remove(@Param('id') id: string) {
     return this.cashiersService.softDelete(+id);
   }
-
-  @Patch('restore/:id')
-  restore(@Param('id') id: string) {
-    return this.cashiersService.restore(+id);
-  }
 }

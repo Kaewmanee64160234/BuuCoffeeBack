@@ -5,7 +5,7 @@ import { CreateCashierDto } from './dto/create-cashier.dto';
 import { UpdateCashierDto } from './dto/update-cashier.dto';
 import { Cashier } from './entities/cashier.entity';
 import { User } from 'src/users/entities/user.entity';
-
+import * as moment from 'moment';
 @Injectable()
 export class CashiersService {
   constructor(
@@ -23,9 +23,24 @@ export class CashiersService {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
 
+      // ตรวจสอบว่ามีข้อมูลของวันที่ปัจจุบันในระบบหรือไม่
+      const currentDate = new Date();
+      currentDate.setHours(0, 0, 0, 0); // กำหนดเวลาให้เป็น 00:00:00
+
+      const existingCashier = await this.cashierRepository.findOne({
+        where: { createdDate: currentDate },
+      });
+
+      // ถ้ามีข้อมูลของวันที่ปัจจุบันในระบบแล้ว ให้สร้างข้อผิดพลาด
+      if (existingCashier) {
+        throw new HttpException(
+          'Cashier for this date already exists',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
       const cashier = new Cashier();
       cashier.cashierAmount = createCashierDto.cashierAmount;
-      cashier.createdDate = createCashierDto.createdDate || new Date();
+      cashier.createdDate = currentDate;
       cashier.user = user;
 
       return this.cashierRepository.save(cashier);
@@ -67,13 +82,6 @@ export class CashiersService {
 
   async softDelete(cashierId: number): Promise<void> {
     const result = await this.cashierRepository.softDelete(cashierId);
-    if (result.affected === 0) {
-      throw new HttpException('Cashier not found', HttpStatus.NOT_FOUND);
-    }
-  }
-
-  async restore(cashierId: number): Promise<void> {
-    const result = await this.cashierRepository.restore(cashierId);
     if (result.affected === 0) {
       throw new HttpException('Cashier not found', HttpStatus.NOT_FOUND);
     }

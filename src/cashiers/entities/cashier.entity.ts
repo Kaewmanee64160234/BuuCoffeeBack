@@ -5,8 +5,8 @@ import {
   ManyToOne,
   JoinColumn,
   PrimaryGeneratedColumn,
+  DeleteDateColumn,
 } from 'typeorm';
-
 @Entity()
 export class Cashier {
   @PrimaryGeneratedColumn()
@@ -15,8 +15,8 @@ export class Cashier {
   cashierAmount: number;
   @Column({ type: 'datetime' })
   createdDate: Date;
-  @Column({ type: 'datetime', nullable: true })
-  deleteDate?: Date;
+  @DeleteDateColumn({ name: 'deletedAt' })
+  deletedAt: Date;
   @ManyToOne(() => User, (user) => user.cashiers)
   @JoinColumn({ name: 'userId' })
   user: User;

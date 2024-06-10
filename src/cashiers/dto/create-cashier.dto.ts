@@ -6,10 +6,6 @@ export class CreateCashierDto {
   @IsNotEmpty()
   cashierAmount: number;
 
-  @IsDate()
-  @IsNotEmpty()
-  createdDate: Date;
-
   @IsNumber()
   @IsNotEmpty()
   userId: number;
