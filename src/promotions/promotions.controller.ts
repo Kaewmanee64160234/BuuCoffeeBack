@@ -34,6 +34,16 @@ export class PromotionsController {
     return this.promotionsService.findByCriteria(query);
   }
 
+  // /promotions/paginate
+  @Get('paginate')
+  paginate(
+    @Query('search') search: string,
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+  ) {
+    return this.promotionsService.getPromotionsPaginate(search, page, limit);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.promotionsService.findOne(+id);
