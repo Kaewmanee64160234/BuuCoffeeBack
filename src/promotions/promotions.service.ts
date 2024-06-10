@@ -7,7 +7,7 @@ import {
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Promotion } from './entities/promotion.entity';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 
 @Injectable()
 export class PromotionsService {
@@ -135,5 +135,24 @@ export class PromotionsService {
     }
 
     return queryBuilder.getMany();
+  }
+
+  // getPromotionsPaginate
+  async getPromotionsPaginate(search: string, page: number, limit: number) {
+    const [result, total] = await this.promotionRepository.findAndCount({
+      where: [
+        { promotionName: Like(`%${search}%`) },
+        { promotionType: Like(`%${search}%`) },
+      ],
+      take: limit,
+      skip: (page - 1) * limit,
+    });
+
+    return {
+      data: result,
+      total,
+      page,
+      limit,
+    };
   }
 }
