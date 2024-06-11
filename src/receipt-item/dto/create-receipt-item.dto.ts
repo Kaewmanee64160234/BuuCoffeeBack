@@ -11,4 +11,5 @@ export class CreateReceiptItemDto {
   receiptItemId: number;
 
   productTypeToppings: CreateProductTypeToppingDto[];
+  sweetnessLevel: string;
 }

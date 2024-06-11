@@ -27,4 +27,6 @@ export class ReceiptItem {
     { cascade: true },
   )
   productTypeToppings: ProductTypeTopping[];
+  @Column({ nullable: true })
+  sweetnessLevel: string;
 }

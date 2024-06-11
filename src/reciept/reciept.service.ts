@@ -92,6 +92,10 @@ export class RecieptService {
         const newRecieptItem = this.recieptItemRepository.create({
           quantity: receiptItemDto.quantity,
           reciept: recieptSave,
+          sweetnessLevel:
+            receiptItemDto.sweetnessLevel === null
+              ? null
+              : receiptItemDto.sweetnessLevel,
         });
         console.log(newRecieptItem);
         // Save the new receipt item to the database
