@@ -19,7 +19,6 @@ export class CreateRecieptDto {
   receiptStatus: string;
 
   @IsNotEmpty()
-  @Length(3, 64)
   receiptType: string;
 
   @IsNotEmpty()
@@ -29,4 +28,6 @@ export class CreateRecieptDto {
   userId: number;
   @IsNotEmpty()
   customerId: number;
+  @IsNotEmpty()
+  paymentMethod: string;
 }

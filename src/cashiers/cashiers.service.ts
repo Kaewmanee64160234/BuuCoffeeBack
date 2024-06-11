@@ -5,7 +5,6 @@ import { CreateCashierDto } from './dto/create-cashier.dto';
 import { UpdateCashierDto } from './dto/update-cashier.dto';
 import { Cashier } from './entities/cashier.entity';
 import { User } from 'src/users/entities/user.entity';
-import * as moment from 'moment';
 @Injectable()
 export class CashiersService {
   constructor(

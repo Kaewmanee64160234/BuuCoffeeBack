@@ -52,32 +52,30 @@ export class RecieptService {
       if (user == null) {
         throw new Error('User not found');
       }
-
-      // Find the user by userId from userDto
-      const customer = await this.customerRepository.findOne({
-        where: { customerId: createRecieptDto.customerId }, // assuming the correct property name is 'id' in the user repository
-      });
-      console.log(customer);
-      if (!customer) {
-        throw new Error('Customer not found');
+      if (createRecieptDto.customerId != null) {
+        // Find the user by userId from userDto
+        const customer = await this.customerRepository.findOne({
+          where: { customerId: createRecieptDto.customerId }, // assuming the correct property name is 'id' in the user repository
+        });
+        console.log(customer);
+        if (!customer) {
+          throw new Error('Customer not found');
+        }
       }
 
-      let storeStatus = 'ร้านข้าว';
-      if (user.userRole === 'coffee shop employee') {
-        storeStatus = 'ร้านกาแฟ';
-      } else if (user.userRole === 'manager') {
-        storeStatus = 'ผู้จัดการร้าน';
-      }
-
-      // Create new receipt
       const newReciept = this.recieptRepository.create({
         receiptTotalPrice: createRecieptDto.receiptTotalPrice,
         receiptTotalDiscount: createRecieptDto.receiptTotalDiscount,
         receiptNetPrice: createRecieptDto.receiptNetPrice,
         receiptStatus: createRecieptDto.receiptStatus,
         user: user,
-        customer: customer,
-        storeStatus: storeStatus,
+        customer: createRecieptDto.customerId
+          ? await this.customerRepository.findOne({
+              where: { customerId: createRecieptDto.customerId },
+            })
+          : null,
+        receiptType: createRecieptDto.receiptType,
+        paymentMethod: createRecieptDto.paymentMethod,
       });
 
       // Save new receipt to the database
