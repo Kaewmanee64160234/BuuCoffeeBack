@@ -36,6 +36,8 @@ import { CheckingredientitemsModule } from './checkingredientitems/checkingredie
 import { Checkingredientitem } from './checkingredientitems/entities/checkingredientitem.entity';
 import { PromotionsModule } from './promotions/promotions.module';
 import { Promotion } from './promotions/entities/promotion.entity';
+import { CashiersModule } from './cashiers/cashiers.module';
+import { Cashier } from './cashiers/entities/cashier.entity';
 
 @Module({
   imports: [
@@ -64,6 +66,7 @@ import { Promotion } from './promotions/entities/promotion.entity';
         Checkingredient,
         Checkingredientitem,
         Promotion,
+        Cashier,
       ],
       synchronize: true,
     }),
@@ -84,6 +87,7 @@ import { Promotion } from './promotions/entities/promotion.entity';
     CheckingredientsModule,
     CheckingredientitemsModule,
     PromotionsModule,
+    CashiersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

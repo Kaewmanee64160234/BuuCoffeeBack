@@ -54,14 +54,17 @@ export class UsersService {
 
   async update(id: number, updateUserDto: UpdateUserDto) {
     try {
-      const user = this.usersRepository.findOne({
+      const user = await this.usersRepository.findOne({
         where: { userId: id },
       });
       if (!user) {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
-      return this.usersRepository.update(id, updateUserDto);
+      await this.usersRepository.update(id, updateUserDto);
+      console.log(this.usersRepository.findOne({ where: { userId: id } }));
+      return this.usersRepository.findOne({ where: { userId: id } }); // Return updated user
     } catch (error) {
+      console.log(error);
       throw new HttpException('Failed to update user', HttpStatus.BAD_REQUEST);
     }
   }
