@@ -20,8 +20,6 @@ export class ReceiptItem {
   receiptSubTotal: number;
   @ManyToOne(() => Reciept, (reciept) => reciept.receiptItems)
   reciept: Reciept;
-  user: User;
-  customer: Customer;
 
   @OneToMany(
     () => ProductTypeTopping,
