@@ -97,7 +97,11 @@ export class CustomersService {
   findCustomerByName(name: string) {
     try {
       const customer = this.customersRepository.findOne({
-        where: { customerName: name },
+        where: {
+          customerName: Like(`%${name}%`),
+          customerPhone: Like(`%${name}%`),
+        },
+
         relations: ['customer'],
         order: { customerName: 'ASC' },
       });

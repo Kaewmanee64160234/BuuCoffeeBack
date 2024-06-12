@@ -1,5 +1,6 @@
 import { IsNotEmpty, Length, IsPhoneNumber } from 'class-validator';
 import { CreateCustomerDto } from 'src/customers/dto/create-customer.dto';
+import { Customer } from 'src/customers/entities/customer.entity';
 import { CreateReceiptItemDto } from 'src/receipt-item/dto/create-receipt-item.dto';
 import { ReceiptItem } from 'src/receipt-item/entities/receipt-item.entity';
 import { ReceiptPromotion } from 'src/receipt-promotions/entities/receipt-promotion.entity';
@@ -31,7 +32,8 @@ export class CreateRecieptDto {
   @IsNotEmpty()
   userId: number;
   @IsNotEmpty()
-  customerId: number;
+  customer: Customer;
+
   @IsNotEmpty()
   paymentMethod: string;
 }

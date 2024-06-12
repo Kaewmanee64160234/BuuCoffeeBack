@@ -54,13 +54,20 @@ export class RecieptService {
         throw new Error('User not found');
       }
 
-      const customer = createRecieptDto.customerId
+      const customer = createRecieptDto.customer
         ? await this.customerRepository.findOne({
-            where: { customerId: createRecieptDto.customerId },
+            where: { customerId: createRecieptDto.customer.customerId },
           })
         : null;
-      if (createRecieptDto.customerId && !customer) {
+      if (createRecieptDto.customer && !customer) {
         throw new Error('Customer not found');
+      }
+      if (customer !== null) {
+        customer.customerNumberOfStamp += createRecieptDto.receiptItems.reduce(
+          (acc, item) => item.quantity + acc,
+          0,
+        );
+        await this.customerRepository.save(customer);
       }
 
       const newReciept = this.recieptRepository.create({
