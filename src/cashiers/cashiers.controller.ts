@@ -26,7 +26,10 @@ export class CashiersController {
   findAll() {
     return this.cashiersService.findAll();
   }
-
+  @Get('today')
+  findToday() {
+    return this.cashiersService.findToday();
+  }
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.cashiersService.findOne(+id);

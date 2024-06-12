@@ -57,11 +57,13 @@ export class CreatePromotionDto {
   conditionValue2?: number;
 
   @IsString()
-  description: string;
+  promotionDescription: string;
 
   @IsOptional()
   @IsBoolean()
   noEndDate?: boolean;
+
+  promotionForStore: string;
 }
 
 export class QueryPromotionDto {

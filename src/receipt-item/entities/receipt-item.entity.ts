@@ -1,5 +1,6 @@
 import { Customer } from 'src/customers/entities/customer.entity';
 import { ProductTypeTopping } from 'src/product-type-toppings/entities/product-type-topping.entity';
+import { Product } from 'src/products/entities/product.entity';
 import { Reciept } from 'src/reciept/entities/reciept.entity';
 import { User } from 'src/users/entities/user.entity';
 import {
@@ -20,8 +21,6 @@ export class ReceiptItem {
   receiptSubTotal: number;
   @ManyToOne(() => Reciept, (reciept) => reciept.receiptItems)
   reciept: Reciept;
-  user: User;
-  customer: Customer;
 
   @OneToMany(
     () => ProductTypeTopping,
@@ -29,4 +28,9 @@ export class ReceiptItem {
     { cascade: true },
   )
   productTypeToppings: ProductTypeTopping[];
+  @Column({ nullable: true })
+  sweetnessLevel: string;
+
+  @ManyToOne(() => Product, (product) => product.receiptItems)
+  product: Product;
 }
