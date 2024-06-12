@@ -50,9 +50,24 @@ export class CashiersService {
       );
     }
   }
+  async findToday(): Promise<Cashier> {
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0); // กำหนดเวลาให้เป็น 00:00:00
 
+    const cashier = await this.cashierRepository.findOne({
+      where: { createdDate: currentDate },
+    });
+
+    if (!cashier) {
+      throw new HttpException('ไม่มีข้อมูลวันนี้', HttpStatus.NOT_FOUND);
+    }
+
+    return cashier;
+  }
   async findAll(): Promise<Cashier[]> {
-    return await this.cashierRepository.find();
+    return await this.cashierRepository.find({
+      withDeleted: true,
+    });
   }
 
   async findOne(id: number): Promise<Cashier> {
