@@ -3,7 +3,7 @@ import { CreateProductTypeToppingDto } from 'src/product-type-toppings/dto/creat
 import { ProductTypeTopping } from 'src/product-type-toppings/entities/product-type-topping.entity';
 export class CreateReceiptItemDto {
   @IsNotEmpty()
-  subTotal: number;
+  receiptSubTotal: number;
 
   @IsNotEmpty()
   quantity: number;
