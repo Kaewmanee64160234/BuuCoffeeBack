@@ -86,6 +86,9 @@ export class RecieptService {
           reciept: recieptSave,
           sweetnessLevel: receiptItemDto.sweetnessLevel,
           receiptSubTotal: receiptItemDto.receiptSubTotal,
+          product: await this.productRepository.findOne({
+            where: { productId: receiptItemDto.product.productId },
+          }),
         });
         const recieptItemSave = await this.recieptItemRepository.save(
           newRecieptItem,
@@ -95,12 +98,16 @@ export class RecieptService {
             where: { productTypeId: productTypeToppingDto.productTypeId },
             relations: ['product', 'product.category'],
           });
+          const topping = await this.toppingRepository.findOne({
+            where: { toppingId: productTypeToppingDto.toppingId },
+          });
 
           const newProductTypeTopping =
             this.productTypeToppingRepository.create({
               quantity: productTypeToppingDto.quantity,
               productType: productType,
               receiptItem: recieptItemSave,
+              topping: topping,
             });
 
           if (
@@ -130,6 +137,7 @@ export class RecieptService {
         recieptPromotion.promotion = receiptPromotion.promotion;
         recieptPromotion.discount = receiptPromotion.discount;
         recieptPromotion.date = receiptPromotion.date;
+
         await this.recieptPromotionRepository.save(recieptPromotion);
       }
 
@@ -142,6 +150,8 @@ export class RecieptService {
         relations: [
           'receiptItems',
           'receiptItems.productTypeToppings',
+          'receiptItems.productTypeToppings.topping',
+          'receiptItems.product',
           'user',
           'customer',
           'receiptPromotions',

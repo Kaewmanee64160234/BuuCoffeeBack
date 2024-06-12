@@ -1,5 +1,6 @@
 import { Category } from 'src/categories/entities/category.entity';
 import { ProductType } from 'src/product-types/entities/product-type.entity';
+import { ReceiptItem } from 'src/receipt-item/entities/receipt-item.entity';
 import {
   Column,
   Entity,
@@ -27,4 +28,7 @@ export class Product {
 
   @OneToMany(() => ProductType, (productType) => productType.product)
   productTypes: ProductType[];
+
+  @OneToMany(() => ReceiptItem, (receiptItem) => receiptItem.product)
+  receiptItems: ReceiptItem[];
 }

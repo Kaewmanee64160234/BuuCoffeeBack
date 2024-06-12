@@ -8,6 +8,7 @@ import {
 import { Category } from 'src/categories/entities/category.entity';
 import { CreateProductTypeDto } from 'src/product-types/dto/create-product-type.dto';
 import { ProductType } from 'src/product-types/entities/product-type.entity';
+import { Product } from '../entities/product.entity';
 
 export class CreateProductDto {
   @IsString()
@@ -24,6 +25,6 @@ export class CreateProductDto {
   @IsNotEmpty()
   categoryId: string;
   category: Category;
-
+  product: Product;
   productTypes: CreateProductTypeDto[];
 }

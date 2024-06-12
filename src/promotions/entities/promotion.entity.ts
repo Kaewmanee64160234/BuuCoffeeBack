@@ -37,6 +37,9 @@ export class Promotion {
   @Column('date')
   startDate: Date;
 
+  @Column()
+  promotionForStore: string;
+
   @Column('date', { nullable: true })
   endDate: Date;
 

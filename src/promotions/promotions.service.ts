@@ -39,6 +39,8 @@ export class PromotionsService {
       conditionValue1: promotionDetails.conditionValue1 ?? null,
       conditionValue2: promotionDetails.conditionValue2 ?? null,
       endDate: promotionDetails.noEndDate ? null : promotionDetails.endDate,
+      promotionDescription: promotionDetails.promotionDescription ?? null,
+      promotionForStore: promotionDetails.promotionForStore,
     });
 
     return this.promotionRepository.save(promotion);

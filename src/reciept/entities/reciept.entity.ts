@@ -7,6 +7,8 @@ import {
   OneToMany,
   ManyToOne,
   PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { ReceiptPromotion } from 'src/receipt-promotions/entities/receipt-promotion.entity';
 @Entity()
@@ -40,4 +42,10 @@ export class Reciept {
     (receiptPromotion) => receiptPromotion.receipt,
   )
   receiptPromotions: ReceiptPromotion[];
+
+  @CreateDateColumn()
+  createdDate: Date;
+
+  @UpdateDateColumn()
+  updatedDate: Date;
 }
