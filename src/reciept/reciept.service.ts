@@ -17,6 +17,7 @@ import { ProductTypeTopping } from 'src/product-type-toppings/entities/product-t
 import { Topping } from 'src/toppings/entities/topping.entity';
 import { ReceiptItem } from 'src/receipt-item/entities/receipt-item.entity';
 import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
+import { ReceiptPromotion } from 'src/receipt-promotions/entities/receipt-promotion.entity';
 
 @Injectable()
 export class RecieptService {
@@ -39,28 +40,27 @@ export class RecieptService {
     private userRepository: Repository<User>,
     @InjectRepository(Customer)
     private customerRepository: Repository<Customer>,
+    @InjectRepository(ReceiptPromotion)
+    private recieptPromotionRepository: Repository<ReceiptPromotion>,
   ) {}
 
   async create(createRecieptDto: CreateRecieptDto) {
     console.log(createRecieptDto);
     try {
-      // Find the user by userId from userDto
       const user = await this.userRepository.findOne({
-        where: { userId: createRecieptDto.userId }, // assuming the correct property name is 'id' in the user repository
+        where: { userId: createRecieptDto.userId },
       });
-      console.log(user);
-      if (user == null) {
+      if (!user) {
         throw new Error('User not found');
       }
-      if (createRecieptDto.customerId != null) {
-        // Find the user by userId from userDto
-        const customer = await this.customerRepository.findOne({
-          where: { customerId: createRecieptDto.customerId }, // assuming the correct property name is 'id' in the user repository
-        });
-        console.log(customer);
-        if (!customer) {
-          throw new Error('Customer not found');
-        }
+
+      const customer = createRecieptDto.customerId
+        ? await this.customerRepository.findOne({
+            where: { customerId: createRecieptDto.customerId },
+          })
+        : null;
+      if (createRecieptDto.customerId && !customer) {
+        throw new Error('Customer not found');
       }
 
       const newReciept = this.recieptRepository.create({
@@ -69,184 +69,144 @@ export class RecieptService {
         receiptNetPrice: createRecieptDto.receiptNetPrice,
         receiptStatus: createRecieptDto.receiptStatus,
         user: user,
-        customer: createRecieptDto.customerId
-          ? await this.customerRepository.findOne({
-              where: { customerId: createRecieptDto.customerId },
-            })
-          : null,
+        customer: customer,
         receiptType: createRecieptDto.receiptType,
         paymentMethod: createRecieptDto.paymentMethod,
       });
 
-      // Save new receipt to the database
       const recieptSave = await this.recieptRepository.save(newReciept);
-      // Loop through each receipt item in the DTO
+
       for (const receiptItemDto of createRecieptDto.receiptItems) {
-        if (isNaN(receiptItemDto.quantity) || receiptItemDto.quantity < 0) {
-          receiptItemDto.quantity = 1;
+        if (isNaN(receiptItemDto.quantity) || receiptItemDto.quantity <= 0) {
+          throw new Error('Invalid quantity value');
         }
 
-        if (isNaN(receiptItemDto.quantity) || receiptItemDto.quantity < 0) {
-          throw new Error('Invalid quantity value after increment');
-        }
         const newRecieptItem = this.recieptItemRepository.create({
           quantity: receiptItemDto.quantity,
           reciept: recieptSave,
-          sweetnessLevel:
-            receiptItemDto.sweetnessLevel === null
-              ? null
-              : receiptItemDto.sweetnessLevel,
+          sweetnessLevel: receiptItemDto.sweetnessLevel,
+          receiptSubTotal: receiptItemDto.receiptSubTotal,
+          product: await this.productRepository.findOne({
+            where: { productId: receiptItemDto.product.productId },
+          }),
         });
-        console.log(newRecieptItem);
-        // Save the new receipt item to the database
         const recieptItemSave = await this.recieptItemRepository.save(
           newRecieptItem,
         );
-
-        let totalProductTopping = 0;
-        // Loop through each product type topping in the DTO
         for (const productTypeToppingDto of receiptItemDto.productTypeToppings) {
           const productType = await this.productTypeRepository.findOne({
             where: { productTypeId: productTypeToppingDto.productTypeId },
             relations: ['product', 'product.category'],
           });
-          console.log(productType);
-          console.log(productType.product.category);
+          const topping = await this.toppingRepository.findOne({
+            where: { toppingId: productTypeToppingDto.toppingId },
+          });
+
           const newProductTypeTopping =
             this.productTypeToppingRepository.create({
               quantity: productTypeToppingDto.quantity,
               productType: productType,
               receiptItem: recieptItemSave,
+              topping: topping,
             });
 
-          if (productType.product.category.haveTopping) {
-            if (productTypeToppingDto.toppingId) {
-              const topping = await this.toppingRepository.findOne({
-                where: { toppingId: productTypeToppingDto.toppingId },
-              });
-              newProductTypeTopping.topping = topping;
-              totalProductTopping += Number(
-                topping.toppingPrice * productTypeToppingDto.quantity,
-              );
-              ////////////////
-              console.log(
-                topping.toppingPrice + '*' + productTypeToppingDto.quantity,
-              );
-              console.log('ราคาท็อปปิ้ง*จำนวนท็อปปิ้ง' + totalProductTopping);
-            }
-            // totalProductTopping += Number(totalProductTopping);
-            // //////////////////////////
-            // console.log('รวมราคาท็อปปิ้ง' + totalProductTopping);
+          if (
+            productType.product.category.haveTopping &&
+            productTypeToppingDto.toppingId
+          ) {
+            const topping = await this.toppingRepository.findOne({
+              where: { toppingId: productTypeToppingDto.toppingId },
+            });
+            newProductTypeTopping.topping = topping;
+            recieptItemSave.receiptSubTotal +=
+              topping.toppingPrice * productTypeToppingDto.quantity;
           } else {
-            totalProductTopping += Number(productType.product.productPrice);
-            //////////////////////////////
-            console.log(
-              totalProductTopping + '+' + productType.product.productPrice,
-            );
-            console.log('ราคารวมท็อปปิ้ง+ราคารวมสินค้า' + totalProductTopping);
+            recieptItemSave.receiptSubTotal +=
+              productType.product.productPrice * productTypeToppingDto.quantity;
           }
-          // totalProductTopping +=
-          //   Number(productType.product.productPrice) +
-          //   Number(productType.productTypePrice);
-          // ////////////////////////
-          // console.log(
-          //   productType.product.productPrice +
-          //     '+' +
-          //     productType.productTypePrice,
-          // );
-          // console.log('รวมราคาตามประเภทร้อนเย็นปั่น' + totalProductTopping);
-          const productPrice = Number(productType.product.productPrice);
-          const productTypePrice = Number(productType.productTypePrice);
-          totalProductTopping += productPrice + productTypePrice;
-          console.log('ราคาสินค้า: ' + productPrice);
-          console.log(
-            'ราคาแบบสินค้า (เช่น ร้อน เย็น ปั่น): ' + productTypePrice,
-          );
-          console.log('ราคารวม: ' + totalProductTopping);
-          // Save the new product type topping to the database
+
+          recieptItemSave.receiptSubTotal +=
+            productType.product.productPrice + productType.productTypePrice;
           await this.productTypeToppingRepository.save(newProductTypeTopping);
         }
-
-        // Update the receipt item subtotal
-        newRecieptItem.receiptSubTotal = Number(totalProductTopping);
-        await this.recieptItemRepository.save(newRecieptItem);
-
-        newReciept.receiptTotalPrice =
-          recieptSave.receiptTotalPrice + newRecieptItem.receiptSubTotal;
-        newReciept.receiptTotalDiscount = recieptSave.receiptTotalDiscount;
-        newReciept.receiptNetPrice =
-          recieptSave.receiptTotalPrice - newReciept.receiptTotalDiscount;
       }
 
-      // Save the final receipt to the database
-      const receiptFinish = await this.recieptRepository.save(recieptSave);
-      for (const receiptItemDto of createRecieptDto.receiptItems) {
-        const receiptItem = await this.recieptItemRepository.findOne({
-          where: { receiptItemId: receiptItemDto.receiptItemId },
-          relations: [
-            'productTypeToppings',
-            'productTypeToppings.productType',
-            'productTypeToppings.productType.recipes',
-            'productTypeToppings.productType.recipes.ingredient',
-          ],
-        });
+      for (const receiptPromotion of createRecieptDto.receiptPromotions) {
+        const recieptPromotion = new ReceiptPromotion();
+        recieptPromotion.receipt = recieptSave;
+        recieptPromotion.promotion = receiptPromotion.promotion;
+        recieptPromotion.discount = receiptPromotion.discount;
+        recieptPromotion.date = receiptPromotion.date;
 
-        if (receiptItem && receiptItem.productTypeToppings) {
-          for (const productTypeTopping of receiptItem.productTypeToppings) {
-            if (
-              productTypeTopping.productType &&
-              productTypeTopping.productType.recipes
-            ) {
-              for (const recipe of productTypeTopping.productType.recipes) {
-                const ingredient = recipe.ingredient;
-                if (ingredient) {
-                  const oldRemaining = ingredient.ingredientRemining;
-                  ingredient.ingredientRemining = Math.round(
-                    ingredient.ingredientRemining,
-                  );
-                  ingredient.ingredientRemining +=
-                    receiptItemDto.quantity * recipe.quantity;
-                  console.log(
-                    'Updating ingredient: ',
-                    ingredient.ingredientName,
-                  );
-                  console.log('Old remaining: ', oldRemaining);
-
-                  if (
-                    ingredient.ingredientRemining >
-                    ingredient.ingredientQuantityPerUnit
-                  ) {
-                    ingredient.ingredientRemining -=
-                      ingredient.ingredientQuantityPerUnit;
-                    ingredient.ingredientQuantityInStock -= 1;
-                    console.log(
-                      'Stock reduced for ingredient: ',
-                      ingredient.ingredientName,
-                    );
-                  }
-
-                  console.log('New remaining: ', ingredient.ingredientRemining);
-                  await this.ingredientRepository.save(ingredient);
-                }
-              }
-            }
-          }
-        }
+        await this.recieptPromotionRepository.save(recieptPromotion);
       }
 
-      // Fetch the newly created receipt with relations
+      const receiptFinish = await this.recieptRepository.save(newReciept);
+
+      await this.updateIngredientStock(createRecieptDto.receiptItems);
+
       return await this.recieptRepository.findOne({
         where: { receiptId: receiptFinish.receiptId },
         relations: [
           'receiptItems',
           'receiptItems.productTypeToppings',
+          'receiptItems.productTypeToppings.topping',
+          'receiptItems.product',
           'user',
           'customer',
+          'receiptPromotions',
+          'receiptPromotions.promotion',
         ],
       });
     } catch (error) {
       console.error(error);
       throw new Error('Error creating receipt');
+    }
+  }
+
+  private async updateIngredientStock(receiptItems) {
+    for (const receiptItemDto of receiptItems) {
+      const receiptItem = await this.recieptItemRepository.findOne({
+        where: { receiptItemId: receiptItemDto.receiptItemId },
+        relations: [
+          'productTypeToppings',
+          'productTypeToppings.productType',
+          'productTypeToppings.productType.recipes',
+          'productTypeToppings.productType.recipes.ingredient',
+        ],
+      });
+
+      if (receiptItem && receiptItem.productTypeToppings) {
+        for (const productTypeTopping of receiptItem.productTypeToppings) {
+          if (
+            productTypeTopping.productType &&
+            productTypeTopping.productType.recipes
+          ) {
+            for (const recipe of productTypeTopping.productType.recipes) {
+              const ingredient = recipe.ingredient;
+              if (ingredient) {
+                const oldRemaining = ingredient.ingredientRemining;
+                ingredient.ingredientRemining = Math.round(
+                  ingredient.ingredientRemining,
+                );
+                ingredient.ingredientRemining +=
+                  receiptItemDto.quantity * recipe.quantity;
+
+                if (
+                  ingredient.ingredientRemining >
+                  ingredient.ingredientQuantityPerUnit
+                ) {
+                  ingredient.ingredientRemining -=
+                    ingredient.ingredientQuantityPerUnit;
+                  ingredient.ingredientQuantityInStock -= 1;
+                }
+
+                await this.ingredientRepository.save(ingredient);
+              }
+            }
+          }
+        }
+      }
     }
   }
 
