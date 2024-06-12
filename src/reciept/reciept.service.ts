@@ -296,4 +296,23 @@ export class RecieptService {
       );
     }
   }
+  async getSumByPaymentMethod(paymentMethod: string): Promise<number> {
+    const sum = await this.recieptRepository
+      .createQueryBuilder('receipt')
+      .select('SUM(receipt.receiptTotalPrice)', 'totalPrice')
+      .where('receipt.paymentMethod = :paymentMethod', { paymentMethod })
+      .andWhere('DATE(receipt.createdDate) = CURDATE()') // เพิ่มเงื่อนไขเพื่อค้นหาเฉพาะข้อมูลที่ถูกสร้างในวันนี้
+      .getRawOne();
+
+    return sum.totalPrice || 0;
+  }
+
+  async getSumTodayByPaymentMethod(): Promise<{
+    cash: number;
+    qrcode: number;
+  }> {
+    const cashSum = await this.getSumByPaymentMethod('cash');
+    const qrcodeSum = await this.getSumByPaymentMethod('qrcode');
+    return { cash: cashSum, qrcode: qrcodeSum };
+  }
 }
