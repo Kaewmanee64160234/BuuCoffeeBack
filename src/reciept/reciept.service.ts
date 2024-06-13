@@ -5,12 +5,8 @@ import { UpdateRecieptDto } from './dto/update-reciept.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Reciept } from './entities/reciept.entity';
 import { User } from 'src/users/entities/user.entity';
-import { CreateUserDto } from 'src/users/dto/create-user.dto';
 import { Customer } from 'src/customers/entities/customer.entity';
-import { CreateCustomerDto } from 'src/customers/dto/create-customer.dto';
 import { Repository } from 'typeorm';
-import { CreateProductTypeDto } from 'src/product-types/dto/create-product-type.dto';
-import { CreateProductTypeToppingDto } from 'src/product-type-toppings/dto/create-product-type-topping.dto';
 import { ProductType } from 'src/product-types/entities/product-type.entity';
 import { Product } from 'src/products/entities/product.entity';
 import { ProductTypeTopping } from 'src/product-type-toppings/entities/product-type-topping.entity';
@@ -88,18 +84,24 @@ export class RecieptService {
           throw new Error('Invalid quantity value');
         }
 
+        const product = await this.productRepository.findOne({
+          where: { productId: receiptItemDto.product.productId },
+        });
+        if (!product) {
+          throw new Error('Product not found');
+        }
+
         const newRecieptItem = this.recieptItemRepository.create({
           quantity: receiptItemDto.quantity,
           reciept: recieptSave,
           sweetnessLevel: receiptItemDto.sweetnessLevel,
           receiptSubTotal: receiptItemDto.receiptSubTotal,
-          product: await this.productRepository.findOne({
-            where: { productId: receiptItemDto.product.productId },
-          }),
+          product: product,
         });
         const recieptItemSave = await this.recieptItemRepository.save(
           newRecieptItem,
         );
+
         for (const productTypeToppingDto of receiptItemDto.productTypeToppings) {
           const productType = await this.productTypeRepository.findOne({
             where: { productTypeId: productTypeToppingDto.productTypeId },
@@ -108,6 +110,13 @@ export class RecieptService {
           const topping = await this.toppingRepository.findOne({
             where: { toppingId: productTypeToppingDto.toppingId },
           });
+
+          if (!productType) {
+            throw new Error('Product Type not found');
+          }
+          if (!topping) {
+            throw new Error('Topping not found');
+          }
 
           const newProductTypeTopping =
             this.productTypeToppingRepository.create({
@@ -121,10 +130,6 @@ export class RecieptService {
             productType.product.category.haveTopping &&
             productTypeToppingDto.toppingId
           ) {
-            const topping = await this.toppingRepository.findOne({
-              where: { toppingId: productTypeToppingDto.toppingId },
-            });
-            newProductTypeTopping.topping = topping;
             recieptItemSave.receiptSubTotal +=
               topping.toppingPrice * productTypeToppingDto.quantity;
           } else {
@@ -238,25 +243,23 @@ export class RecieptService {
     }
   }
 
-  // async updateStock(productType, quantity) {
-  //   try {
-  //     const product = await this.productRepository.findOne({
-  //       where: { productId: productType.product.productId },
-  //     });
-
-  //     if (product) {
-  //       product.productTypes.this.ingredieintRepository -= quantity; // ลดจำนวนวัตถุดิบในสต็อก
-  //       await this.productRepository.save(product);
-  //       console.log('อัปเดตจำนวนวัตถุดิบในสต็อก: ' + product.ingredieint);
-  //     }
-  //   } catch (error) {
-  //     console.error('Error updating stock:', error);
-  //   }
-  // }
-
-  findAll() {
+  async findAll() {
     try {
-      return this.recieptRepository.find();
+      const receipts = await this.recieptRepository.find({
+        relations: [
+          'receiptItems',
+          'receiptItems.productTypeToppings',
+          'receiptItems.productType',
+          'receiptItems.productTypeToppings.topping',
+          'receiptItems.product',
+          'user',
+          'customer',
+          'receiptPromotions',
+          'receiptPromotions.promotion',
+        ],
+      });
+      console.log(receipts); // ตรวจสอบข้อมูลที่ได้รับ
+      return receipts;
     } catch (error) {
       console.error(error);
     }
@@ -264,7 +267,6 @@ export class RecieptService {
 
   async findOne(id: number) {
     try {
-      //find if not found throw error
       const reciept = await this.recieptRepository.findOne({
         where: { receiptId: id },
       });
@@ -296,12 +298,13 @@ export class RecieptService {
       );
     }
   }
+
   async getSumByPaymentMethod(paymentMethod: string): Promise<number> {
     const sum = await this.recieptRepository
       .createQueryBuilder('receipt')
       .select('SUM(receipt.receiptTotalPrice)', 'totalPrice')
       .where('receipt.paymentMethod = :paymentMethod', { paymentMethod })
-      .andWhere('DATE(receipt.createdDate) = CURDATE()') // เพิ่มเงื่อนไขเพื่อค้นหาเฉพาะข้อมูลที่ถูกสร้างในวันนี้
+      .andWhere('DATE(receipt.createdDate) = CURDATE()')
       .getRawOne();
 
     return sum.totalPrice || 0;

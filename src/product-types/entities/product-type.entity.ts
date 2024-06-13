@@ -1,5 +1,6 @@
 import { ProductTypeTopping } from 'src/product-type-toppings/entities/product-type-topping.entity';
 import { Product } from 'src/products/entities/product.entity';
+import { ReceiptItem } from 'src/receipt-item/entities/receipt-item.entity';
 import { Recipe } from 'src/recipes/entities/recipe.entity';
 import {
   Column,
@@ -38,4 +39,7 @@ export class ProductType {
 
   @OneToMany(() => Recipe, (recipe) => recipe.productType, { cascade: true })
   recipes: Recipe[];
+
+  @OneToMany(() => ReceiptItem, (receiptItem) => receiptItem.productType)
+  receiptItems: ReceiptItem[];
 }
