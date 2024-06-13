@@ -33,6 +33,10 @@ export class RecieptController {
     const qrcodeSum = await this.recieptService.getSumByPaymentMethod('qrcode');
     return { cash: cashSum, qrcode: qrcodeSum };
   }
+  @Get('daily-report')
+  async getDailyReport() {
+    return this.recieptService.getDailyReport();
+  }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
