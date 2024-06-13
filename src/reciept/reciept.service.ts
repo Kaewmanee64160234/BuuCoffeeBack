@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Reciept } from './entities/reciept.entity';
 import { User } from 'src/users/entities/user.entity';
 import { Customer } from 'src/customers/entities/customer.entity';
-import { Repository } from 'typeorm';
+import { Repository, getConnection, Between } from 'typeorm';
 import { ProductType } from 'src/product-types/entities/product-type.entity';
 import { Product } from 'src/products/entities/product.entity';
 import { ProductTypeTopping } from 'src/product-type-toppings/entities/product-type-topping.entity';
@@ -357,6 +357,64 @@ export class RecieptService {
         'Failed to fetch daily report',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
+    }
+  }
+  async findTopIngredients(): Promise<
+    { ingredient: Ingredient; count: number }[]
+  > {
+    try {
+      const startDate = new Date('2024-01-01');
+      const endDate = new Date('2024-07-01');
+
+      // Fetch receipts within the desired timeframe
+      const receipts = await this.recieptRepository.find({
+        where: {
+          createdDate: Between(startDate, endDate),
+        },
+        relations: [
+          'receiptItems',
+          'receiptItems.productType',
+          'receiptItems.productType.recipes',
+          'receiptItems.productType.recipes.ingredient',
+        ],
+      });
+
+      // Count ingredients usage
+      const ingredientCounts = new Map<
+        number,
+        { ingredient: Ingredient; count: number }
+      >();
+
+      receipts.forEach((receipt) => {
+        receipt.receiptItems.forEach((receiptItem) => {
+          if (receiptItem.productType && receiptItem.productType.recipes) {
+            receiptItem.productType.recipes.forEach((recipe) => {
+              if (recipe.ingredient) {
+                const { ingredientId } = recipe.ingredient;
+                if (ingredientCounts.has(ingredientId)) {
+                  ingredientCounts.get(ingredientId).count += 1;
+                } else {
+                  ingredientCounts.set(ingredientId, {
+                    ingredient: recipe.ingredient,
+                    count: 1,
+                  });
+                }
+              }
+            });
+          }
+        });
+      });
+
+      // Convert map to array and sort by count descending
+      const sortedIngredients = Array.from(ingredientCounts.values()).sort(
+        (a, b) => b.count - a.count,
+      );
+
+      // Return top 5 ingredients
+      return sortedIngredients.slice(0, 5);
+    } catch (error) {
+      console.error('Error fetching receipts:', error);
+      throw error;
     }
   }
 }

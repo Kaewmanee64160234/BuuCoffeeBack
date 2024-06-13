@@ -53,4 +53,19 @@ export class RecieptController {
   remove(@Param('id') id: string) {
     return this.recieptService.remove(+id);
   }
+  @Get('top-ingredients')
+  async findTopIngredients(): Promise<
+    { ingredientName: string; count: number }[]
+  > {
+    try {
+      const topIngredients = await this.recieptService.findTopIngredients();
+      return topIngredients.map((item) => ({
+        ingredientName: item.ingredient.ingredientName,
+        count: item.count,
+      }));
+    } catch (error) {
+      console.error('Error fetching top ingredients:', error);
+      throw error;
+    }
+  }
 }

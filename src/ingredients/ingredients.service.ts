@@ -1,6 +1,6 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Like, Repository } from 'typeorm';
+import { Like, LessThan, Repository } from 'typeorm';
 import { CreateIngredientDto } from './dto/create-ingredient.dto';
 import { UpdateIngredientDto } from './dto/update-ingredient.dto';
 import { Ingredient } from './entities/ingredient.entity';
@@ -47,27 +47,39 @@ export class IngredientsService {
       );
     }
   }
-
   async findAll(query): Promise<Paginate> {
     try {
       const page = query.page || 1;
       const take = query.take || 10;
-      const skip = (page - 1) * take;
       const keyword = query.keyword || '';
       const orderBy = query.orderBy || 'ingredientName';
       const order = query.order || 'ASC';
-      const currentPage = page;
-      const [result, total] = await this.ingredientRepository.findAndCount({
-        where: { ingredientName: Like(`%${keyword}%`) },
-        order: { [orderBy]: order },
-        take: take,
-        skip: skip,
-      });
-      const lastPage = Math.ceil(total / take);
+      const paginate = query.paginate === 'false' ? false : true; // ตรวจสอบว่ามี paginate หรือไม่
+
+      let result, total;
+
+      if (paginate) {
+        const skip = (page - 1) * take;
+        [result, total] = await this.ingredientRepository.findAndCount({
+          where: { ingredientName: Like(`%${keyword}%`) },
+          order: { [orderBy]: order },
+          take: take,
+          skip: skip,
+        });
+      } else {
+        result = await this.ingredientRepository.find({
+          where: { ingredientName: Like(`%${keyword}%`) },
+          order: { [orderBy]: order },
+        });
+        total = result.length;
+      }
+
+      const lastPage = paginate ? Math.ceil(total / take) : 1;
+
       return {
         data: result,
         count: total,
-        currentPage: currentPage,
+        currentPage: paginate ? page : 1,
         lastPage: lastPage,
       };
     } catch (error) {
@@ -204,6 +216,24 @@ export class IngredientsService {
       throw new HttpException(
         'Failed to delete Ingredient',
         HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+  async findLowStockIngredients(): Promise<Ingredient[]> {
+    try {
+      const ingredients = await this.ingredientRepository
+        .createQueryBuilder('ingredient')
+        .where(
+          'ingredient.ingredientQuantityInStock < ingredient.ingredientMinimun',
+        )
+        .getMany();
+
+      return ingredients;
+    } catch (error) {
+      console.error('Failed to retrieve low stock ingredients', error);
+      throw new HttpException(
+        'Failed to retrieve low stock ingredients',
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }

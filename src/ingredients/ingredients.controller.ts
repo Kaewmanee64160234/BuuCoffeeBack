@@ -37,6 +37,17 @@ export class IngredientsController {
       throw new InternalServerErrorException('Failed to search ingredients');
     }
   }
+  @Get('low-stock')
+  async findLowStockIngredients(): Promise<Ingredient[]> {
+    try {
+      return await this.ingredientsService.findLowStockIngredients();
+    } catch (error) {
+      console.error('Failed to retrieve low stock ingredients', error);
+      throw new InternalServerErrorException(
+        'Failed to retrieve low stock ingredients',
+      );
+    }
+  }
   @Post()
   @UseInterceptors(
     FileInterceptor('imageFile', {
