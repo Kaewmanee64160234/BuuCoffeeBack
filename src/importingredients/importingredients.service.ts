@@ -73,7 +73,9 @@ export class ImportingredientsService {
 
   findAll() {
     try {
-      return this.importingredientRepository.find();
+      return this.importingredientRepository.find({
+        relations: ['importingredientitem', 'user'],
+      });
     } catch (error) {
       console.error(error);
     }

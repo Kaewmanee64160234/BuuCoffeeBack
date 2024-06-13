@@ -1,5 +1,4 @@
-import { HttpException, HttpStatus } from '@nestjs/common';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { CreateRecieptDto } from './dto/create-reciept.dto';
 import { UpdateRecieptDto } from './dto/update-reciept.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -17,6 +16,7 @@ import { ReceiptPromotion } from 'src/receipt-promotions/entities/receipt-promot
 
 @Injectable()
 export class RecieptService {
+  private readonly logger = new Logger(RecieptService.name);
   constructor(
     @InjectRepository(Reciept)
     private recieptRepository: Repository<Reciept>,
@@ -317,5 +317,45 @@ export class RecieptService {
     const cashSum = await this.getSumByPaymentMethod('cash');
     const qrcodeSum = await this.getSumByPaymentMethod('qrcode');
     return { cash: cashSum, qrcode: qrcodeSum };
+  }
+  async getDailyReport(): Promise<{
+    totalSales: number;
+    totalDiscount: number;
+    totalTransactions: number;
+  }> {
+    try {
+      const totalSalesResult = await this.recieptRepository
+        .createQueryBuilder('receipt')
+        .select('SUM(receipt.receiptTotalPrice)', 'totalSales')
+        .where('DATE(receipt.createdDate) = CURDATE()')
+        .getRawOne();
+      const totalSales = totalSalesResult.totalSales || 0;
+
+      const totalDiscountResult = await this.recieptRepository
+        .createQueryBuilder('receipt')
+        .select('SUM(receipt.receiptTotalDiscount)', 'totalDiscount')
+        .where('DATE(receipt.createdDate) = CURDATE()')
+        .getRawOne();
+      const totalDiscount = totalDiscountResult.totalDiscount || 0;
+
+      const totalTransactionsResult = await this.recieptRepository
+        .createQueryBuilder('receipt')
+        .select('COUNT(receipt.receiptId)', 'totalTransactions')
+        .where('DATE(receipt.createdDate) = CURDATE()')
+        .getRawOne();
+      const totalTransactions = totalTransactionsResult.totalTransactions || 0;
+
+      return {
+        totalSales,
+        totalDiscount,
+        totalTransactions,
+      };
+    } catch (error) {
+      this.logger.error('Failed to fetch daily report', error.stack);
+      throw new HttpException(
+        'Failed to fetch daily report',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }
