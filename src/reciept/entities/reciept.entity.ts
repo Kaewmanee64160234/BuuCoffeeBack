@@ -33,6 +33,7 @@ export class Reciept {
     cascade: true,
   })
   receiptItems: ReceiptItem[];
+
   @ManyToOne(() => User, (user) => user.reciepts)
   user: User;
   @ManyToOne(() => Customer, (customer) => customer.reciept)
