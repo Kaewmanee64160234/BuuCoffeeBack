@@ -249,7 +249,8 @@ export class RecieptService {
         relations: [
           'receiptItems',
           'receiptItems.productTypeToppings',
-          'receiptItems.productType',
+          'receiptItems.productTypeToppings.productType',
+          'receiptItems.productTypeToppings.productType.product',
           'receiptItems.productTypeToppings.topping',
           'receiptItems.product',
           'user',
