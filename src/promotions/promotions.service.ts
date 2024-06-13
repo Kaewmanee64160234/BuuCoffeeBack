@@ -157,4 +157,9 @@ export class PromotionsService {
       limit,
     };
   }
+  // get promotion by typ
+
+  async getPromotionByType(promotionForStore: string) {
+    return this.promotionRepository.find({ where: { promotionForStore } });
+  }
 }

@@ -61,4 +61,10 @@ export class PromotionsController {
   remove(@Param('id') id: string) {
     return this.promotionsService.remove(+id);
   }
+
+  // getPromotionByType
+  @Get('type/:type')
+  getPromotionByType(@Param('type') type: string) {
+    return this.promotionsService.getPromotionByType(type);
+  }
 }
