@@ -97,6 +97,7 @@ export class RecieptService {
           sweetnessLevel: receiptItemDto.sweetnessLevel,
           receiptSubTotal: receiptItemDto.receiptSubTotal,
           product: product,
+          productType: receiptItemDto.productType,
         });
         const recieptItemSave = await this.recieptItemRepository.save(
           newRecieptItem,
@@ -247,12 +248,15 @@ export class RecieptService {
     try {
       const receipts = await this.recieptRepository.find({
         relations: [
+          'receiptItems.productType',
           'receiptItems',
           'receiptItems.productTypeToppings',
           'receiptItems.productTypeToppings.productType',
           'receiptItems.productTypeToppings.productType.product',
+          'receiptItems.productTypeToppings.productType.product',
           'receiptItems.productTypeToppings.topping',
           'receiptItems.product',
+          'receiptItems.product.category',
           'user',
           'customer',
           'receiptPromotions',
@@ -270,6 +274,18 @@ export class RecieptService {
     try {
       const reciept = await this.recieptRepository.findOne({
         where: { receiptId: id },
+        relations: [
+          'receiptItems',
+          'receiptItems.productTypeToppings',
+          'receiptItems.productTypeToppings.productType',
+          'receiptItems.productTypeToppings.productType.product',
+          'receiptItems.productTypeToppings.topping',
+          'receiptItems.product',
+          'user',
+          'customer',
+          'receiptPromotions',
+          'receiptPromotions.promotion',
+        ],
       });
       if (!reciept) {
         throw new HttpException('Reciept not found', HttpStatus.NOT_FOUND);
