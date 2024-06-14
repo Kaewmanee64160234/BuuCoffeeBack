@@ -6,6 +6,7 @@ import { Importingredientitem } from '../importingredientitems/entities/importin
 import { Ingredient } from '../ingredients/entities/ingredient.entity';
 import { User } from '../users/entities/user.entity';
 import { ImportingredientsController } from './importingredients.controller';
+import { Reciept } from 'src/reciept/entities/reciept.entity';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { ImportingredientsController } from './importingredients.controller';
       Importingredientitem,
       Ingredient,
       User,
+      Reciept,
     ]),
   ],
   controllers: [ImportingredientsController],

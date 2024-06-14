@@ -2,11 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateImportingredientDto } from './dto/create-importingredient.dto';
 import { Importingredient } from './entities/importingredient.entity';
-import { Repository } from 'typeorm';
+import { Repository, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import { Importingredientitem } from 'src/importingredientitems/entities/importingredientitem.entity';
 import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 import { User } from 'src/users/entities/user.entity';
 import { HttpException, HttpStatus } from '@nestjs/common';
+import { Reciept } from 'src/reciept/entities/reciept.entity';
 
 @Injectable()
 export class ImportingredientsService {
@@ -19,6 +20,8 @@ export class ImportingredientsService {
     private ingredientRepository: Repository<Ingredient>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(Reciept)
+    private readonly recieptRepository: Repository<Reciept>,
   ) {}
   async create(createImportingredientDto: CreateImportingredientDto) {
     const user = await this.userRepository.findOneBy({
@@ -120,5 +123,62 @@ export class ImportingredientsService {
         HttpStatus.BAD_REQUEST,
       );
     }
+  }
+  async getRevenueByPeriod(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<{ receipts: any[]; totalRevenue: number }> {
+    const receipts = await this.recieptRepository
+      .createQueryBuilder('reciept')
+      .select('reciept.createdDate AS date')
+      .addSelect('reciept.receiptNetPrice', 'receiptNetPrice')
+      .where('reciept.createdDate BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      })
+      .getRawMany();
+
+    const totalRevenue = receipts.reduce(
+      (sum, receipt) => sum + receipt.receiptNetPrice,
+      0,
+    );
+
+    return { receipts, totalRevenue };
+  }
+
+  async getExpenditureByPeriod(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<{ startDate: Date; endDate: Date; totalExpenditure: number }> {
+    const importIngredients = await this.importingredientRepository
+      .createQueryBuilder('importingredient')
+      .where('importingredient.date = :endDate', { endDate })
+      .getMany();
+
+    const totalExpenditure = importIngredients.reduce(
+      (sum, importIngredient) => sum + importIngredient.total,
+      0,
+    );
+
+    return { startDate, endDate, totalExpenditure };
+  }
+
+  async getStartAndEndDate(): Promise<{ startDate: Date; endDate: Date }> {
+    const latestImport = await this.importingredientRepository
+      .createQueryBuilder('importingredient')
+      .orderBy('importingredient.date', 'DESC')
+      .getOne();
+
+    const secondLatestImport = await this.importingredientRepository
+      .createQueryBuilder('importingredient')
+      .orderBy('importingredient.date', 'DESC')
+      .skip(1)
+      .take(1)
+      .getOne();
+
+    const startDate = secondLatestImport ? secondLatestImport.date : new Date();
+    const endDate = latestImport ? latestImport.date : new Date();
+
+    return { startDate, endDate };
   }
 }

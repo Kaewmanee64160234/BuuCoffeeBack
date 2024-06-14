@@ -3,7 +3,7 @@ import {
   Get,
   Post,
   Body,
-  Patch,
+  Query,
   Param,
   Delete,
 } from '@nestjs/common';
@@ -16,6 +16,36 @@ export class ImportingredientsController {
   constructor(
     private readonly importingredientsService: ImportingredientsService,
   ) {}
+
+  @Get('revenue')
+  async getRevenue(): Promise<{
+    receipts: { date: Date; receiptNetPrice: number }[];
+    totalRevenue: number;
+  }> {
+    const { startDate, endDate } =
+      await this.importingredientsService.getStartAndEndDate();
+    const { receipts, totalRevenue } =
+      await this.importingredientsService.getRevenueByPeriod(
+        startDate,
+        endDate,
+      );
+    return { receipts, totalRevenue };
+  }
+
+  @Get('expenditure')
+  async getExpenditure(): Promise<{
+    startDate: Date;
+    endDate: Date;
+    totalExpenditure: number;
+  }> {
+    const { startDate, endDate } =
+      await this.importingredientsService.getStartAndEndDate();
+    const result = await this.importingredientsService.getExpenditureByPeriod(
+      startDate,
+      endDate,
+    );
+    return result;
+  }
 
   @Post()
   create(@Body() createImportingredientDto: CreateImportingredientDto) {
