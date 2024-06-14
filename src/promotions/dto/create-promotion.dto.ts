@@ -64,6 +64,7 @@ export class CreatePromotionDto {
   noEndDate?: boolean;
 
   promotionForStore: string;
+  promotionCanUseManyTimes: boolean;
 }
 
 export class QueryPromotionDto {

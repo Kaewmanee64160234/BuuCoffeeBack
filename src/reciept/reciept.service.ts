@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Reciept } from './entities/reciept.entity';
 import { User } from 'src/users/entities/user.entity';
 import { Customer } from 'src/customers/entities/customer.entity';
-import { Repository } from 'typeorm';
+import { Repository, getConnection, Between } from 'typeorm';
 import { ProductType } from 'src/product-types/entities/product-type.entity';
 import { Product } from 'src/products/entities/product.entity';
 import { ProductTypeTopping } from 'src/product-type-toppings/entities/product-type-topping.entity';
@@ -249,7 +249,8 @@ export class RecieptService {
         relations: [
           'receiptItems',
           'receiptItems.productTypeToppings',
-          'receiptItems.productType',
+          'receiptItems.productTypeToppings.productType',
+          'receiptItems.productTypeToppings.productType.product',
           'receiptItems.productTypeToppings.topping',
           'receiptItems.product',
           'user',
@@ -326,7 +327,7 @@ export class RecieptService {
     try {
       const totalSalesResult = await this.recieptRepository
         .createQueryBuilder('receipt')
-        .select('SUM(receipt.receiptTotalPrice)', 'totalSales')
+        .select('SUM(receipt.receiptNetPrice)', 'totalSales')
         .where('DATE(receipt.createdDate) = CURDATE()')
         .getRawOne();
       const totalSales = totalSalesResult.totalSales || 0;
@@ -356,6 +357,103 @@ export class RecieptService {
         'Failed to fetch daily report',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
+    }
+  }
+  async findTopIngredients(): Promise<
+    { ingredient: Ingredient; count: number }[]
+  > {
+    try {
+      const startDate = new Date('2024-01-01');
+      const endDate = new Date('2024-07-01');
+
+      const receipts = await this.recieptRepository.find({
+        where: {
+          createdDate: Between(startDate, endDate),
+        },
+        relations: [
+          'receiptItems',
+          'receiptItems.productType',
+          'receiptItems.productType.recipes',
+          'receiptItems.productType.recipes.ingredient',
+        ],
+      });
+
+      // Count ingredients usage
+      const ingredientCounts = new Map<
+        number,
+        { ingredient: Ingredient; count: number }
+      >();
+
+      receipts.forEach((receipt) => {
+        receipt.receiptItems.forEach((receiptItem) => {
+          if (receiptItem.productType && receiptItem.productType.recipes) {
+            receiptItem.productType.recipes.forEach((recipe) => {
+              if (recipe.ingredient) {
+                const { ingredientId: ingredientId } = recipe.ingredient; // Adjust based on the actual property name
+                if (ingredientCounts.has(ingredientId)) {
+                  ingredientCounts.get(ingredientId).count += 1;
+                } else {
+                  ingredientCounts.set(ingredientId, {
+                    ingredient: recipe.ingredient,
+                    count: 1,
+                  });
+                }
+              }
+            });
+          }
+        });
+      });
+
+      // Convert map to array and sort by count descending
+      const sortedIngredients = Array.from(ingredientCounts.values()).sort(
+        (a, b) => b.count - a.count,
+      );
+
+      // Return top 5 ingredients
+      return sortedIngredients.slice(0, 5);
+    } catch (error) {
+      console.error('Error fetching receipts:', error);
+      throw error;
+    }
+  }
+  async getGroupedReceipts(start: Date, end: Date) {
+    try {
+      const receipts = await this.recieptRepository
+        .createQueryBuilder('receipt')
+        .where('receipt.createdDate BETWEEN :startDate AND :endDate', {
+          startDate: start.toISOString(),
+          endDate: end.toISOString(),
+        })
+        .andWhere('receipt.receiptType = :receiptType', {
+          receiptType: 'coffee', // ตั้งค่า receiptType ตามที่ต้องการ
+        })
+        .getMany();
+
+      const groupedByDay = {};
+      const groupedByMonth = {};
+      const groupedByYear = {};
+
+      receipts.forEach((receipt) => {
+        const createdDate = new Date(receipt.createdDate);
+        const day = createdDate.toISOString().split('T')[0];
+        const month = createdDate.toISOString().slice(0, 7);
+        const year = createdDate.getFullYear();
+
+        groupedByDay[day] = (groupedByDay[day] || 0) + receipt.receiptNetPrice;
+        groupedByMonth[month] =
+          (groupedByMonth[month] || 0) + receipt.receiptNetPrice;
+        groupedByYear[year] =
+          (groupedByYear[year] || 0) + receipt.receiptNetPrice;
+      });
+
+      return {
+        groupedByDay,
+        groupedByMonth,
+        groupedByYear,
+      };
+    } catch (error) {
+      console.error('Error in getGroupedReceipts:', error);
+      throw new Error('Error while grouping receipts: ' + error.message);
     }
   }
 }

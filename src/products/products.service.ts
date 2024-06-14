@@ -122,7 +122,7 @@ export class ProductsService {
       ingredient.ingredientName = productName;
       ingredient.ingredientMinimun = 10;
       ingredient.ingredientUnit = 'piece';
-      ingredient.ingredientQuantityInStock = 10;
+      ingredient.ingredientQuantityInStock = 0;
       ingredient.ingredientQuantityPerUnit = 1;
       ingredient.ingredientQuantityPerSubUnit = 'piece';
       ingredient.ingredientRemining = 0;

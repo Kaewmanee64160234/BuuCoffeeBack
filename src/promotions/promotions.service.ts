@@ -24,7 +24,8 @@ export class PromotionsService {
       promotionType,
       discountValue:
         promotionType === PromotionType.DISCOUNT_PRICE ||
-        promotionType === PromotionType.USE_POINTS
+        promotionType === PromotionType.USE_POINTS ||
+        PromotionType.DISCOUNT_PERCENTAGE
           ? promotionDetails.discountValue
           : null,
       conditionQuantity: promotionDetails.conditionQuantity ?? null,
@@ -41,6 +42,7 @@ export class PromotionsService {
       endDate: promotionDetails.noEndDate ? null : promotionDetails.endDate,
       promotionDescription: promotionDetails.promotionDescription ?? null,
       promotionForStore: promotionDetails.promotionForStore,
+      promotionCanUseManyTimes: promotionDetails.promotionCanUseManyTimes,
     });
 
     return this.promotionRepository.save(promotion);
@@ -156,5 +158,10 @@ export class PromotionsService {
       page,
       limit,
     };
+  }
+  // get promotion by typ
+
+  async getPromotionByType(promotionForStore: string) {
+    return this.promotionRepository.find({ where: { promotionForStore } });
   }
 }
