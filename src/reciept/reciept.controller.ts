@@ -3,9 +3,11 @@ import {
   Get,
   Post,
   Body,
-  Patch,
+  HttpStatus,
   Param,
   Delete,
+  HttpException,
+  Query,
 } from '@nestjs/common';
 import { RecieptService } from './reciept.service';
 import { CreateRecieptDto } from './dto/create-reciept.dto';
@@ -19,7 +21,28 @@ export class RecieptController {
   create(@Body() createRecieptDto: CreateRecieptDto) {
     return this.recieptService.create(createRecieptDto);
   }
+  @Get('/grouped')
+  async getGroupedReceipts(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+  ) {
+    try {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
 
+      const groupedReceipts = await this.recieptService.getGroupedReceipts(
+        start,
+        end,
+      );
+
+      return groupedReceipts;
+    } catch (error) {
+      throw new HttpException(
+        'Failed to fetch grouped receipts',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
   @Get()
   findAll() {
     return this.recieptService.findAll();

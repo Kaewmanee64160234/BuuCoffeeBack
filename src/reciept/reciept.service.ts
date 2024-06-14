@@ -327,7 +327,7 @@ export class RecieptService {
     try {
       const totalSalesResult = await this.recieptRepository
         .createQueryBuilder('receipt')
-        .select('SUM(receipt.receiptTotalPrice)', 'totalSales')
+        .select('SUM(receipt.receiptNetPrice)', 'totalSales')
         .where('DATE(receipt.createdDate) = CURDATE()')
         .getRawOne();
       const totalSales = totalSalesResult.totalSales || 0;
@@ -366,7 +366,6 @@ export class RecieptService {
       const startDate = new Date('2024-01-01');
       const endDate = new Date('2024-07-01');
 
-      // Fetch receipts within the desired timeframe
       const receipts = await this.recieptRepository.find({
         where: {
           createdDate: Between(startDate, endDate),
@@ -390,7 +389,7 @@ export class RecieptService {
           if (receiptItem.productType && receiptItem.productType.recipes) {
             receiptItem.productType.recipes.forEach((recipe) => {
               if (recipe.ingredient) {
-                const { ingredientId } = recipe.ingredient;
+                const { ingredientId: ingredientId } = recipe.ingredient; // Adjust based on the actual property name
                 if (ingredientCounts.has(ingredientId)) {
                   ingredientCounts.get(ingredientId).count += 1;
                 } else {
@@ -415,6 +414,46 @@ export class RecieptService {
     } catch (error) {
       console.error('Error fetching receipts:', error);
       throw error;
+    }
+  }
+  async getGroupedReceipts(start: Date, end: Date) {
+    try {
+      const receipts = await this.recieptRepository
+        .createQueryBuilder('receipt')
+        .where('receipt.createdDate BETWEEN :startDate AND :endDate', {
+          startDate: start.toISOString(),
+          endDate: end.toISOString(),
+        })
+        .andWhere('receipt.receiptType = :receiptType', {
+          receiptType: 'coffee', // ตั้งค่า receiptType ตามที่ต้องการ
+        })
+        .getMany();
+
+      const groupedByDay = {};
+      const groupedByMonth = {};
+      const groupedByYear = {};
+
+      receipts.forEach((receipt) => {
+        const createdDate = new Date(receipt.createdDate);
+        const day = createdDate.toISOString().split('T')[0];
+        const month = createdDate.toISOString().slice(0, 7);
+        const year = createdDate.getFullYear();
+
+        groupedByDay[day] = (groupedByDay[day] || 0) + receipt.receiptNetPrice;
+        groupedByMonth[month] =
+          (groupedByMonth[month] || 0) + receipt.receiptNetPrice;
+        groupedByYear[year] =
+          (groupedByYear[year] || 0) + receipt.receiptNetPrice;
+      });
+
+      return {
+        groupedByDay,
+        groupedByMonth,
+        groupedByYear,
+      };
+    } catch (error) {
+      console.error('Error in getGroupedReceipts:', error);
+      throw new Error('Error while grouping receipts: ' + error.message);
     }
   }
 }
