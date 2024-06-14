@@ -17,6 +17,7 @@ import { ReceiptPromotion } from 'src/receipt-promotions/entities/receipt-promot
 @Injectable()
 export class RecieptService {
   private readonly logger = new Logger(RecieptService.name);
+
   constructor(
     @InjectRepository(Reciept)
     private recieptRepository: Repository<Reciept>,
@@ -41,13 +42,12 @@ export class RecieptService {
   ) {}
 
   async create(createRecieptDto: CreateRecieptDto) {
-    console.log(createRecieptDto);
     try {
       const user = await this.userRepository.findOne({
         where: { userId: createRecieptDto.userId },
       });
       if (!user) {
-        throw new Error('User not found');
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
 
       const customer = createRecieptDto.customer
@@ -55,9 +55,11 @@ export class RecieptService {
             where: { customerId: createRecieptDto.customer.customerId },
           })
         : null;
+
       if (createRecieptDto.customer && !customer) {
-        throw new Error('Customer not found');
+        throw new HttpException('Customer not found', HttpStatus.NOT_FOUND);
       }
+
       if (customer !== null) {
         customer.customerNumberOfStamp += createRecieptDto.receiptItems.reduce(
           (acc, item) => item.quantity + acc,
@@ -81,14 +83,17 @@ export class RecieptService {
 
       for (const receiptItemDto of createRecieptDto.receiptItems) {
         if (isNaN(receiptItemDto.quantity) || receiptItemDto.quantity <= 0) {
-          throw new Error('Invalid quantity value');
+          throw new HttpException(
+            'Invalid quantity value',
+            HttpStatus.BAD_REQUEST,
+          );
         }
 
         const product = await this.productRepository.findOne({
           where: { productId: receiptItemDto.product.productId },
         });
         if (!product) {
-          throw new Error('Product not found');
+          throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
         }
 
         const newRecieptItem = this.recieptItemRepository.create({
@@ -112,10 +117,13 @@ export class RecieptService {
           });
 
           if (!productType) {
-            throw new Error('Product Type not found');
+            throw new HttpException(
+              'Product Type not found',
+              HttpStatus.NOT_FOUND,
+            );
           }
           if (!topping) {
-            throw new Error('Topping not found');
+            throw new HttpException('Topping not found', HttpStatus.NOT_FOUND);
           }
 
           const newProductTypeTopping =
@@ -171,8 +179,11 @@ export class RecieptService {
         ],
       });
     } catch (error) {
-      console.error(error);
-      throw new Error('Error creating receipt');
+      this.logger.error('Error creating receipt', error.stack);
+      throw new HttpException(
+        'Error creating receipt',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -235,7 +246,7 @@ export class RecieptService {
 
       return await this.recieptRepository.save(reciept);
     } catch (error) {
-      console.error(error);
+      this.logger.error('Failed to cancel receipt', error.stack);
       throw new HttpException(
         'Failed to cancel receipt',
         HttpStatus.BAD_REQUEST,
@@ -259,10 +270,13 @@ export class RecieptService {
           'receiptPromotions.promotion',
         ],
       });
-      console.log(receipts); // ตรวจสอบข้อมูลที่ได้รับ
       return receipts;
     } catch (error) {
-      console.error(error);
+      this.logger.error('Error fetching receipts', error.stack);
+      throw new HttpException(
+        'Error fetching receipts',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -270,16 +284,26 @@ export class RecieptService {
     try {
       const reciept = await this.recieptRepository.findOne({
         where: { receiptId: id },
+        relations: [
+          'receiptItems',
+          'receiptItems.productTypeToppings',
+          'receiptItems.productTypeToppings.productType',
+          'receiptItems.productTypeToppings.productType.product',
+          'receiptItems.productTypeToppings.topping',
+          'receiptItems.product',
+          'user',
+          'customer',
+          'receiptPromotions',
+          'receiptPromotions.promotion',
+        ],
       });
       if (!reciept) {
         throw new HttpException('Reciept not found', HttpStatus.NOT_FOUND);
       }
       return reciept;
     } catch (error) {
-      throw new HttpException(
-        'Failed to fetch reciept',
-        HttpStatus.BAD_REQUEST,
-      );
+      this.logger.error('Error fetching receipt', error.stack);
+      throw new HttpException('Error fetching receipt', HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -293,8 +317,9 @@ export class RecieptService {
       }
       return await this.recieptRepository.remove(reciept);
     } catch (error) {
+      this.logger.error('Error deleting receipt', error.stack);
       throw new HttpException(
-        'Failed to delete reciept',
+        'Failed to delete receipt',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -319,6 +344,7 @@ export class RecieptService {
     const qrcodeSum = await this.getSumByPaymentMethod('qrcode');
     return { cash: cashSum, qrcode: qrcodeSum };
   }
+
   async getDailyReport(): Promise<{
     totalSales: number;
     totalDiscount: number;
@@ -359,6 +385,7 @@ export class RecieptService {
       );
     }
   }
+
   async findTopIngredients(): Promise<
     { ingredient: Ingredient; count: number }[]
   > {
@@ -412,10 +439,14 @@ export class RecieptService {
       // Return top 5 ingredients
       return sortedIngredients.slice(0, 5);
     } catch (error) {
-      console.error('Error fetching receipts:', error);
-      throw error;
+      this.logger.error('Error fetching receipts', error.stack);
+      throw new HttpException(
+        'Error fetching receipts',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
+
   async getGroupedReceipts(start: Date, end: Date) {
     try {
       const receipts = await this.recieptRepository
@@ -452,8 +483,11 @@ export class RecieptService {
         groupedByYear,
       };
     } catch (error) {
-      console.error('Error in getGroupedReceipts:', error);
-      throw new Error('Error while grouping receipts: ' + error.message);
+      this.logger.error('Error in getGroupedReceipts', error.stack);
+      throw new HttpException(
+        'Error while grouping receipts',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 }
