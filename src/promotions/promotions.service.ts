@@ -24,7 +24,8 @@ export class PromotionsService {
       promotionType,
       discountValue:
         promotionType === PromotionType.DISCOUNT_PRICE ||
-        promotionType === PromotionType.USE_POINTS
+        promotionType === PromotionType.USE_POINTS ||
+        PromotionType.DISCOUNT_PERCENTAGE
           ? promotionDetails.discountValue
           : null,
       conditionQuantity: promotionDetails.conditionQuantity ?? null,
