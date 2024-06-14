@@ -42,6 +42,7 @@ export class PromotionsService {
       endDate: promotionDetails.noEndDate ? null : promotionDetails.endDate,
       promotionDescription: promotionDetails.promotionDescription ?? null,
       promotionForStore: promotionDetails.promotionForStore,
+      promotionCanUseManyTimes: promotionDetails.promotionCanUseManyTimes,
     });
 
     return this.promotionRepository.save(promotion);

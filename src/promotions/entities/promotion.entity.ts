@@ -40,6 +40,9 @@ export class Promotion {
   @Column()
   promotionForStore: string;
 
+  @Column()
+  promotionCanUseManyTimes: boolean;
+
   @Column('date', { nullable: true })
   endDate: Date;
 
