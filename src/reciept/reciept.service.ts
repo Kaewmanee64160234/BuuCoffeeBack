@@ -13,7 +13,6 @@ import { Topping } from 'src/toppings/entities/topping.entity';
 import { ReceiptItem } from 'src/receipt-item/entities/receipt-item.entity';
 import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 import { ReceiptPromotion } from 'src/receipt-promotions/entities/receipt-promotion.entity';
-
 @Injectable()
 export class RecieptService {
   private readonly logger = new Logger(RecieptService.name);
@@ -494,4 +493,43 @@ export class RecieptService {
       );
     }
   }
+  // async getBestSellingProducts(
+  //   startDate: string,
+  //   endDate: string,
+  // ): Promise<ProductSalesDto[]> {
+  //   const start = new Date(startDate);
+  //   const end = new Date(endDate);
+  //   const receipts = await this.recieptRepository.find({
+  //     where: {
+  //       createdDate: Between(start, end),
+  //     },
+  //     relations: ['receiptItems', 'receiptItems.product'],
+  //   });
+
+  //   const productSalesMap = new Map<
+  //     number,
+  //     { product: Product; quantity: number }
+  //   >();
+
+  //   receipts.forEach((receipt) => {
+  //     receipt.receiptItems.forEach((item) => {
+  //       const product = item.product;
+  //       const quantity = item.quantity;
+  //       if (productSalesMap.has(product.productId)) {
+  //         productSalesMap.get(product.productId).quantity += quantity;
+  //       } else {
+  //         productSalesMap.set(product.productId, { product, quantity });
+  //       }
+  //     });
+  //   });
+
+  //   const productSalesArray = Array.from(productSalesMap.values());
+  //   productSalesArray.sort((a, b) => b.quantity - a.quantity);
+
+  //   return productSalesArray.map((ps) => ({
+  //     productId: ps.product.productId,
+  //     productName: ps.product.productName,
+  //     quantitySold: ps.quantity,
+  //   }));
+  // }
 }

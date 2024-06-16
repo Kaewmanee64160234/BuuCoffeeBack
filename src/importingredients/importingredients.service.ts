@@ -124,22 +124,20 @@ export class ImportingredientsService {
       );
     }
   }
-  async getRevenueByPeriod(
-    startDate: Date,
-    endDate: Date,
-  ): Promise<{ receipts: any[]; totalRevenue: number }> {
+  async getRevenueByPeriod(startDate, endDate) {
     const receipts = await this.recieptRepository
       .createQueryBuilder('reciept')
-      .select('reciept.createdDate AS date')
-      .addSelect('reciept.receiptNetPrice', 'receiptNetPrice')
+      .select('DATE(reciept.createdDate) AS date')
+      .addSelect('SUM(reciept.receiptNetPrice)', 'totalNetPrice')
       .where('reciept.createdDate BETWEEN :startDate AND :endDate', {
         startDate,
         endDate,
       })
+      .groupBy('DATE(reciept.createdDate)')
       .getRawMany();
 
     const totalRevenue = receipts.reduce(
-      (sum, receipt) => sum + receipt.receiptNetPrice,
+      (sum, receipt) => sum + parseFloat(receipt.totalNetPrice),
       0,
     );
 
@@ -149,18 +147,43 @@ export class ImportingredientsService {
   async getExpenditureByPeriod(
     startDate: Date,
     endDate: Date,
-  ): Promise<{ startDate: Date; endDate: Date; totalExpenditure: number }> {
-    const importIngredients = await this.importingredientRepository
+  ): Promise<{
+    startDate: Date;
+    endDate: Date;
+    // totalExpenditure: number;
+    totalExpenditureStartDate: number;
+    totalExpenditureEndDate: number;
+  }> {
+    const importIngredientsStart = await this.importingredientRepository
+      .createQueryBuilder('importingredient')
+      .where('importingredient.date = :startDate', { startDate })
+      .getMany();
+
+    const importIngredientsEnd = await this.importingredientRepository
       .createQueryBuilder('importingredient')
       .where('importingredient.date = :endDate', { endDate })
       .getMany();
 
-    const totalExpenditure = importIngredients.reduce(
+    const totalExpenditureStartDate = importIngredientsStart.reduce(
       (sum, importIngredient) => sum + importIngredient.total,
       0,
     );
 
-    return { startDate, endDate, totalExpenditure };
+    const totalExpenditureEndDate = importIngredientsEnd.reduce(
+      (sum, importIngredient) => sum + importIngredient.total,
+      0,
+    );
+
+    // const totalExpenditure =
+    //   totalExpenditureStartDate + totalExpenditureEndDate;
+
+    return {
+      startDate,
+      endDate,
+      // totalExpenditure,
+      totalExpenditureStartDate,
+      totalExpenditureEndDate,
+    };
   }
 
   async getStartAndEndDate(): Promise<{ startDate: Date; endDate: Date }> {
