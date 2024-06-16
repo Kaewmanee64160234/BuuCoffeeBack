@@ -77,6 +77,7 @@ export class RecieptService {
         customer: customer,
         receiptType: createRecieptDto.receiptType,
         paymentMethod: createRecieptDto.paymentMethod,
+        queueNumber: createRecieptDto.queueNumber,
       });
 
       const recieptSave = await this.recieptRepository.save(newReciept);
@@ -107,16 +108,16 @@ export class RecieptService {
         const recieptItemSave = await this.recieptItemRepository.save(
           newRecieptItem,
         );
-
+        console.log(receiptItemDto.productTypeToppings);
         for (const productTypeToppingDto of receiptItemDto.productTypeToppings) {
           const productType = await this.productTypeRepository.findOne({
             where: { productTypeId: productTypeToppingDto.productTypeId },
             relations: ['product', 'product.category'],
           });
           const topping = await this.toppingRepository.findOne({
-            where: { toppingId: productTypeToppingDto.toppingId },
+            where: { toppingId: productTypeToppingDto.topping.toppingId },
           });
-
+          console.log(topping);
           if (!productType) {
             throw new HttpException(
               'Product Type not found',
@@ -169,10 +170,15 @@ export class RecieptService {
       return await this.recieptRepository.findOne({
         where: { receiptId: receiptFinish.receiptId },
         relations: [
+          'receiptItems.productType',
           'receiptItems',
           'receiptItems.productTypeToppings',
+          'receiptItems.productTypeToppings.productType',
+          'receiptItems.productTypeToppings.productType.product',
+          'receiptItems.productTypeToppings.productType.product',
           'receiptItems.productTypeToppings.topping',
           'receiptItems.product',
+          'receiptItems.product.category',
           'user',
           'customer',
           'receiptPromotions',

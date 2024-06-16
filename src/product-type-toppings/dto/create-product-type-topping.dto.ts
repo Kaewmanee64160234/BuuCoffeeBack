@@ -1,4 +1,5 @@
 import { IsNotEmpty, IsNumber } from 'class-validator';
+import { Topping } from 'src/toppings/entities/topping.entity';
 
 export class CreateProductTypeToppingDto {
   @IsNotEmpty()
@@ -10,4 +11,5 @@ export class CreateProductTypeToppingDto {
   @IsNotEmpty()
   @IsNumber()
   toppingId: number;
+  topping: Topping;
 }

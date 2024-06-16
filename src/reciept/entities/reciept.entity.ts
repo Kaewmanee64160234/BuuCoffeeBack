@@ -25,6 +25,8 @@ export class Reciept {
   receiptStatus: string;
   @Column()
   receiptType: string;
+  @Column()
+  queueNumber: number;
 
   @Column()
   paymentMethod: string;
