@@ -38,6 +38,7 @@ import { PromotionsModule } from './promotions/promotions.module';
 import { Promotion } from './promotions/entities/promotion.entity';
 import { CashiersModule } from './cashiers/cashiers.module';
 import { Cashier } from './cashiers/entities/cashier.entity';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -88,6 +89,7 @@ import { Cashier } from './cashiers/entities/cashier.entity';
     CheckingredientitemsModule,
     PromotionsModule,
     CashiersModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

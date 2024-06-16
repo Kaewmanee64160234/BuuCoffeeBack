@@ -6,6 +6,8 @@ import {
   Patch,
   Param,
   Delete,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -38,5 +40,13 @@ export class UsersController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);
+  }
+  @Get('email/:email')
+  async findOneByEmail(@Param('email') email: string) {
+    try {
+      return await this.usersService.findOneByEmail(email);
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
   }
 }

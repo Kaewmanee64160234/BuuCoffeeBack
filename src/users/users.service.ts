@@ -14,15 +14,20 @@ export class UsersService {
     @InjectRepository(User) private usersRepository: Repository<User>,
   ) {}
 
-  create(createUserDto: CreateUserDto) {
+  async create(createUserDto: CreateUserDto) {
     try {
       const newUser = new User();
       newUser.userId = userId++;
       newUser.userName = createUserDto.userName;
-      newUser.userPassword = createUserDto.userPassword;
       newUser.userRole = createUserDto.userRole;
       newUser.userEmail = createUserDto.userEmail;
       newUser.userStatus = createUserDto.userStatus;
+      // Hash the password before saving the user
+      const salt = await bcrypt.genSalt();
+      newUser.userPassword = await bcrypt.hash(
+        createUserDto.userPassword,
+        salt,
+      );
 
       return this.usersRepository.save(newUser);
     } catch (error) {
@@ -49,6 +54,22 @@ export class UsersService {
       return user;
     } catch (error) {
       throw new HttpException('Failed to fetch user', HttpStatus.BAD_REQUEST);
+    }
+  }
+  async findOneByEmail(email: string): Promise<User> {
+    try {
+      const user = await this.usersRepository.findOne({
+        where: { userEmail: email },
+      });
+      if (!user) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+      return user;
+    } catch (error) {
+      throw new HttpException(
+        'Failed to fetch user by email',
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 

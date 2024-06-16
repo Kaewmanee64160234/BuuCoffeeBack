@@ -12,7 +12,6 @@ import {
 import { RecieptService } from './reciept.service';
 import { CreateRecieptDto } from './dto/create-reciept.dto';
 import { UpdateRecieptDto } from './dto/update-reciept.dto';
-
 @Controller('receipts')
 export class RecieptController {
   constructor(private readonly recieptService: RecieptService) {}
@@ -21,6 +20,13 @@ export class RecieptController {
   create(@Body() createRecieptDto: CreateRecieptDto) {
     return this.recieptService.create(createRecieptDto);
   }
+  // @Get('best-selling-products')
+  // async getBestSellingProducts(
+  //   @Query('startDate') startDate: string,
+  //   @Query('endDate') endDate: string,
+  // ): Promise<ProductSalesDto[]> {
+  //   return await this.recieptService.getBestSellingProducts(startDate, endDate);
+  // }
   @Get('/grouped')
   async getGroupedReceipts(
     @Query('startDate') startDate: string,
@@ -76,19 +82,19 @@ export class RecieptController {
   remove(@Param('id') id: string) {
     return this.recieptService.remove(+id);
   }
-  @Get('top-ingredients')
-  async findTopIngredients(): Promise<
-    { ingredientName: string; count: number }[]
-  > {
-    try {
-      const topIngredients = await this.recieptService.findTopIngredients();
-      return topIngredients.map((item) => ({
-        ingredientName: item.ingredient.ingredientName,
-        count: item.count,
-      }));
-    } catch (error) {
-      console.error('Error fetching top ingredients:', error);
-      throw error;
-    }
-  }
+  // @Get('top-ingredients')
+  // async findTopIngredients(): Promise<
+  //   { ingredientName: string; count: number }[]
+  // > {
+  //   try {
+  //     const topIngredients = await this.recieptService.findTopIngredients();
+  //     return topIngredients.map((item) => ({
+  //       ingredientName: item.ingredient.ingredientName,
+  //       count: item.count,
+  //     }));
+  //   } catch (error) {
+  //     console.error('Error fetching top ingredients:', error);
+  //     throw error;
+  //   }
+  // }
 }

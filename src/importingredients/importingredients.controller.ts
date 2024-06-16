@@ -36,7 +36,7 @@ export class ImportingredientsController {
   async getExpenditure(): Promise<{
     startDate: Date;
     endDate: Date;
-    totalExpenditure: number;
+    // totalExpenditure: number;
   }> {
     const { startDate, endDate } =
       await this.importingredientsService.getStartAndEndDate();
