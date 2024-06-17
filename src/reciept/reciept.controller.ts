@@ -8,6 +8,7 @@ import {
   Delete,
   HttpException,
   Query,
+  Patch,
 } from '@nestjs/common';
 import { RecieptService } from './reciept.service';
 import { CreateRecieptDto } from './dto/create-reciept.dto';
@@ -19,6 +20,11 @@ export class RecieptController {
   @Post()
   create(@Body() createRecieptDto: CreateRecieptDto) {
     return this.recieptService.create(createRecieptDto);
+  }
+  // update
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateRecieptDto: UpdateRecieptDto) {
+    return this.recieptService.update(+id, updateRecieptDto);
   }
   // @Get('best-selling-products')
   // async getBestSellingProducts(
@@ -49,6 +55,11 @@ export class RecieptController {
       );
     }
   }
+  // getRecieptIn30Min
+  @Get('in-30-min')
+  async getRecieptIn30Min() {
+    return this.recieptService.getRecieptIn30Min();
+  }
   @Get()
   findAll() {
     return this.recieptService.findAll();
@@ -77,11 +88,16 @@ export class RecieptController {
   ): Promise<number> {
     return this.recieptService.getSumByPaymentMethod(paymentMethod);
   }
-
+  // cancelReceipt from param
+  @Delete('cancel/:id')
+  async cancelReceipt(@Param('id') id: string) {
+    return this.recieptService.cancelReceipt(+id);
+  }
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.recieptService.remove(+id);
   }
+
   // @Get('top-ingredients')
   // async findTopIngredients(): Promise<
   //   { ingredientName: string; count: number }[]

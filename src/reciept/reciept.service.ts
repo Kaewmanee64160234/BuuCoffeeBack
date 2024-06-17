@@ -241,16 +241,29 @@ export class RecieptService {
 
   async cancelReceipt(id: number) {
     try {
-      const reciept = await this.recieptRepository.findOne({
+      // check if in 30 min can cancle
+      const receipt = await this.recieptRepository.findOne({
         where: { receiptId: id },
+        relations: ['receiptItems'],
       });
-      if (!reciept) {
-        throw new HttpException('Reciept not found', HttpStatus.NOT_FOUND);
+      if (!receipt) {
+        throw new HttpException('Receipt not found', HttpStatus.NOT_FOUND);
       }
 
-      reciept.receiptStatus = 'cancel';
+      const currentDate = new Date();
+      const receiptDate = new Date(receipt.createdDate);
+      const diff = Math.abs(currentDate.getTime() - receiptDate.getTime());
+      const minutes = Math.floor(diff / 60000);
 
-      return await this.recieptRepository.save(reciept);
+      if (minutes > 30) {
+        throw new HttpException(
+          'Receipt can not be cancelled after 30 minutes',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      receipt.receiptStatus = 'cancel';
+      await this.recieptRepository.save(receipt);
     } catch (error) {
       this.logger.error('Failed to cancel receipt', error.stack);
       throw new HttpException(
@@ -330,6 +343,175 @@ export class RecieptService {
       throw new HttpException(
         'Failed to delete receipt',
         HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  // updateReceipt
+  async update(id: number, updateRecieptDto: UpdateRecieptDto) {
+    try {
+      const reciept = await this.recieptRepository.findOne({
+        where: { receiptId: id },
+        relations: ['receiptItems'],
+      });
+      if (!reciept) {
+        throw new HttpException('Reciept not found', HttpStatus.NOT_FOUND);
+      }
+
+      const user = await this.userRepository.findOne({
+        where: { userId: updateRecieptDto.userId },
+      });
+      if (!user) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+
+      const customer = updateRecieptDto.customer
+        ? await this.customerRepository.findOne({
+            where: { customerId: updateRecieptDto.customer.customerId },
+          })
+        : null;
+
+      if (updateRecieptDto.customer && !customer) {
+        throw new HttpException('Customer not found', HttpStatus.NOT_FOUND);
+      }
+
+      if (customer !== null) {
+        customer.customerNumberOfStamp += updateRecieptDto.receiptItems.reduce(
+          (acc, item) => item.quantity + acc,
+          0,
+        );
+        await this.customerRepository.save(customer);
+      }
+
+      reciept.receiptTotalPrice = updateRecieptDto.receiptTotalPrice;
+      reciept.receiptTotalDiscount = updateRecieptDto.receiptTotalDiscount;
+      reciept.receiptNetPrice = updateRecieptDto.receiptNetPrice;
+      reciept.receiptStatus = updateRecieptDto.receiptStatus;
+      reciept.user = user;
+      reciept.customer = customer;
+      reciept.receiptType = updateRecieptDto.receiptType;
+      reciept.paymentMethod = updateRecieptDto.paymentMethod;
+      reciept.queueNumber = updateRecieptDto.queueNumber;
+
+      const recieptSave = await this.recieptRepository.save(reciept);
+
+      await this.recieptItemRepository.delete({
+        reciept: recieptSave,
+      });
+
+      for (const receiptItemDto of updateRecieptDto.receiptItems) {
+        if (isNaN(receiptItemDto.quantity) || receiptItemDto.quantity <= 0) {
+          throw new HttpException(
+            'Invalid quantity value',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+
+        const product = await this.productRepository.findOne({
+          where: {
+            productId: receiptItemDto.product.productId,
+          },
+        });
+        if (!product) {
+          throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
+        }
+
+        const newRecieptItem = this.recieptItemRepository.create({
+          quantity: receiptItemDto.quantity,
+          reciept: recieptSave,
+          sweetnessLevel: receiptItemDto.sweetnessLevel,
+          receiptSubTotal: receiptItemDto.receiptSubTotal,
+          product: product,
+          productType: receiptItemDto.productType,
+        });
+        const recieptItemSave = await this.recieptItemRepository.save(
+          newRecieptItem,
+        );
+
+        for (const productTypeToppingDto of receiptItemDto.productTypeToppings) {
+          const productType = await this.productTypeRepository.findOne({
+            where: { productTypeId: productTypeToppingDto.productTypeId },
+            relations: ['product', 'product.category'],
+          });
+          const topping = await this.toppingRepository.findOne({
+            where: { toppingId: productTypeToppingDto.topping.toppingId },
+          });
+
+          if (!productType) {
+            throw new HttpException(
+              'Product Type not found',
+              HttpStatus.NOT_FOUND,
+            );
+          }
+          if (!topping) {
+            throw new HttpException('Topping not found', HttpStatus.NOT_FOUND);
+          }
+
+          const newProductTypeTopping =
+            this.productTypeToppingRepository.create({
+              quantity: productTypeToppingDto.quantity,
+              productType: productType,
+              receiptItem: recieptItemSave,
+              topping: topping,
+            });
+
+          if (
+            productType.product.category.haveTopping &&
+            productTypeToppingDto.toppingId
+          ) {
+            recieptItemSave.receiptSubTotal +=
+              topping.toppingPrice * productTypeToppingDto.quantity;
+          } else {
+            recieptItemSave.receiptSubTotal +=
+              productType.product.productPrice * productTypeToppingDto.quantity;
+          }
+
+          recieptItemSave.receiptSubTotal +=
+            productType.product.productPrice + productType.productTypePrice;
+          await this.productTypeToppingRepository.save(newProductTypeTopping);
+        }
+      }
+
+      await this.recieptPromotionRepository.delete({
+        receipt: recieptSave,
+      });
+
+      for (const receiptPromotion of updateRecieptDto.receiptPromotions) {
+        const recieptPromotion = new ReceiptPromotion();
+        recieptPromotion.receipt = recieptSave;
+        recieptPromotion.promotion = receiptPromotion.promotion;
+        recieptPromotion.discount = receiptPromotion.discount;
+        recieptPromotion.date = receiptPromotion.date;
+
+        await this.recieptPromotionRepository.save(recieptPromotion);
+      }
+
+      const receiptFinish = await this.recieptRepository.save(reciept);
+
+      await this.updateIngredientStock(updateRecieptDto.receiptItems);
+
+      return await this.recieptRepository.findOne({
+        where: { receiptId: receiptFinish.receiptId },
+        relations: [
+          'receiptItems.productType',
+          'receiptItems',
+          'receiptItems.productTypeToppings',
+          'receiptItems.productTypeToppings.productType',
+          'receiptItems.productTypeToppings.productType.product',
+          'receiptItems.productTypeToppings.productType.product',
+          'receiptItems.productTypeToppings.topping',
+          'receiptItems.product',
+          'user',
+          'customer',
+          'receiptPromotions',
+          'receiptPromotions.promotion',
+        ],
+      });
+    } catch (error) {
+      this.logger.error('Error updating receipt', error.stack);
+      throw new HttpException(
+        'Error updating receipt',
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -538,4 +720,30 @@ export class RecieptService {
   //     quantitySold: ps.quantity,
   //   }));
   // }
+  // get recipt in 30 min created
+  async getRecieptIn30Min(): Promise<Reciept[]> {
+    const currentDate = new Date();
+    const startDate = new Date(currentDate.getTime() - 30 * 60000);
+    const endDate = new Date(currentDate.getTime());
+    return await this.recieptRepository.find({
+      where: {
+        createdDate: Between(startDate, endDate),
+        receiptStatus: 'paid',
+      },
+      relations: [
+        'receiptItems',
+        'receiptItems.productType',
+        'receiptItems.productType.recipes',
+        'receiptItems.productType.recipes.ingredient',
+        'receiptItems.productTypeToppings',
+        'receiptItems.productTypeToppings.productType',
+        'receiptItems.productTypeToppings.topping',
+        'receiptItems.product',
+        'user',
+        'customer',
+        'receiptPromotions',
+        'receiptPromotions.promotion',
+      ],
+    });
+  }
 }
