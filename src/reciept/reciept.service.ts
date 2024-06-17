@@ -681,46 +681,71 @@ export class RecieptService {
       );
     }
   }
-  // async getBestSellingProducts(
-  //   startDate: string,
-  //   endDate: string,
-  // ): Promise<ProductSalesDto[]> {
-  //   const start = new Date(startDate);
-  //   const end = new Date(endDate);
-  //   const receipts = await this.recieptRepository.find({
-  //     where: {
-  //       createdDate: Between(start, end),
-  //     },
-  //     relations: ['receiptItems', 'receiptItems.product'],
-  //   });
+  async getTopSellingProductsByDate(date: Date): Promise<any[]> {
+    try {
+      // Set the start and end of the specified date
+      const startOfDay = new Date(date);
+      startOfDay.setUTCHours(0, 0, 0, 0);
 
-  //   const productSalesMap = new Map<
-  //     number,
-  //     { product: Product; quantity: number }
-  //   >();
+      const endOfDay = new Date(date);
+      endOfDay.setUTCHours(23, 59, 59, 999);
 
-  //   receipts.forEach((receipt) => {
-  //     receipt.receiptItems.forEach((item) => {
-  //       const product = item.product;
-  //       const quantity = item.quantity;
-  //       if (productSalesMap.has(product.productId)) {
-  //         productSalesMap.get(product.productId).quantity += quantity;
-  //       } else {
-  //         productSalesMap.set(product.productId, { product, quantity });
-  //       }
-  //     });
-  //   });
+      // Find receipts created within the specified date range
+      const receipts = await this.recieptRepository.find({
+        where: {
+          createdDate: Between(startOfDay, endOfDay),
+        },
+        relations: ['receiptItems', 'receiptItems.product'],
+      });
 
-  //   const productSalesArray = Array.from(productSalesMap.values());
-  //   productSalesArray.sort((a, b) => b.quantity - a.quantity);
+      // Map to store product sales data
+      const productSalesMap = new Map<
+        number,
+        { productId: number; productName: string; count: number }
+      >();
 
-  //   return productSalesArray.map((ps) => ({
-  //     productId: ps.product.productId,
-  //     productName: ps.product.productName,
-  //     quantitySold: ps.quantity,
-  //   }));
-  // }
-  // get recipt in 30 min created
+      // Calculate quantities sold for each product
+      receipts.forEach((receipt) => {
+        receipt.receiptItems.forEach((item) => {
+          const product = item.product;
+          const quantity = parseInt(String(item.quantity)); // Ensure quantity is parsed as an integer
+
+          // Accumulate quantity sold for each product
+          if (productSalesMap.has(product.productId)) {
+            productSalesMap.get(product.productId).count += quantity;
+          } else {
+            productSalesMap.set(product.productId, {
+              productId: product.productId,
+              productName: product.productName,
+              count: quantity,
+            });
+          }
+        });
+      });
+
+      // Convert map values to array
+      const productsArray = Array.from(productSalesMap.values());
+
+      // Sort by count in descending order
+      productsArray.sort((a, b) => b.count - a.count);
+
+      // Prepare the final response format
+      const response = productsArray.map((product) => ({
+        productId: product.productId,
+        productName: product.productName,
+        Count: product.count,
+      }));
+
+      // Return the top products
+      return response.slice(0, 5); // Return top 5 products
+    } catch (error) {
+      throw new HttpException(
+        'Failed to fetch top selling products',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   async getRecieptIn30Min(): Promise<Reciept[]> {
     const currentDate = new Date();
     const startDate = new Date(currentDate.getTime() - 30 * 60000);

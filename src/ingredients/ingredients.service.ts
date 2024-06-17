@@ -33,7 +33,7 @@ export class IngredientsService {
         createIngredientDto.ingredientQuantityPerSubUnit;
 
       if (imageFile && imageFile.filename) {
-        newIngredient.ingredientImage = imageFile.filename; // Save filename instead of base64 string
+        newIngredient.ingredientImage = imageFile.filename;
       } else {
         newIngredient.ingredientImage = 'no-image.png';
       }
@@ -54,7 +54,7 @@ export class IngredientsService {
       const keyword = query.keyword || '';
       const orderBy = query.orderBy || 'ingredientName';
       const order = query.order || 'ASC';
-      const paginate = query.paginate === 'false' ? false : true; // ตรวจสอบว่ามี paginate หรือไม่
+      const paginate = query.paginate === 'false' ? false : true;
 
       let result, total;
 
