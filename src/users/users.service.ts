@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
@@ -56,7 +60,7 @@ export class UsersService {
       throw new HttpException('Failed to fetch user', HttpStatus.BAD_REQUEST);
     }
   }
-  async findOneByEmail(email: string): Promise<User> {
+  async findOneByEmail(email: string): Promise<User | undefined> {
     try {
       const user = await this.usersRepository.findOne({
         where: { userEmail: email },
@@ -66,10 +70,8 @@ export class UsersService {
       }
       return user;
     } catch (error) {
-      throw new HttpException(
-        'Failed to fetch user by email',
-        HttpStatus.BAD_REQUEST,
-      );
+      console.error('Error finding user by email:', email, error);
+      throw new InternalServerErrorException('Error finding user by email');
     }
   }
 
