@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { UpdateAuthDto } from './dto/update-auth.dto';
 import { UsersService } from 'src/users/users.service';
@@ -14,17 +18,27 @@ export class AuthService {
     private usersService: UsersService,
   ) {}
   async Login(email: string, password: string): Promise<any> {
-    const user = await this.usersService.findOneByEmail(email);
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
+    try {
+      console.log('Finding user by email:', email);
+      const user = await this.usersService.findOneByEmail(email);
+      if (!user) {
+        console.error('User not found:', email);
+        throw new NotFoundException('User not found');
+      }
 
-    const isMatch = await bcrypt.compare(password, user.userPassword);
-    if (!isMatch) {
-      throw new NotFoundException('Invalid credentials');
-    }
+      console.log('Comparing passwords');
+      const isMatch = await bcrypt.compare(password, user.userPassword);
+      if (!isMatch) {
+        console.error('Invalid credentials for user:', email);
+        throw new NotFoundException('Invalid credentials');
+      }
 
-    const { userPassword: userPassword, ...result } = user;
-    return result;
+      const { userPassword, ...result } = user;
+      console.log('Login successful for user:', email);
+      return result;
+    } catch (error) {
+      console.error('Error in login method:', error);
+      throw new InternalServerErrorException('Internal server error');
+    }
   }
 }
