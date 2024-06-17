@@ -67,10 +67,15 @@ export class CheckingredientsService {
     });
   }
 
-  findAll() {
-    return `This action returns all checkingredients`;
+  async findAll(): Promise<Checkingredient[]> {
+    return await this.checkingredientRepository.find({
+      relations: [
+        'checkingredientitem',
+        'user',
+        'checkingredientitem.ingredient',
+      ],
+    });
   }
-
   findOne(id: number) {
     return `This action returns a #${id} checkingredient`;
   }
