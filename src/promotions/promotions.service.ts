@@ -8,12 +8,16 @@ import { UpdatePromotionDto } from './dto/update-promotion.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Promotion } from './entities/promotion.entity';
 import { Like, Repository } from 'typeorm';
+import { ReceiptPromotion } from 'src/receipt-promotions/entities/receipt-promotion.entity';
 
 @Injectable()
 export class PromotionsService {
   constructor(
     @InjectRepository(Promotion)
-    private promotionRepository: Repository<Promotion>,
+    private readonly promotionRepository: Repository<Promotion>,
+
+    @InjectRepository(ReceiptPromotion)
+    private readonly receiptPromotionRepository: Repository<ReceiptPromotion>,
   ) {}
 
   async create(createPromotionDto: CreatePromotionDto): Promise<Promotion> {
@@ -78,17 +82,22 @@ export class PromotionsService {
     return this.promotionRepository.findOne({ where: { promotionId: id } });
   }
 
-  remove(id: number) {
+  async remove(id: number) {
     try {
-      const promotion = this.promotionRepository.findOne({
+      const promotion = await this.promotionRepository.findOne({
         where: { promotionId: id },
       });
       if (!promotion) {
         throw new HttpException('Promotion not found', HttpStatus.NOT_FOUND);
       }
-      this.promotionRepository.delete(
-        this.promotionRepository.create({ promotionId: id }),
+
+      // Set associated receiptPromotions to null
+      await this.receiptPromotionRepository.update(
+        { promotion: { promotionId: id } },
+        { promotion: null },
       );
+
+      await this.promotionRepository.delete({ promotionId: id });
     } catch (error) {
       throw new HttpException(
         'Failed to delete promotion',
