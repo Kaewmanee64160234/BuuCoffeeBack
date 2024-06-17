@@ -12,6 +12,7 @@ import {
 import { RecieptService } from './reciept.service';
 import { CreateRecieptDto } from './dto/create-reciept.dto';
 import { UpdateRecieptDto } from './dto/update-reciept.dto';
+import { Product } from 'src/products/entities/product.entity';
 @Controller('receipts')
 export class RecieptController {
   constructor(private readonly recieptService: RecieptService) {}
@@ -20,13 +21,21 @@ export class RecieptController {
   create(@Body() createRecieptDto: CreateRecieptDto) {
     return this.recieptService.create(createRecieptDto);
   }
-  // @Get('best-selling-products')
-  // async getBestSellingProducts(
-  //   @Query('startDate') startDate: string,
-  //   @Query('endDate') endDate: string,
-  // ): Promise<ProductSalesDto[]> {
-  //   return await this.recieptService.getBestSellingProducts(startDate, endDate);
-  // }
+  @Get('/top-selling-products')
+  async getTopSellingProductsByDate(
+    @Query('date') dateString: string,
+  ): Promise<Product[]> {
+    try {
+      const date = new Date(dateString); // Convert query string to Date object
+      const topProducts = await this.recieptService.getTopSellingProductsByDate(
+        date,
+      );
+      return topProducts;
+    } catch (error) {
+      // Handle errors here
+      throw error; // or return appropriate error response
+    }
+  }
   @Get('/grouped')
   async getGroupedReceipts(
     @Query('startDate') startDate: string,
