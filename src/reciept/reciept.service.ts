@@ -729,32 +729,66 @@ export class RecieptService {
 
   async getTopSellingProductsByDate(date: Date): Promise<any[]> {
     try {
-      const startOfDay = new Date(date);
-      startOfDay.setUTCHours(0, 0, 0, 0);
-      const endOfDay = new Date(date);
-      endOfDay.setUTCHours(23, 59, 59, 999);
+      const startOfDay = moment(date)
+        .tz('Asia/Bangkok')
+        .startOf('day')
+        .toDate();
+      const endOfDay = moment(date).tz('Asia/Bangkok').endOf('day').toDate();
+      const products = await this.productRepository.find({
+        relations: ['productTypes'],
+      });
       const receipts = await this.recieptRepository.find({
         where: {
           createdDate: Between(startOfDay, endOfDay),
         },
-        relations: ['receiptItems', 'receiptItems.product'],
+        relations: [
+          'receiptItems',
+          'receiptItems.product',
+          'receiptItems.productType',
+        ],
       });
       const productSalesMap = new Map<
         number,
-        { productId: number; productName: string; count: number }
+        {
+          productId: number;
+          productName: string;
+          productType: string;
+          count: number;
+        }
       >();
-      receipts.forEach((receipt) => {
-        receipt.receiptItems.forEach((item) => {
-          const product = item.product;
-          const quantity = parseInt(String(item.quantity));
-          if (productSalesMap.has(product.productId)) {
-            productSalesMap.get(product.productId).count += quantity;
-          } else {
-            productSalesMap.set(product.productId, {
+      products.forEach((product) => {
+        if (product.productTypes.length > 0) {
+          product.productTypes.forEach((type) => {
+            productSalesMap.set(type.productTypeId, {
               productId: product.productId,
               productName: product.productName,
-              count: quantity,
+              productType: type.productTypeName,
+              count: 0,
             });
+          });
+        } else {
+          productSalesMap.set(product.productId, {
+            productId: product.productId,
+            productName: product.productName,
+            productType: 'No Type',
+            count: 0,
+          });
+        }
+      });
+
+      receipts.forEach((receipt) => {
+        receipt.receiptItems.forEach((item) => {
+          const productId = item.product.productId;
+          const productTypeId = item.productType?.productTypeId;
+
+          if (productTypeId && productSalesMap.has(productTypeId)) {
+            productSalesMap.get(productTypeId).count += parseInt(
+              String(item.quantity),
+            );
+          } else if (!item.productType && productSalesMap.has(productId)) {
+            productSalesMap.get(productId).count += parseInt(
+              String(item.quantity),
+            );
           }
         });
       });
@@ -763,9 +797,11 @@ export class RecieptService {
       const response = productsArray.map((product) => ({
         productId: product.productId,
         productName: product.productName,
-        Count: product.count,
+        productType: product.productType,
+        count: product.count,
       }));
-      return response.slice(0, 5);
+
+      return response;
     } catch (error) {
       throw new HttpException(
         'Failed to fetch top selling products',
