@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Reciept } from './entities/reciept.entity';
 import { User } from 'src/users/entities/user.entity';
 import { Customer } from 'src/customers/entities/customer.entity';
-import { Repository, getConnection, Between } from 'typeorm';
+import { Repository, Between } from 'typeorm';
 import { ProductType } from 'src/product-types/entities/product-type.entity';
 import { Product } from 'src/products/entities/product.entity';
 import { ProductTypeTopping } from 'src/product-type-toppings/entities/product-type-topping.entity';
@@ -810,7 +810,7 @@ export class RecieptService {
     }
   }
 
-  async getRecieptIn30Min(): Promise<Reciept[]> {
+  async getRecieptIn1Day(typeOfStore: string): Promise<Reciept[]> {
     const currentDate = new Date();
     const startDate = new Date(currentDate.getTime() - 24 * 60 * 60000); // 24 hours in milliseconds
     const endDate = new Date(currentDate.getTime());
@@ -818,6 +818,7 @@ export class RecieptService {
       where: {
         createdDate: Between(startDate, endDate),
         receiptStatus: 'paid',
+        receiptType: typeOfStore,
       },
       relations: [
         'receiptItems',

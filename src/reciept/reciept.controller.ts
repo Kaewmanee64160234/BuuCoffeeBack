@@ -69,11 +69,13 @@ export class RecieptController {
     }
   }
 
-  // getRecieptIn30Min
-  @Get('in-30-min')
-  async getRecieptIn30Min() {
-    return this.recieptService.getRecieptIn30Min();
+  // getRecieptIn1Day
+  // param typeOfProduct
+  @Get('/receipt-in-1-day')
+  async getRecieptIn1Day(@Query('typeOfProduct') typeOfProduct: string) {
+    return this.recieptService.getRecieptIn1Day(typeOfProduct);
   }
+
   @Get()
   findAll() {
     return this.recieptService.findAll();
