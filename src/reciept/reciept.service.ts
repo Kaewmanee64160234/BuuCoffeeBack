@@ -92,7 +92,10 @@ export class RecieptService {
 
         const product = await this.productRepository.findOne({
           where: { productId: receiptItemDto.product.productId },
+          relations: ['category'],
         });
+        console.log(product);
+
         if (!product) {
           throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
         }
@@ -117,7 +120,7 @@ export class RecieptService {
           const topping = await this.toppingRepository.findOne({
             where: { toppingId: productTypeToppingDto.topping.toppingId },
           });
-          console.log(topping);
+          console.log(productType);
           if (!productType) {
             throw new HttpException(
               'Product Type not found',
@@ -136,19 +139,16 @@ export class RecieptService {
               topping: topping,
             });
 
-          if (
-            productType.product.category.haveTopping &&
-            productTypeToppingDto.toppingId
-          ) {
+          if (product.category.haveTopping && productTypeToppingDto.toppingId) {
             recieptItemSave.receiptSubTotal +=
               topping.toppingPrice * productTypeToppingDto.quantity;
           } else {
             recieptItemSave.receiptSubTotal +=
-              productType.product.productPrice * productTypeToppingDto.quantity;
+              product.productPrice * productTypeToppingDto.quantity;
           }
 
           recieptItemSave.receiptSubTotal +=
-            productType.product.productPrice + productType.productTypePrice;
+            product.productPrice + productType.productTypePrice;
           await this.productTypeToppingRepository.save(newProductTypeTopping);
         }
       }

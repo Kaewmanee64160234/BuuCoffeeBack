@@ -216,140 +216,20 @@ export class ProductsService {
     }
   }
 
-  async update(
-    productId: number,
-    updateProductDto: UpdateProductDto,
-  ): Promise<Product> {
-    console.log('Update Product Recipe DTO:', updateProductDto); // Debug log
-
-    const product = await this.productRepository.findOne({
-      where: { productId },
-      relations: [
-        'productTypes',
-        'productTypes.recipes',
-        'category',
-        'productTypes.recipes.ingredient',
-      ],
-    });
-
-    if (!product) {
-      throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
-    }
-
-    // Update product types and recipes
-    const existingProductTypes = product.productTypes || [];
-    const updatedProductTypes = new Map<string, ProductType>();
-
-    for (const typeDto of updateProductDto.productTypes || []) {
-      let productType = existingProductTypes.find(
-        (pt) => pt.productTypeId === typeDto.productTypeId,
-      );
-
-      if (!productType) {
-        productType = new ProductType();
-        productType.product = product;
-        productType.productTypeName = typeDto.productTypeName;
-        productType.productTypePrice = Number(typeDto.productTypePrice);
-        if (isNaN(productType.productTypePrice)) {
-          throw new HttpException(
-            'Invalid Product Type Price',
-            HttpStatus.BAD_REQUEST,
-          );
-        }
-        productType.recipes = [];
-        productType = await this.productTypeRepository.save(productType);
-        product.productTypes.push(productType);
-      } else {
-        productType.productTypeName = typeDto.productTypeName;
-        productType.productTypePrice = Number(typeDto.productTypePrice);
-        if (isNaN(productType.productTypePrice)) {
-          throw new HttpException(
-            'Invalid Product Type Price',
-            HttpStatus.BAD_REQUEST,
-          );
-        }
-        await this.productTypeRepository.save(productType);
-      }
-
-      updatedProductTypes.set(productType.productTypeName, productType);
-
-      const existingRecipes = productType.recipes || [];
-      const updatedRecipes = new Map<number, Recipe>();
-
-      for (const recipeDto of typeDto.recipes || []) {
-        const ingredientId = Number(recipeDto.ingredient.ingredientId);
-        if (isNaN(ingredientId)) {
-          throw new HttpException(
-            'Invalid Ingredient ID',
-            HttpStatus.BAD_REQUEST,
-          );
-        }
-
-        const ingredient = await this.ingredientRepository.findOne({
-          where: { ingredientId },
-        });
-
-        if (!ingredient) {
-          throw new HttpException('Ingredient not found', HttpStatus.NOT_FOUND);
-        }
-
-        let recipe = existingRecipes.find(
-          (r) => r.ingredient.ingredientId === ingredientId,
-        );
-
-        if (!recipe) {
-          recipe = new Recipe();
-          recipe.productType = productType;
-          recipe.ingredient = ingredient;
-          productType.recipes.push(recipe);
-        }
-
-        recipe.quantity = Number(recipeDto.quantity);
-        if (isNaN(recipe.quantity)) {
-          throw new HttpException(
-            'Invalid Recipe Quantity',
-            HttpStatus.BAD_REQUEST,
-          );
-        }
-
-        recipe = await this.recipeRepository.save(recipe);
-        updatedRecipes.set(recipe.recipeId, recipe);
-      }
-
-      // Remove old recipes that are not in the updated list
-      for (const recipe of existingRecipes) {
-        if (!updatedRecipes.has(recipe.recipeId)) {
-          await this.recipeRepository.remove(recipe);
-        }
-      }
-    }
-
-    await this.productRepository.save(product);
-
-    return this.productRepository.findOne({
-      where: { productId },
-      relations: [
-        'productTypes',
-        'productTypes.recipes',
-        'category',
-        'productTypes.recipes.ingredient',
-      ],
-    });
-  }
-
   async remove(id: number) {
+    // soft remove
     try {
-      const result = await this.productRepository.delete(id);
-      if (!result.affected) {
+      const product = await this.productRepository.findOne({
+        where: { productId: id },
+      });
+      if (!product) {
         throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
       }
-      //delete product types
-      await this.productTypeRepository.delete({ product: { productId: id } });
-      return { id, status: 'deleted' };
+      const updatedProduct = await this.productRepository.softRemove(product);
+      return updatedProduct;
     } catch (error) {
-      console.log(error);
       throw new HttpException(
-        'Failed to delete product',
+        'Failed to remove product',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -396,5 +276,147 @@ export class ProductsService {
     });
 
     return { data, total };
+  }
+
+  // update
+  async update(id: number, updateProductDto: UpdateProductDto) {
+    try {
+      console.log('updateProductDto', updateProductDto);
+      // soft remove and create new product for old data
+      const product = await this.productRepository.findOne({
+        where: { productId: id },
+        relations: ['category'],
+      });
+      if (!product) {
+        throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
+      }
+      await this.productRepository.softRemove(product);
+
+      // Parse and validate categoryId
+
+      if (isNaN(updateProductDto.category.categoryId)) {
+        throw new HttpException('Invalid category ID', HttpStatus.BAD_REQUEST);
+      }
+
+      const category = await this.categoryRepository.findOne({
+        where: { categoryId: +updateProductDto.category.categoryId },
+      });
+      if (!category) {
+        throw new HttpException('Category not found', HttpStatus.NOT_FOUND);
+      }
+
+      const newProduct = new Product();
+      newProduct.productName = updateProductDto.productName;
+      newProduct.productPrice = Number(updateProductDto.productPrice);
+      if (isNaN(newProduct.productPrice)) {
+        throw new HttpException(
+          'Invalid product price',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      newProduct.category = category;
+
+      const savedProduct = await this.productRepository.save(newProduct);
+
+      if (category.haveTopping === true) {
+        if (updateProductDto.productTypes.length > 0) {
+          for (const typeDto of updateProductDto.productTypes) {
+            const newProductType = new ProductType();
+            newProductType.productTypeName = typeDto.productTypeName;
+            newProductType.productTypePrice = Number(typeDto.productTypePrice);
+            if (isNaN(newProductType.productTypePrice)) {
+              throw new HttpException(
+                'Invalid product type price',
+                HttpStatus.BAD_REQUEST,
+              );
+            }
+            newProductType.product = savedProduct;
+
+            const savedProductType = await this.productTypeRepository.save(
+              newProductType,
+            );
+
+            if (typeDto.recipes) {
+              for (const recipeDto of typeDto.recipes) {
+                const parsedIngredientId = Number(recipeDto.IngredientId);
+                if (isNaN(parsedIngredientId)) {
+                  throw new HttpException(
+                    'Invalid ingredient ID',
+                    HttpStatus.BAD_REQUEST,
+                  );
+                }
+
+                const ingredient = await this.ingredientRepository.findOne({
+                  where: { ingredientId: parsedIngredientId },
+                });
+                if (!ingredient) {
+                  throw new HttpException(
+                    'Ingredient not found',
+                    HttpStatus.NOT_FOUND,
+                  );
+                }
+
+                const newRecipe = new Recipe();
+                newRecipe.quantity = Number(recipeDto.quantity);
+                if (isNaN(newRecipe.quantity)) {
+                  throw new HttpException(
+                    'Invalid recipe quantity',
+                    HttpStatus.BAD_REQUEST,
+                  );
+                }
+                newRecipe.ingredient = ingredient;
+                newRecipe.productType = savedProductType;
+
+                await this.recipeRepository.save(newRecipe);
+              }
+            } else {
+              throw new HttpException(
+                'Recipe is required',
+                HttpStatus.BAD_REQUEST,
+              );
+            }
+          }
+        } else {
+          throw new HttpException(
+            'Product type is required',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      } else {
+        // Create ingredient
+        const ingredient = new Ingredient();
+        ingredient.ingredientName = updateProductDto.product.productName;
+        ingredient.ingredientMinimun = 10;
+        ingredient.ingredientUnit = 'piece';
+        ingredient.ingredientQuantityInStock = 0;
+        ingredient.ingredientQuantityPerUnit = 1;
+        ingredient.ingredientQuantityPerSubUnit = 'piece';
+        ingredient.ingredientRemining = 0;
+
+        const ing = await this.ingredientRepository.save(ingredient);
+
+        // Create product type and recipe
+        const newProductType = new ProductType();
+        newProductType.productTypeName = '';
+        newProductType.productTypePrice = 0;
+        newProductType.product = savedProduct;
+        const savedProductType = await this.productTypeRepository.save(
+          newProductType,
+        );
+
+        const newRecipe = new Recipe();
+        newRecipe.quantity = 1;
+        newRecipe.ingredient = ing;
+        newRecipe.productType = savedProductType;
+        await this.recipeRepository.save(newRecipe);
+      }
+
+      return this.productRepository.findOne({
+        where: { productId: savedProduct.productId },
+        relations: ['productTypes', 'productTypes.recipes', 'category'],
+      });
+    } catch (error) {
+      console.log(error);
+    }
   }
 }
