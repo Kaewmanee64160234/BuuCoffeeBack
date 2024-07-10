@@ -13,6 +13,7 @@ import { Topping } from 'src/toppings/entities/topping.entity';
 import { ReceiptItem } from 'src/receipt-item/entities/receipt-item.entity';
 import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 import { ReceiptPromotion } from 'src/receipt-promotions/entities/receipt-promotion.entity';
+import * as moment from 'moment-timezone';
 @Injectable()
 export class RecieptService {
   private readonly logger = new Logger(RecieptService.name);
@@ -658,16 +659,27 @@ export class RecieptService {
     }
   }
 
-  async getGroupedReceipts(start: Date, end: Date) {
+  async getGroupedReceipts(start: Date, end: Date, receiptType: string) {
     try {
+      if (!(start instanceof Date) || isNaN(start.getTime())) {
+        throw new Error('Invalid start date');
+      }
+
+      if (!(end instanceof Date) || isNaN(end.getTime())) {
+        end = new Date();
+      }
+
       const receipts = await this.recieptRepository
         .createQueryBuilder('receipt')
         .where('receipt.createdDate BETWEEN :startDate AND :endDate', {
-          startDate: start.toISOString(),
-          endDate: end.toISOString(),
+          startDate: moment(start)
+            .tz('Asia/Bangkok')
+            .startOf('day')
+            .toISOString(),
+          endDate: moment(end).tz('Asia/Bangkok').endOf('day').toISOString(),
         })
         .andWhere('receipt.receiptType = :receiptType', {
-          receiptType: 'ร้านกาแฟ', // ตั้งค่า receiptType ตามที่ต้องการ
+          receiptType: receiptType,
         })
         .getMany();
 
@@ -676,10 +688,17 @@ export class RecieptService {
       const groupedByYear = {};
 
       receipts.forEach((receipt) => {
-        const createdDate = new Date(receipt.createdDate);
-        const day = createdDate.toISOString().split('T')[0];
-        const month = createdDate.toISOString().slice(0, 7);
-        const year = createdDate.getFullYear();
+        const createdDate = moment(receipt.createdDate).tz('Asia/Bangkok');
+        const day = createdDate.format('YYYY-MM-DD');
+        const month = createdDate.format('YYYY-MM');
+        const year = createdDate.year();
+
+        // Logging for debugging
+        // console.log(
+        //   `Receipt ID: ${
+        //     receipt.receiptId
+        //   }, Created Date: ${createdDate.format()}, Day: ${day}`,
+        // );
 
         groupedByDay[day] = (groupedByDay[day] || 0) + receipt.receiptNetPrice;
         groupedByMonth[month] =
@@ -687,6 +706,12 @@ export class RecieptService {
         groupedByYear[year] =
           (groupedByYear[year] || 0) + receipt.receiptNetPrice;
       });
+
+      // Logging for debugging
+      // console.log('Receipts:', receipts);
+      // console.log('Grouped by Day:', groupedByDay);
+      // console.log('Grouped by Month:', groupedByMonth);
+      // console.log('Grouped by Year:', groupedByYear);
 
       return {
         groupedByDay,
@@ -701,63 +726,82 @@ export class RecieptService {
       );
     }
   }
+
   async getTopSellingProductsByDate(date: Date): Promise<any[]> {
     try {
-      // Set the start and end of the specified date
-      const startOfDay = new Date(date);
-      startOfDay.setUTCHours(0, 0, 0, 0);
-
-      const endOfDay = new Date(date);
-      endOfDay.setUTCHours(23, 59, 59, 999);
-
-      // Find receipts created within the specified date range
+      const startOfDay = moment(date)
+        .tz('Asia/Bangkok')
+        .startOf('day')
+        .toDate();
+      const endOfDay = moment(date).tz('Asia/Bangkok').endOf('day').toDate();
+      const products = await this.productRepository.find({
+        relations: ['productTypes'],
+      });
       const receipts = await this.recieptRepository.find({
         where: {
           createdDate: Between(startOfDay, endOfDay),
         },
-        relations: ['receiptItems', 'receiptItems.product'],
+        relations: [
+          'receiptItems',
+          'receiptItems.product',
+          'receiptItems.productType',
+        ],
       });
-
-      // Map to store product sales data
       const productSalesMap = new Map<
         number,
-        { productId: number; productName: string; count: number }
+        {
+          productId: number;
+          productName: string;
+          productType: string;
+          count: number;
+        }
       >();
-
-      // Calculate quantities sold for each product
-      receipts.forEach((receipt) => {
-        receipt.receiptItems.forEach((item) => {
-          const product = item.product;
-          const quantity = parseInt(String(item.quantity)); // Ensure quantity is parsed as an integer
-
-          // Accumulate quantity sold for each product
-          if (productSalesMap.has(product.productId)) {
-            productSalesMap.get(product.productId).count += quantity;
-          } else {
-            productSalesMap.set(product.productId, {
+      products.forEach((product) => {
+        if (product.productTypes.length > 0) {
+          product.productTypes.forEach((type) => {
+            productSalesMap.set(type.productTypeId, {
               productId: product.productId,
               productName: product.productName,
-              count: quantity,
+              productType: type.productTypeName,
+              count: 0,
             });
+          });
+        } else {
+          productSalesMap.set(product.productId, {
+            productId: product.productId,
+            productName: product.productName,
+            productType: 'No Type',
+            count: 0,
+          });
+        }
+      });
+
+      receipts.forEach((receipt) => {
+        receipt.receiptItems.forEach((item) => {
+          const productId = item.product.productId;
+          const productTypeId = item.productType?.productTypeId;
+
+          if (productTypeId && productSalesMap.has(productTypeId)) {
+            productSalesMap.get(productTypeId).count += parseInt(
+              String(item.quantity),
+            );
+          } else if (!item.productType && productSalesMap.has(productId)) {
+            productSalesMap.get(productId).count += parseInt(
+              String(item.quantity),
+            );
           }
         });
       });
-
-      // Convert map values to array
       const productsArray = Array.from(productSalesMap.values());
-
-      // Sort by count in descending order
       productsArray.sort((a, b) => b.count - a.count);
-
-      // Prepare the final response format
       const response = productsArray.map((product) => ({
         productId: product.productId,
         productName: product.productName,
-        Count: product.count,
+        productType: product.productType,
+        count: product.count,
       }));
 
-      // Return the top products
-      return response.slice(0, 5); // Return top 5 products
+      return response;
     } catch (error) {
       throw new HttpException(
         'Failed to fetch top selling products',

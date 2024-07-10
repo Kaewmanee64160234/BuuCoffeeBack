@@ -48,6 +48,7 @@ export class RecieptController {
   async getGroupedReceipts(
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
+    @Query('receiptType') receiptType: string,
   ) {
     try {
       const start = new Date(startDate);
@@ -56,6 +57,7 @@ export class RecieptController {
       const groupedReceipts = await this.recieptService.getGroupedReceipts(
         start,
         end,
+        receiptType,
       );
 
       return groupedReceipts;
@@ -66,6 +68,7 @@ export class RecieptController {
       );
     }
   }
+
   // getRecieptIn30Min
   @Get('in-30-min')
   async getRecieptIn30Min() {
