@@ -30,6 +30,7 @@ export class ProductTypeTopping {
   @ManyToOne(
     () => ReceiptItem,
     (receiptItem) => receiptItem.productTypeToppings,
+    { onDelete: 'CASCADE' },
   )
   receiptItem: ReceiptItem;
 }

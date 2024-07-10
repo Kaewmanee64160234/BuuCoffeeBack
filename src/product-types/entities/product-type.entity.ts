@@ -7,14 +7,11 @@ import {
   Entity,
   ManyToOne,
   OneToMany,
-  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+
 @Entity()
 export class ProductType {
-  static productTypePrice(productTypePrice: any) {
-    throw new Error('Method not implemented.');
-  }
   @PrimaryGeneratedColumn()
   productTypeId: number;
 
@@ -39,6 +36,8 @@ export class ProductType {
   @OneToMany(() => Recipe, (recipe) => recipe.productType, { cascade: true })
   recipes: Recipe[];
 
-  @OneToMany(() => ReceiptItem, (receiptItem) => receiptItem.productType)
+  @OneToMany(() => ReceiptItem, (receiptItem) => receiptItem.productType, {
+    cascade: true,
+  })
   receiptItems: ReceiptItem[];
 }

@@ -255,7 +255,7 @@ export class RecieptService {
       const diff = Math.abs(currentDate.getTime() - receiptDate.getTime());
       const minutes = Math.floor(diff / 60000);
 
-      if (minutes > 30) {
+      if (minutes > 1440) {
         throw new HttpException(
           'Receipt can not be cancelled after 30 minutes',
           HttpStatus.BAD_REQUEST,
@@ -667,7 +667,7 @@ export class RecieptService {
           endDate: end.toISOString(),
         })
         .andWhere('receipt.receiptType = :receiptType', {
-          receiptType: 'coffee', // ตั้งค่า receiptType ตามที่ต้องการ
+          receiptType: 'ร้านกาแฟ', // ตั้งค่า receiptType ตามที่ต้องการ
         })
         .getMany();
 
@@ -768,7 +768,7 @@ export class RecieptService {
 
   async getRecieptIn30Min(): Promise<Reciept[]> {
     const currentDate = new Date();
-    const startDate = new Date(currentDate.getTime() - 30 * 60000);
+    const startDate = new Date(currentDate.getTime() - 24 * 60 * 60000); // 24 hours in milliseconds
     const endDate = new Date(currentDate.getTime());
     return await this.recieptRepository.find({
       where: {
