@@ -1,4 +1,9 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   CreatePromotionDto,
   PromotionType,
@@ -78,8 +83,33 @@ export class PromotionsService {
     id: number,
     updatePromotionDto: UpdatePromotionDto,
   ): Promise<Promotion> {
-    await this.promotionRepository.update(id, updatePromotionDto);
-    return this.promotionRepository.findOne({ where: { promotionId: id } });
+    // Fetch the current promotion
+    const currentPromotion = await this.promotionRepository.findOne({
+      where: { promotionId: id },
+    });
+
+    if (!currentPromotion) {
+      throw new NotFoundException(`Promotion with ID ${id} not found`);
+    }
+
+    // Check if the type or end date has changed
+    const typeChanged =
+      currentPromotion.promotionType !== updatePromotionDto.promotionType;
+    const endDateChanged =
+      currentPromotion.endDate !== updatePromotionDto.endDate;
+
+    if (typeChanged || endDateChanged) {
+      // Soft remove the current promotion
+      await this.promotionRepository.softRemove(currentPromotion);
+
+      // Create a new promotion with the updated data
+      const newPromotion = this.promotionRepository.create(updatePromotionDto);
+      return this.promotionRepository.save(newPromotion);
+    } else {
+      // Update the existing promotion
+      await this.promotionRepository.update(id, updatePromotionDto);
+      return this.promotionRepository.findOne({ where: { promotionId: id } });
+    }
   }
 
   async remove(id: number) {
@@ -87,17 +117,12 @@ export class PromotionsService {
       const promotion = await this.promotionRepository.findOne({
         where: { promotionId: id },
       });
+
       if (!promotion) {
-        throw new HttpException('Promotion not found', HttpStatus.NOT_FOUND);
+        throw new NotFoundException(`Promotion with ID ${id} not found`);
       }
 
-      // Set associated receiptPromotions to null
-      await this.receiptPromotionRepository.update(
-        { promotion: { promotionId: id } },
-        { promotion: null },
-      );
-
-      await this.promotionRepository.delete({ promotionId: id });
+      await this.promotionRepository.softRemove(promotion);
     } catch (error) {
       throw new HttpException(
         'Failed to delete promotion',
