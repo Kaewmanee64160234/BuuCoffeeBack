@@ -26,5 +26,6 @@ export class CreateProductDto {
   categoryId: string;
   category: Category;
   product: Product;
+  countingPoint: boolean;
   productTypes: CreateProductTypeDto[];
 }

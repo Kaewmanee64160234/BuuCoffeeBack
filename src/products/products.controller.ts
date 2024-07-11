@@ -34,6 +34,7 @@ export class ProductsController {
   async createProduct(@Body() createProductDto: CreateProductDto) {
     return this.productsService.create(createProductDto);
   }
+
   @Post('update-image/:productId')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -61,17 +62,19 @@ export class ProductsController {
 
     const oldImagePath = join('./product_images', product.productImage);
     const tempImagePath = join('./product_images', file.filename);
-    const newImagePath = join('./product_images', product.productImage);
 
     try {
-      // Rename the temporary file to the old file name
+      // Update the product's image information in the database first
+      await this.productsService.uploadImage(+id, file.filename);
+
+      // Rename the temporary file to the new file name
+      const newImagePath = join('./product_images', file.filename);
       await promisify(rename)(tempImagePath, newImagePath);
 
-      // Update the product's image information in the database if needed
-      await this.productsService.uploadImage(+id, product.productImage);
-
       // Optionally, you can remove the old image if necessary
-      // await promisify(unlink)(oldImagePath);
+      if (product.productImage) {
+        await promisify(unlink)(oldImagePath);
+      }
 
       console.log('Image updated successfully:', newImagePath);
       return { message: 'Image updated successfully' };
@@ -82,6 +85,7 @@ export class ProductsController {
       throw new BadRequestException('Error updating image');
     }
   }
+
   //uplode image product file
   @Post('upload/:productId')
   @UseInterceptors(

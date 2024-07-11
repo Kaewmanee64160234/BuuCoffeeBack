@@ -35,6 +35,9 @@ export class Product {
   @OneToMany(() => ReceiptItem, (receiptItem) => receiptItem.product)
   receiptItems: ReceiptItem[];
 
+  @Column({ default: false })
+  countingPoint: boolean;
+
   @CreateDateColumn()
   createdDate: Date;
   @UpdateDateColumn()

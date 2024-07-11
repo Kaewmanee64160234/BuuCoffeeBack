@@ -47,6 +47,7 @@ export class ProductsService {
     const newProduct = new Product();
     newProduct.productName = productName;
     newProduct.productPrice = Number(productPrice);
+    newProduct.countingPoint = createProductDto.countingPoint;
     if (isNaN(newProduct.productPrice)) {
       throw new HttpException('Invalid product price', HttpStatus.BAD_REQUEST);
     }
@@ -59,6 +60,7 @@ export class ProductsService {
         for (const typeDto of productTypes) {
           const newProductType = new ProductType();
           newProductType.productTypeName = typeDto.productTypeName;
+
           newProductType.productTypePrice = Number(typeDto.productTypePrice);
           if (isNaN(newProductType.productTypePrice)) {
             throw new HttpException(
@@ -156,17 +158,22 @@ export class ProductsService {
   // uploadImage
   async uploadImage(productId: number, fileName: string) {
     try {
+      console.log('fileName', fileName);
       console.log('productId', productId);
+
       const product = await this.productRepository.findOne({
         where: { productId: +productId },
       });
       if (!product) {
         throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
       }
+
       const updatedProduct = await this.productRepository.save({
         ...product,
         productImage: fileName,
       });
+
+      console.log('productImage', fileName);
       return updatedProduct;
     } catch (error) {
       console.log(error);
@@ -306,8 +313,9 @@ export class ProductsService {
         product.productName !== updateProductDto.productName;
       const isPriceChanged =
         product.productPrice !== +updateProductDto.productPrice;
-      const isImageChanged =
-        product.productImage !== updateProductDto.productImage;
+      const isCountingPointChanged =
+        product.countingPoint !== updateProductDto.countingPoint;
+
       const isProductTypesChanged = await this.isProductTypesChanged(
         product.productTypes,
         updateProductDto.productTypes,
@@ -317,15 +325,16 @@ export class ProductsService {
         isCategoryChanged ||
         isNameChanged ||
         isPriceChanged ||
-        isImageChanged ||
-        isProductTypesChanged
+        isProductTypesChanged ||
+        isCountingPointChanged
       ) {
         await this.productRepository.softRemove(product);
 
         const newProduct = new Product();
         newProduct.productName = updateProductDto.productName;
+        newProduct.countingPoint = updateProductDto.countingPoint;
         newProduct.productPrice = Number(updateProductDto.productPrice);
-        newProduct.productImage = updateProductDto.productImage;
+        newProduct.countingPoint = updateProductDto.countingPoint;
         if (isNaN(newProduct.productPrice)) {
           throw new HttpException(
             'Invalid product price',
@@ -346,7 +355,10 @@ export class ProductsService {
       } else {
         product.productName = updateProductDto.productName;
         product.productPrice = Number(updateProductDto.productPrice);
-        product.productImage = updateProductDto.productImage;
+
+        product.countingPoint = updateProductDto.countingPoint;
+
+        // product.productImage = updateProductDto.productImage;
         if (isNaN(product.productPrice)) {
           throw new HttpException(
             'Invalid product price',
