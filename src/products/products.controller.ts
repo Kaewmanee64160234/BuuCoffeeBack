@@ -64,20 +64,29 @@ export class ProductsController {
     const tempImagePath = join('./product_images', file.filename);
 
     try {
-      // Update the product's image information in the database first
-      await this.productsService.uploadImage(+id, file.filename);
-
-      // Rename the temporary file to the new file name
-      const newImagePath = join('./product_images', file.filename);
-      await promisify(rename)(tempImagePath, newImagePath);
-
-      // Optionally, you can remove the old image if necessary
+      // Check if the old image exists before renaming
       if (product.productImage) {
-        await promisify(unlink)(oldImagePath);
-      }
+        const newImagePath = join('./product_images', file.filename);
+        // Rename the temporary file to the old file name
+        await promisify(rename)(tempImagePath, newImagePath);
 
-      console.log('Image updated successfully:', newImagePath);
-      return { message: 'Image updated successfully' };
+        // Update the product's image information in the database
+        await this.productsService.uploadImage(+id, file.filename);
+
+        // Optionally, remove the old image if it exists
+        if (fs.existsSync(oldImagePath)) {
+          await promisify(unlink)(oldImagePath);
+        }
+
+        console.log('Image updated successfully:', newImagePath);
+        return { message: 'Image updated successfully' };
+      } else {
+        // If there was no previous image, just rename and update the path
+        await promisify(rename)(tempImagePath, oldImagePath);
+        await this.productsService.uploadImage(+id, file.filename);
+        console.log('Image updated successfully:', oldImagePath);
+        return { message: 'Image updated successfully' };
+      }
     } catch (error) {
       console.error('Error updating image:', error);
       // Cleanup in case of error
