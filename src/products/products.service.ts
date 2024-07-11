@@ -9,6 +9,8 @@ import { ProductType } from 'src/product-types/entities/product-type.entity';
 import { Recipe } from 'src/recipes/entities/recipe.entity';
 import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 import { Multer } from 'multer';
+import { UpdateRecipeDto } from 'src/recipes/dto/update-recipe.dto';
+import { UpdateProductTypeDto } from 'src/product-types/dto/update-product-type.dto';
 
 @Injectable()
 export class ProductsService {
@@ -282,20 +284,13 @@ export class ProductsService {
   async update(id: number, updateProductDto: UpdateProductDto) {
     try {
       console.log('updateProductDto', updateProductDto);
-      // soft remove and create new product for old data
+
       const product = await this.productRepository.findOne({
         where: { productId: id },
-        relations: ['category'],
+        relations: ['category', 'productTypes', 'productTypes.recipes'],
       });
       if (!product) {
         throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
-      }
-      await this.productRepository.softRemove(product);
-
-      // Parse and validate categoryId
-
-      if (isNaN(updateProductDto.category.categoryId)) {
-        throw new HttpException('Invalid category ID', HttpStatus.BAD_REQUEST);
       }
 
       const category = await this.categoryRepository.findOne({
@@ -305,87 +300,203 @@ export class ProductsService {
         throw new HttpException('Category not found', HttpStatus.NOT_FOUND);
       }
 
-      const newProduct = new Product();
-      newProduct.productName = updateProductDto.productName;
-      newProduct.productPrice = Number(updateProductDto.productPrice);
-      if (isNaN(newProduct.productPrice)) {
-        throw new HttpException(
-          'Invalid product price',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-      newProduct.category = category;
+      const isCategoryChanged =
+        product.category.categoryId !== +updateProductDto.category.categoryId;
+      const isNameChanged =
+        product.productName !== updateProductDto.productName;
+      const isPriceChanged =
+        product.productPrice !== +updateProductDto.productPrice;
+      const isImageChanged =
+        product.productImage !== updateProductDto.productImage;
+      const isProductTypesChanged = await this.isProductTypesChanged(
+        product.productTypes,
+        updateProductDto.productTypes,
+      );
 
-      const savedProduct = await this.productRepository.save(newProduct);
+      if (
+        isCategoryChanged ||
+        isNameChanged ||
+        isPriceChanged ||
+        isImageChanged ||
+        isProductTypesChanged
+      ) {
+        await this.productRepository.softRemove(product);
 
-      if (category.haveTopping === true) {
-        if (updateProductDto.productTypes.length > 0) {
-          for (const typeDto of updateProductDto.productTypes) {
-            const newProductType = new ProductType();
-            newProductType.productTypeName = typeDto.productTypeName;
-            newProductType.productTypePrice = Number(typeDto.productTypePrice);
-            if (isNaN(newProductType.productTypePrice)) {
-              throw new HttpException(
-                'Invalid product type price',
-                HttpStatus.BAD_REQUEST,
-              );
-            }
-            newProductType.product = savedProduct;
-
-            const savedProductType = await this.productTypeRepository.save(
-              newProductType,
-            );
-
-            if (typeDto.recipes) {
-              for (const recipeDto of typeDto.recipes) {
-                const parsedIngredientId = Number(recipeDto.IngredientId);
-                if (isNaN(parsedIngredientId)) {
-                  throw new HttpException(
-                    'Invalid ingredient ID',
-                    HttpStatus.BAD_REQUEST,
-                  );
-                }
-
-                const ingredient = await this.ingredientRepository.findOne({
-                  where: { ingredientId: parsedIngredientId },
-                });
-                if (!ingredient) {
-                  throw new HttpException(
-                    'Ingredient not found',
-                    HttpStatus.NOT_FOUND,
-                  );
-                }
-
-                const newRecipe = new Recipe();
-                newRecipe.quantity = Number(recipeDto.quantity);
-                if (isNaN(newRecipe.quantity)) {
-                  throw new HttpException(
-                    'Invalid recipe quantity',
-                    HttpStatus.BAD_REQUEST,
-                  );
-                }
-                newRecipe.ingredient = ingredient;
-                newRecipe.productType = savedProductType;
-
-                await this.recipeRepository.save(newRecipe);
-              }
-            } else {
-              throw new HttpException(
-                'Recipe is required',
-                HttpStatus.BAD_REQUEST,
-              );
-            }
-          }
-        } else {
+        const newProduct = new Product();
+        newProduct.productName = updateProductDto.productName;
+        newProduct.productPrice = Number(updateProductDto.productPrice);
+        newProduct.productImage = updateProductDto.productImage;
+        if (isNaN(newProduct.productPrice)) {
           throw new HttpException(
-            'Product type is required',
+            'Invalid product price',
             HttpStatus.BAD_REQUEST,
           );
         }
+        newProduct.category = category;
+        const savedProduct = await this.productRepository.save(newProduct);
+
+        await this.handleProductTypesAndRecipes(savedProduct, updateProductDto);
+
+        const result = await this.productRepository.findOne({
+          where: { productId: savedProduct.productId },
+          relations: ['productTypes', 'productTypes.recipes', 'category'],
+        });
+        console.log(result);
+        return result;
       } else {
-        // Create ingredient
+        product.productName = updateProductDto.productName;
+        product.productPrice = Number(updateProductDto.productPrice);
+        product.productImage = updateProductDto.productImage;
+        if (isNaN(product.productPrice)) {
+          throw new HttpException(
+            'Invalid product price',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+        product.category = category;
+
+        const savedProduct = await this.productRepository.save(product);
+
+        await this.handleProductTypesAndRecipes(
+          savedProduct,
+          updateProductDto,
+          true,
+        );
+
+        const result = await this.productRepository.findOne({
+          where: { productId: savedProduct.productId },
+          relations: ['productTypes', 'productTypes.recipes', 'category'],
+        });
+        console.log(result);
+        return result;
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  private async isProductTypesChanged(
+    existingProductTypes: ProductType[],
+    newProductTypes: UpdateProductTypeDto[],
+  ): Promise<boolean> {
+    if (existingProductTypes.length !== newProductTypes.length) {
+      return true;
+    }
+
+    for (let i = 0; i < existingProductTypes.length; i++) {
+      const existingType = existingProductTypes[i];
+      const newType = newProductTypes[i];
+
+      if (
+        existingType.productTypeName !== newType.productTypeName ||
+        existingType.productTypePrice !== Number(newType.productTypePrice) ||
+        (await this.isRecipesChanged(existingType.recipes, newType.recipes))
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private async isRecipesChanged(
+    existingRecipes: Recipe[],
+    newRecipes: UpdateRecipeDto[],
+  ): Promise<boolean> {
+    if (existingRecipes.length !== newRecipes.length) {
+      return true;
+    }
+
+    for (let i = 0; i < existingRecipes.length; i++) {
+      const existingRecipe = existingRecipes[i];
+      const newRecipe = newRecipes[i];
+
+      if (
+        existingRecipe.quantity !== Number(newRecipe.quantity) ||
+        existingRecipe.ingredient.ingredientId !==
+          Number(newRecipe.ingredient.ingredientId)
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private async handleProductTypesAndRecipes(
+    savedProduct: Product,
+    updateProductDto: UpdateProductDto,
+    isUpdate = false,
+  ) {
+    if (savedProduct.category.haveTopping === true) {
+      if (updateProductDto.productTypes.length > 0) {
+        for (const typeDto of updateProductDto.productTypes) {
+          const newProductType = new ProductType();
+          newProductType.productTypeName = this.getProductTypeName(
+            typeDto.productTypeName,
+          );
+          newProductType.productTypePrice = Number(typeDto.productTypePrice);
+          if (isNaN(newProductType.productTypePrice)) {
+            throw new HttpException(
+              'Invalid product type price',
+              HttpStatus.BAD_REQUEST,
+            );
+          }
+          newProductType.product = savedProduct;
+
+          const savedProductType = await this.productTypeRepository.save(
+            newProductType,
+          );
+
+          if (typeDto.recipes) {
+            for (const recipeDto of typeDto.recipes) {
+              const parsedIngredientId = Number(
+                recipeDto.ingredient.ingredientId,
+              );
+              if (isNaN(parsedIngredientId)) {
+                throw new HttpException(
+                  'Invalid ingredient ID',
+                  HttpStatus.BAD_REQUEST,
+                );
+              }
+              const ingredient = await this.ingredientRepository.findOne({
+                where: { ingredientId: parsedIngredientId },
+              });
+              if (!ingredient) {
+                throw new HttpException(
+                  'Ingredient not found',
+                  HttpStatus.NOT_FOUND,
+                );
+              }
+              const newRecipe = new Recipe();
+              newRecipe.quantity = Number(recipeDto.quantity);
+              if (isNaN(newRecipe.quantity)) {
+                throw new HttpException(
+                  'Invalid recipe quantity',
+                  HttpStatus.BAD_REQUEST,
+                );
+              }
+              newRecipe.ingredient = ingredient;
+              newRecipe.productType = savedProductType;
+              await this.recipeRepository.save(newRecipe);
+            }
+          } else {
+            throw new HttpException(
+              'Recipe is required',
+              HttpStatus.BAD_REQUEST,
+            );
+          }
+        }
+      } else {
+        throw new HttpException(
+          'Product type is required',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    } else {
+      if (!isUpdate) {
         const ingredient = new Ingredient();
-        ingredient.ingredientName = updateProductDto.product.productName;
+        ingredient.ingredientName = updateProductDto.productName;
         ingredient.ingredientMinimun = 10;
         ingredient.ingredientUnit = 'piece';
         ingredient.ingredientQuantityInStock = 0;
@@ -395,11 +506,11 @@ export class ProductsService {
 
         const ing = await this.ingredientRepository.save(ingredient);
 
-        // Create product type and recipe
         const newProductType = new ProductType();
         newProductType.productTypeName = '';
         newProductType.productTypePrice = 0;
         newProductType.product = savedProduct;
+
         const savedProductType = await this.productTypeRepository.save(
           newProductType,
         );
@@ -410,13 +521,19 @@ export class ProductsService {
         newRecipe.productType = savedProductType;
         await this.recipeRepository.save(newRecipe);
       }
+    }
+  }
 
-      return this.productRepository.findOne({
-        where: { productId: savedProduct.productId },
-        relations: ['productTypes', 'productTypes.recipes', 'category'],
-      });
-    } catch (error) {
-      console.log(error);
+  private getProductTypeName(name: string): string {
+    switch (name) {
+      case 'Hot':
+        return 'ร้อน';
+      case 'Cold':
+        return 'เย็น';
+      case 'Blend':
+        return 'ปั่น';
+      default:
+        return name;
     }
   }
 }

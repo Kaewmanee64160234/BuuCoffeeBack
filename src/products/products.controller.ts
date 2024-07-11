@@ -34,33 +34,6 @@ export class ProductsController {
   async createProduct(@Body() createProductDto: CreateProductDto) {
     return this.productsService.create(createProductDto);
   }
-
-  //uplode image product file
-  @Post('upload/:productId')
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: diskStorage({
-        destination: './product_images',
-        filename: (req, file, cb) => {
-          const name = uuidv4();
-          return cb(null, `${name}${extname(file.originalname)}`);
-        },
-      }),
-    }),
-  )
-  uploadImage(
-    @Param('productId') id: string,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    console.log('File:', file);
-    if (!file) {
-      console.error('File upload attempt without file.');
-      throw new BadRequestException('No file uploaded');
-    }
-    console.log('Uploaded file:', file.filename);
-    return this.productsService.uploadImage(+id, file.filename);
-  }
-
   @Post('update-image/:productId')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -108,6 +81,31 @@ export class ProductsController {
       await promisify(unlink)(tempImagePath);
       throw new BadRequestException('Error updating image');
     }
+  }
+  //uplode image product file
+  @Post('upload/:productId')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './product_images',
+        filename: (req, file, cb) => {
+          const name = uuidv4();
+          return cb(null, `${name}${extname(file.originalname)}`);
+        },
+      }),
+    }),
+  )
+  uploadImage(
+    @Param('productId') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    console.log('File:', file);
+    if (!file) {
+      console.error('File upload attempt without file.');
+      throw new BadRequestException('No file uploaded');
+    }
+    console.log('Uploaded file:', file.filename);
+    return this.productsService.uploadImage(+id, file.filename);
   }
 
   @Get('paginate')
