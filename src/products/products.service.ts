@@ -450,6 +450,7 @@ export class ProductsService {
             typeDto.productTypeName,
           );
           newProductType.productTypePrice = Number(typeDto.productTypePrice);
+          console.log('newProductType', newProductType);
           if (isNaN(newProductType.productTypePrice)) {
             throw new HttpException(
               'Invalid product type price',
