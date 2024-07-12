@@ -335,6 +335,8 @@ export class ProductsService {
         newProduct.countingPoint = updateProductDto.countingPoint;
         newProduct.productPrice = Number(updateProductDto.productPrice);
         newProduct.countingPoint = updateProductDto.countingPoint;
+        newProduct.productImage = product.productImage;
+
         if (isNaN(newProduct.productPrice)) {
           throw new HttpException(
             'Invalid product price',
@@ -358,7 +360,7 @@ export class ProductsService {
 
         product.countingPoint = updateProductDto.countingPoint;
 
-        // product.productImage = updateProductDto.productImage;
+        product.productImage = updateProductDto.productImage;
         if (isNaN(product.productPrice)) {
           throw new HttpException(
             'Invalid product price',
