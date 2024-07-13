@@ -50,22 +50,11 @@ export class RecieptService {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
 
-      const customer = createRecieptDto.customer
-        ? await this.customerRepository.findOne({
-            where: { customerId: createRecieptDto.customer.customerId },
-          })
-        : null;
-
-      if (createRecieptDto.customer && !customer) {
+      const customer = await this.customerRepository.findOne({
+        where: { customerId: createRecieptDto.customer.customerId },
+      });
+      if (!customer) {
         throw new HttpException('Customer not found', HttpStatus.NOT_FOUND);
-      }
-
-      if (customer !== null) {
-        customer.customerNumberOfStamp += createRecieptDto.receiptItems.reduce(
-          (acc, item) => item.quantity + acc,
-          0,
-        );
-        await this.customerRepository.save(customer);
       }
 
       const newReciept = this.recieptRepository.create({
@@ -81,6 +70,7 @@ export class RecieptService {
       });
 
       const recieptSave = await this.recieptRepository.save(newReciept);
+      let totalPoints = 0;
 
       for (const receiptItemDto of createRecieptDto.receiptItems) {
         if (isNaN(receiptItemDto.quantity) || receiptItemDto.quantity <= 0) {
@@ -94,7 +84,6 @@ export class RecieptService {
           where: { productId: receiptItemDto.product.productId },
           relations: ['category'],
         });
-        console.log(product);
 
         if (!product) {
           throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
@@ -111,7 +100,7 @@ export class RecieptService {
         const recieptItemSave = await this.recieptItemRepository.save(
           newRecieptItem,
         );
-        console.log(receiptItemDto.productTypeToppings);
+
         for (const productTypeToppingDto of receiptItemDto.productTypeToppings) {
           const productType = await this.productTypeRepository.findOne({
             where: { productTypeId: productTypeToppingDto.productTypeId },
@@ -120,7 +109,7 @@ export class RecieptService {
           const topping = await this.toppingRepository.findOne({
             where: { toppingId: productTypeToppingDto.topping.toppingId },
           });
-          console.log(productType);
+
           if (!productType) {
             throw new HttpException(
               'Product Type not found',
@@ -151,6 +140,11 @@ export class RecieptService {
             product.productPrice + productType.productTypePrice;
           await this.productTypeToppingRepository.save(newProductTypeTopping);
         }
+
+        // Calculate points if the product has countingPoint = true
+        if (product.countingPoint) {
+          totalPoints += receiptItemDto.quantity;
+        }
       }
 
       for (const receiptPromotion of createRecieptDto.receiptPromotions) {
@@ -166,6 +160,10 @@ export class RecieptService {
       const receiptFinish = await this.recieptRepository.save(newReciept);
 
       await this.updateIngredientStock(createRecieptDto.receiptItems);
+
+      // Update customer points
+      customer.customerNumberOfStamp += totalPoints;
+      await this.customerRepository.save(customer);
 
       return await this.recieptRepository.findOne({
         where: { receiptId: receiptFinish.receiptId },
