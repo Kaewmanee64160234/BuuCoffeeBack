@@ -50,11 +50,17 @@ export class RecieptService {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
 
-      const customer = await this.customerRepository.findOne({
-        where: { customerId: createRecieptDto.customer.customerId },
-      });
-      if (!customer) {
-        throw new HttpException('Customer not found', HttpStatus.NOT_FOUND);
+      let customer = null;
+      if (
+        createRecieptDto.customer != null &&
+        createRecieptDto.customer.customerId
+      ) {
+        customer = await this.customerRepository.findOne({
+          where: { customerId: createRecieptDto.customer.customerId },
+        });
+        if (!customer) {
+          throw new HttpException('Customer not found', HttpStatus.NOT_FOUND);
+        }
       }
 
       const newReciept = this.recieptRepository.create({
@@ -161,9 +167,11 @@ export class RecieptService {
 
       await this.updateIngredientStock(createRecieptDto.receiptItems);
 
-      // Update customer points
-      customer.customerNumberOfStamp += totalPoints;
-      await this.customerRepository.save(customer);
+      // Update customer points if customer exists
+      if (customer) {
+        customer.customerNumberOfStamp += totalPoints;
+        await this.customerRepository.save(customer);
+      }
 
       return await this.recieptRepository.findOne({
         where: { receiptId: receiptFinish.receiptId },
