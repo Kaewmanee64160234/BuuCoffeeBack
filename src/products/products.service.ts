@@ -408,7 +408,16 @@ export class ProductsService {
   private async softRemoveProductIngredients(product: Product) {
     for (const productType of product.productTypes) {
       for (const recipe of productType.recipes) {
+        // Soft remove the recipe
         await this.recipeRepository.softRemove(recipe);
+
+        // Soft remove the associated ingredient
+        const ingredient = await this.ingredientRepository.findOne({
+          where: { ingredientId: recipe.ingredient.ingredientId },
+        });
+        if (ingredient) {
+          await this.ingredientRepository.softRemove(ingredient);
+        }
       }
     }
   }
