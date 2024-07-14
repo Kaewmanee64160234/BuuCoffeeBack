@@ -13,6 +13,7 @@ import { User } from 'src/users/entities/user.entity';
 import { Customer } from 'src/customers/entities/customer.entity';
 import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 import { ReceiptPromotion } from 'src/receipt-promotions/entities/receipt-promotion.entity';
+import { Importingredient } from 'src/importingredients/entities/importingredient.entity';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { ReceiptPromotion } from 'src/receipt-promotions/entities/receipt-promot
       Customer,
       Ingredient,
       ReceiptPromotion,
+      Importingredient,
     ]),
   ],
   controllers: [RecieptController],

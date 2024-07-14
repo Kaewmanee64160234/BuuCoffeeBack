@@ -67,7 +67,62 @@ export class PromotionsService {
       );
     }
   }
+  async findAllPromotionsUsageByDateRange(startDate: Date, endDate: Date) {
+    try {
+      const promotionsUsage = await this.receiptPromotionRepository
+        .createQueryBuilder('receiptPromotion')
+        .leftJoinAndSelect('receiptPromotion.promotion', 'promotion')
+        .where('receiptPromotion.date BETWEEN :startDate AND :endDate', {
+          startDate,
+          endDate,
+        })
+        .getMany();
 
+      const allPromotions = await this.promotionRepository.find();
+
+      const promotionSummary = promotionsUsage.reduce(
+        (summary, receiptPromotion) => {
+          const promotionName = receiptPromotion.promotion.promotionName;
+          if (!summary[promotionName]) {
+            summary[promotionName] = {
+              usageCount: 0,
+              totalDiscount: 0,
+            };
+          }
+          summary[promotionName].usageCount += 1;
+          summary[promotionName].totalDiscount += Number(
+            receiptPromotion.discount,
+          );
+          return summary;
+        },
+        {},
+      );
+
+      allPromotions.forEach((promotion) => {
+        if (!promotionSummary[promotion.promotionName]) {
+          promotionSummary[promotion.promotionName] = {
+            usageCount: 0,
+            totalDiscount: 0,
+          };
+        }
+      });
+
+      const result = Object.keys(promotionSummary).map((promotionName) => ({
+        promotionName,
+        usageCount: promotionSummary[promotionName].usageCount,
+        totalDiscount: promotionSummary[promotionName].totalDiscount,
+      }));
+
+      return {
+        promotionsUsage: result,
+      };
+    } catch (error) {
+      throw new HttpException(
+        'Failed to find promotions usage',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
   findOne(id: number) {
     try {
       return this.promotionRepository.findOne({ where: { promotionId: id } });
