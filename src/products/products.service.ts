@@ -28,8 +28,8 @@ export class ProductsService {
   ) {}
 
   async create(createProductDto: CreateProductDto): Promise<Product> {
-    const { productName, productPrice, categoryId, productTypes } =
-      createProductDto;
+    const { productName, productPrice, categoryId, productTypes, barcode } =
+      createProductDto; // Include barcode here
 
     // Parse and validate categoryId
     const parsedCategoryId = Number(categoryId);
@@ -48,6 +48,7 @@ export class ProductsService {
     newProduct.productName = productName;
     newProduct.productPrice = Number(productPrice);
     newProduct.countingPoint = createProductDto.countingPoint;
+    newProduct.barcode = barcode; // Add this line
     if (isNaN(newProduct.productPrice)) {
       throw new HttpException('Invalid product price', HttpStatus.BAD_REQUEST);
     }
@@ -315,6 +316,7 @@ export class ProductsService {
         product.productPrice !== +updateProductDto.productPrice;
       const isCountingPointChanged =
         product.countingPoint !== updateProductDto.countingPoint;
+      const isBarcodeChanged = product.barcode !== updateProductDto.barcode;
 
       const isProductTypesChanged = await this.isProductTypesChanged(
         product.productTypes,
@@ -326,7 +328,8 @@ export class ProductsService {
         isNameChanged ||
         isPriceChanged ||
         isProductTypesChanged ||
-        isCountingPointChanged
+        isCountingPointChanged ||
+        isBarcodeChanged
       ) {
         await this.productRepository.softRemove(product);
 
@@ -336,6 +339,7 @@ export class ProductsService {
         newProduct.productPrice = Number(updateProductDto.productPrice);
         newProduct.countingPoint = updateProductDto.countingPoint;
         newProduct.productImage = product.productImage;
+        newProduct.barcode = updateProductDto.barcode;
 
         if (isNaN(newProduct.productPrice)) {
           throw new HttpException(
@@ -357,10 +361,10 @@ export class ProductsService {
       } else {
         product.productName = updateProductDto.productName;
         product.productPrice = Number(updateProductDto.productPrice);
-
         product.countingPoint = updateProductDto.countingPoint;
-
         product.productImage = updateProductDto.productImage;
+        product.barcode = updateProductDto.barcode;
+
         if (isNaN(product.productPrice)) {
           throw new HttpException(
             'Invalid product price',
