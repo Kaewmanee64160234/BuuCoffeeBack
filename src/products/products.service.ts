@@ -227,19 +227,23 @@ export class ProductsService {
   }
 
   async remove(id: number) {
-    // soft remove
     try {
       const product = await this.productRepository.findOne({
         where: { productId: id },
+        relations: ['category', 'productTypes', 'productTypes.recipes'],
       });
       if (!product) {
         throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
       }
-      const updatedProduct = await this.productRepository.softRemove(product);
-      return updatedProduct;
+
+      if (!product.category.haveTopping) {
+        await this.softRemoveProductIngredients(product);
+      }
+      await this.productRepository.softRemove(product);
     } catch (error) {
+      console.log(error);
       throw new HttpException(
-        'Failed to remove product',
+        'Error deleting product',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -331,6 +335,10 @@ export class ProductsService {
         isCountingPointChanged ||
         isBarcodeChanged
       ) {
+        // Soft remove existing product and its associated ingredients if category has changed and haveTopping is false
+        if (!product.category.haveTopping) {
+          await this.softRemoveProductIngredients(product);
+        }
         await this.productRepository.softRemove(product);
 
         const newProduct = new Product();
@@ -390,6 +398,18 @@ export class ProductsService {
       }
     } catch (error) {
       console.log(error);
+      throw new HttpException(
+        'Error updating product',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  private async softRemoveProductIngredients(product: Product) {
+    for (const productType of product.productTypes) {
+      for (const recipe of productType.recipes) {
+        await this.recipeRepository.softRemove(recipe);
+      }
     }
   }
 

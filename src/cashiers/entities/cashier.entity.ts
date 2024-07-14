@@ -6,6 +6,8 @@ import {
   JoinColumn,
   PrimaryGeneratedColumn,
   DeleteDateColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 @Entity()
 export class Cashier {
@@ -13,11 +15,16 @@ export class Cashier {
   cashierId: number;
   @Column({ type: 'float' })
   cashierAmount: number;
-  @Column({ type: 'datetime' })
+  @CreateDateColumn({ type: 'datetime' })
   createdDate: Date;
   @DeleteDateColumn({ name: 'deletedAt' })
   deletedAt: Date;
   @ManyToOne(() => User, (user) => user.cashiers)
   @JoinColumn({ name: 'userId' })
   user: User;
+
+  @UpdateDateColumn()
+  updatedDate: Date;
+  @DeleteDateColumn()
+  deletedDate: Date;
 }

@@ -4,6 +4,9 @@ import {
   OneToMany,
   ManyToOne,
   PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 import { ProductTypeTopping } from 'src/product-type-toppings/entities/product-type-topping.entity';
 import { ProductType } from 'src/product-types/entities/product-type.entity';
@@ -41,4 +44,10 @@ export class ReceiptItem {
     onDelete: 'CASCADE',
   })
   productType: ProductType;
+  @CreateDateColumn()
+  createdDate: Date;
+  @UpdateDateColumn()
+  updatedDate: Date;
+  @DeleteDateColumn()
+  deletedDate: Date;
 }

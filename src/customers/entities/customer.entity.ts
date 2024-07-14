@@ -1,4 +1,12 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  DeleteDateColumn,
+  Entity,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { Reciept } from 'src/reciept/entities/reciept.entity';
 @Entity()
 export class Customer {
@@ -15,4 +23,10 @@ export class Customer {
 
   @OneToMany(() => Reciept, (reciept) => reciept.user)
   reciept: Reciept[];
+  @CreateDateColumn()
+  createdDate: Date;
+  @UpdateDateColumn()
+  updatedDate: Date;
+  @DeleteDateColumn()
+  deletedDate: Date;
 }

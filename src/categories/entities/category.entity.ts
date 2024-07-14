@@ -1,5 +1,13 @@
 import { Product } from 'src/products/entities/product.entity';
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  DeleteDateColumn,
+  Entity,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity()
 export class Category {
@@ -14,4 +22,11 @@ export class Category {
 
   @OneToMany(() => Product, (product) => product.category)
   products: Product[];
+
+  @CreateDateColumn()
+  createdDate: Date;
+  @UpdateDateColumn()
+  updatedDate: Date;
+  @DeleteDateColumn()
+  deletedDate: Date;
 }

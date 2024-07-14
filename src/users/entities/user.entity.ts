@@ -1,9 +1,12 @@
 import {
   Column,
+  CreateDateColumn,
+  DeleteDateColumn,
   Entity,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { Reciept } from 'src/reciept/entities/reciept.entity';
 import { Importingredient } from 'src/importingredients/entities/importingredient.entity';
@@ -36,4 +39,10 @@ export class User {
   checkingredients: Checkingredient[];
   @OneToMany(() => Cashier, (cashier) => cashier.user)
   cashiers: Cashier[];
+  @CreateDateColumn()
+  createdDate: Date;
+  @UpdateDateColumn()
+  updatedDate: Date;
+  @DeleteDateColumn()
+  deletedDate: Date;
 }
