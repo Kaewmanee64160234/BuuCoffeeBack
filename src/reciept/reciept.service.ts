@@ -195,6 +195,7 @@ export class RecieptService {
         ],
       });
     } catch (error) {
+      console.error(error);
       this.logger.error('Error creating receipt', error.stack);
       throw new HttpException(
         'Error creating receipt',

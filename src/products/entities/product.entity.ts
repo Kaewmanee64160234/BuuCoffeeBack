@@ -38,6 +38,9 @@ export class Product {
   @Column({ default: false })
   countingPoint: boolean;
 
+  @Column({ default: false })
+  barcode: string;
+
   @CreateDateColumn()
   createdDate: Date;
   @UpdateDateColumn()

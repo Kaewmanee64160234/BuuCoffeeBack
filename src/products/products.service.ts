@@ -28,8 +28,8 @@ export class ProductsService {
   ) {}
 
   async create(createProductDto: CreateProductDto): Promise<Product> {
-    const { productName, productPrice, categoryId, productTypes } =
-      createProductDto;
+    const { productName, productPrice, categoryId, productTypes, barcode } =
+      createProductDto; // Include barcode here
 
     // Parse and validate categoryId
     const parsedCategoryId = Number(categoryId);
@@ -48,6 +48,7 @@ export class ProductsService {
     newProduct.productName = productName;
     newProduct.productPrice = Number(productPrice);
     newProduct.countingPoint = createProductDto.countingPoint;
+    newProduct.barcode = barcode; // Add this line
     if (isNaN(newProduct.productPrice)) {
       throw new HttpException('Invalid product price', HttpStatus.BAD_REQUEST);
     }
@@ -226,19 +227,23 @@ export class ProductsService {
   }
 
   async remove(id: number) {
-    // soft remove
     try {
       const product = await this.productRepository.findOne({
         where: { productId: id },
+        relations: ['category', 'productTypes', 'productTypes.recipes'],
       });
       if (!product) {
         throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
       }
-      const updatedProduct = await this.productRepository.softRemove(product);
-      return updatedProduct;
+
+      if (!product.category.haveTopping) {
+        await this.softRemoveProductIngredients(product);
+      }
+      await this.productRepository.softRemove(product);
     } catch (error) {
+      console.log(error);
       throw new HttpException(
-        'Failed to remove product',
+        'Error deleting product',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -315,6 +320,7 @@ export class ProductsService {
         product.productPrice !== +updateProductDto.productPrice;
       const isCountingPointChanged =
         product.countingPoint !== updateProductDto.countingPoint;
+      const isBarcodeChanged = product.barcode !== updateProductDto.barcode;
 
       const isProductTypesChanged = await this.isProductTypesChanged(
         product.productTypes,
@@ -326,8 +332,13 @@ export class ProductsService {
         isNameChanged ||
         isPriceChanged ||
         isProductTypesChanged ||
-        isCountingPointChanged
+        isCountingPointChanged ||
+        isBarcodeChanged
       ) {
+        // Soft remove existing product and its associated ingredients if category has changed and haveTopping is false
+        if (!product.category.haveTopping) {
+          await this.softRemoveProductIngredients(product);
+        }
         await this.productRepository.softRemove(product);
 
         const newProduct = new Product();
@@ -336,6 +347,7 @@ export class ProductsService {
         newProduct.productPrice = Number(updateProductDto.productPrice);
         newProduct.countingPoint = updateProductDto.countingPoint;
         newProduct.productImage = product.productImage;
+        newProduct.barcode = updateProductDto.barcode;
 
         if (isNaN(newProduct.productPrice)) {
           throw new HttpException(
@@ -357,10 +369,10 @@ export class ProductsService {
       } else {
         product.productName = updateProductDto.productName;
         product.productPrice = Number(updateProductDto.productPrice);
-
         product.countingPoint = updateProductDto.countingPoint;
-
         product.productImage = updateProductDto.productImage;
+        product.barcode = updateProductDto.barcode;
+
         if (isNaN(product.productPrice)) {
           throw new HttpException(
             'Invalid product price',
@@ -386,6 +398,27 @@ export class ProductsService {
       }
     } catch (error) {
       console.log(error);
+      throw new HttpException(
+        'Error updating product',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  private async softRemoveProductIngredients(product: Product) {
+    for (const productType of product.productTypes) {
+      for (const recipe of productType.recipes) {
+        // Soft remove the recipe
+        await this.recipeRepository.softRemove(recipe);
+
+        // Soft remove the associated ingredient
+        const ingredient = await this.ingredientRepository.findOne({
+          where: { ingredientId: recipe.ingredient.ingredientId },
+        });
+        if (ingredient) {
+          await this.ingredientRepository.softRemove(ingredient);
+        }
+      }
     }
   }
 

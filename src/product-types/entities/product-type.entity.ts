@@ -4,10 +4,13 @@ import { ReceiptItem } from 'src/receipt-item/entities/receipt-item.entity';
 import { Recipe } from 'src/recipes/entities/recipe.entity';
 import {
   Column,
+  CreateDateColumn,
+  DeleteDateColumn,
   Entity,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity()
@@ -40,4 +43,10 @@ export class ProductType {
     cascade: true,
   })
   receiptItems: ReceiptItem[];
+  @CreateDateColumn()
+  createdDate: Date;
+  @UpdateDateColumn()
+  updatedDate: Date;
+  @DeleteDateColumn()
+  deletedDate: Date;
 }

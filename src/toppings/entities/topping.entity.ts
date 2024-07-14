@@ -1,5 +1,13 @@
 import { ProductTypeTopping } from 'src/product-type-toppings/entities/product-type-topping.entity';
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  DeleteDateColumn,
+  Entity,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity()
 export class Topping {
@@ -15,4 +23,10 @@ export class Topping {
     (productTypeTopping) => productTypeTopping.topping,
   )
   productTypeToppings: ProductTypeTopping[];
+  @CreateDateColumn()
+  createdDate: Date;
+  @UpdateDateColumn()
+  updatedDate: Date;
+  @DeleteDateColumn()
+  deletedDate: Date;
 }
