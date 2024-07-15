@@ -820,94 +820,62 @@ export class RecieptService {
     }
   }
 
-  async getTopSellingProductsByDate(
-    date: Date,
+  async findAllProductsUsageByDateRangeAndReceiptType(
+    startDate: Date,
+    endDate: Date,
     receiptType: string,
-  ): Promise<any[]> {
+  ) {
     try {
-      const startOfDay = moment(date)
-        .tz('Asia/Bangkok')
-        .startOf('day')
-        .toDate();
-      const endOfDay = moment(date).tz('Asia/Bangkok').endOf('day').toDate();
+      const productsUsage = await this.recieptItemRepository
+        .createQueryBuilder('receiptItem')
+        .leftJoinAndSelect('receiptItem.product', 'product')
+        .leftJoinAndSelect('receiptItem.reciept', 'reciept')
+        .where('reciept.createdDate BETWEEN :startDate AND :endDate', {
+          startDate,
+          endDate,
+        })
+        .andWhere('reciept.receiptType = :receiptType', { receiptType })
+        .getMany();
 
-      const products = await this.productRepository.find({
-        relations: ['productTypes'],
-      });
+      const allProducts = await this.productRepository.find();
 
-      const receipts = await this.recieptRepository.find({
-        where: {
-          createdDate: Between(startOfDay, endOfDay),
-          receiptType: receiptType, // เพิ่มเงื่อนไข receiptType
-        },
-        relations: [
-          'receiptItems',
-          'receiptItems.product',
-          'receiptItems.productType',
-        ],
-      });
-
-      const productSalesMap = new Map<
-        number,
-        {
-          productId: number;
-          productName: string;
-          productType: string;
-          count: number;
+      const productSummary = productsUsage.reduce((summary, receiptItem) => {
+        const productName = receiptItem.product.productName;
+        if (!summary[productName]) {
+          summary[productName] = {
+            usageCount: 0,
+            totalQuantity: 0,
+          };
         }
-      >();
+        summary[productName].usageCount += 1;
+        summary[productName].totalQuantity += Number(receiptItem.quantity); // แปลง quantity เป็นตัวเลข
+        return summary;
+      }, {});
 
-      products.forEach((product) => {
-        if (product.productTypes.length > 0) {
-          product.productTypes.forEach((type) => {
-            productSalesMap.set(type.productTypeId, {
-              productId: product.productId,
-              productName: product.productName,
-              productType: type.productTypeName,
-              count: 0,
-            });
-          });
-        } else {
-          productSalesMap.set(product.productId, {
-            productId: product.productId,
-            productName: product.productName,
-            productType: 'No Type',
-            count: 0,
-          });
+      allProducts.forEach((product) => {
+        if (!productSummary[product.productName]) {
+          productSummary[product.productName] = {
+            usageCount: 0,
+            totalQuantity: 0,
+          };
         }
       });
 
-      receipts.forEach((receipt) => {
-        receipt.receiptItems.forEach((item) => {
-          const productId = item.product.productId;
-          const productTypeId = item.productType?.productTypeId;
-
-          if (productTypeId && productSalesMap.has(productTypeId)) {
-            productSalesMap.get(productTypeId).count += parseInt(
-              String(item.quantity),
-            );
-          } else if (!item.productType && productSalesMap.has(productId)) {
-            productSalesMap.get(productId).count += parseInt(
-              String(item.quantity),
-            );
-          }
-        });
-      });
-
-      const productsArray = Array.from(productSalesMap.values());
-      productsArray.sort((a, b) => b.count - a.count);
-
-      const response = productsArray.map((product) => ({
-        productId: product.productId,
-        productName: product.productName,
-        productType: product.productType,
-        count: product.count,
+      const result = Object.keys(productSummary).map((productName) => ({
+        productName,
+        usageCount: productSummary[productName].usageCount,
+        totalQuantity: productSummary[productName].totalQuantity,
       }));
 
-      return response;
+      return {
+        startDate,
+        endDate,
+        receiptType,
+        productsUsage: result,
+      };
     } catch (error) {
       throw new HttpException(
-        'Failed to fetch top selling products',
+        'Failed to find products usage',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

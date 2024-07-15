@@ -59,20 +59,40 @@ export class RecieptController {
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
-  @Get('top-selling-products')
-  async getTopSellingProductsByDate(
-    @Query('date') date: string,
+  @Get('products-usage')
+  async getProductsUsageByDateRangeAndReceiptType(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
     @Query('receiptType') receiptType: string,
   ) {
     try {
-      const parsedDate = new Date(date);
+      const parsedStartDate = new Date(startDate);
+      const parsedEndDate = new Date(endDate);
 
-      return await this.recieptService.getTopSellingProductsByDate(
-        parsedDate,
+      if (isNaN(parsedStartDate.getTime()) || isNaN(parsedEndDate.getTime())) {
+        throw new HttpException('Invalid date format', HttpStatus.BAD_REQUEST);
+      }
+
+      if (!receiptType) {
+        throw new HttpException(
+          'receiptType is required',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // Adjust endDate to include the entire end date
+      parsedEndDate.setDate(parsedEndDate.getDate() + 1);
+
+      return await this.recieptService.findAllProductsUsageByDateRangeAndReceiptType(
+        parsedStartDate,
+        parsedEndDate,
         receiptType,
       );
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        error.message || 'Failed to get products usage',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
   @Get('/grouped')
