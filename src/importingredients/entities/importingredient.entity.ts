@@ -7,6 +7,9 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
   JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 @Entity()
 export class Importingredient {
@@ -19,6 +22,10 @@ export class Importingredient {
   @Column()
   discount: number;
   @Column()
+  importStoreType: string;
+  @Column()
+  importDescription: string;
+  @Column()
   total: number;
   @ManyToOne(() => User, (user) => user.importingredients)
   @JoinColumn({ name: 'userId' })
@@ -28,4 +35,10 @@ export class Importingredient {
     (importingredientitem) => importingredientitem.importingredient,
   )
   importingredientitem: Importingredientitem[];
+  @CreateDateColumn()
+  createdDate: Date;
+  @UpdateDateColumn()
+  updatedDate: Date;
+  @DeleteDateColumn()
+  deletedDate: Date;
 }

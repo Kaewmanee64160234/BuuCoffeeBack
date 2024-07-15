@@ -4,17 +4,17 @@ import { ReceiptItem } from 'src/receipt-item/entities/receipt-item.entity';
 import { Recipe } from 'src/recipes/entities/recipe.entity';
 import {
   Column,
+  CreateDateColumn,
+  DeleteDateColumn,
   Entity,
   ManyToOne,
   OneToMany,
-  OneToOne,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
+
 @Entity()
 export class ProductType {
-  static productTypePrice(productTypePrice: any) {
-    throw new Error('Method not implemented.');
-  }
   @PrimaryGeneratedColumn()
   productTypeId: number;
 
@@ -39,6 +39,14 @@ export class ProductType {
   @OneToMany(() => Recipe, (recipe) => recipe.productType, { cascade: true })
   recipes: Recipe[];
 
-  @OneToMany(() => ReceiptItem, (receiptItem) => receiptItem.productType)
+  @OneToMany(() => ReceiptItem, (receiptItem) => receiptItem.productType, {
+    cascade: true,
+  })
   receiptItems: ReceiptItem[];
+  @CreateDateColumn()
+  createdDate: Date;
+  @UpdateDateColumn()
+  updatedDate: Date;
+  @DeleteDateColumn()
+  deletedDate: Date;
 }

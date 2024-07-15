@@ -1,6 +1,14 @@
 import { Importingredient } from 'src/importingredients/entities/importingredient.entity';
 import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  DeleteDateColumn,
+  Entity,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 @Entity()
 export class Importingredientitem {
   @PrimaryGeneratedColumn()
@@ -16,4 +24,10 @@ export class Importingredientitem {
   importingredient: Importingredient;
   @ManyToOne(() => Ingredient, (ingredient) => ingredient.importingredientitem)
   ingredient: Ingredient; // Ingredient Id
+  @CreateDateColumn()
+  createdDate: Date;
+  @UpdateDateColumn()
+  updatedDate: Date;
+  @DeleteDateColumn()
+  deletedDate: Date;
 }

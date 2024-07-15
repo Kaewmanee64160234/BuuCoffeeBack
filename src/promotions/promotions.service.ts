@@ -1,4 +1,9 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   CreatePromotionDto,
   PromotionType,
@@ -62,7 +67,62 @@ export class PromotionsService {
       );
     }
   }
+  async findAllPromotionsUsageByDateRange(startDate: Date, endDate: Date) {
+    try {
+      const promotionsUsage = await this.receiptPromotionRepository
+        .createQueryBuilder('receiptPromotion')
+        .leftJoinAndSelect('receiptPromotion.promotion', 'promotion')
+        .where('receiptPromotion.date BETWEEN :startDate AND :endDate', {
+          startDate,
+          endDate,
+        })
+        .getMany();
 
+      const allPromotions = await this.promotionRepository.find();
+
+      const promotionSummary = promotionsUsage.reduce(
+        (summary, receiptPromotion) => {
+          const promotionName = receiptPromotion.promotion.promotionName;
+          if (!summary[promotionName]) {
+            summary[promotionName] = {
+              usageCount: 0,
+              totalDiscount: 0,
+            };
+          }
+          summary[promotionName].usageCount += 1;
+          summary[promotionName].totalDiscount += Number(
+            receiptPromotion.discount,
+          );
+          return summary;
+        },
+        {},
+      );
+
+      allPromotions.forEach((promotion) => {
+        if (!promotionSummary[promotion.promotionName]) {
+          promotionSummary[promotion.promotionName] = {
+            usageCount: 0,
+            totalDiscount: 0,
+          };
+        }
+      });
+
+      const result = Object.keys(promotionSummary).map((promotionName) => ({
+        promotionName,
+        usageCount: promotionSummary[promotionName].usageCount,
+        totalDiscount: promotionSummary[promotionName].totalDiscount,
+      }));
+
+      return {
+        promotionsUsage: result,
+      };
+    } catch (error) {
+      throw new HttpException(
+        'Failed to find promotions usage',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
   findOne(id: number) {
     try {
       return this.promotionRepository.findOne({ where: { promotionId: id } });
@@ -78,8 +138,33 @@ export class PromotionsService {
     id: number,
     updatePromotionDto: UpdatePromotionDto,
   ): Promise<Promotion> {
-    await this.promotionRepository.update(id, updatePromotionDto);
-    return this.promotionRepository.findOne({ where: { promotionId: id } });
+    // Fetch the current promotion
+    const currentPromotion = await this.promotionRepository.findOne({
+      where: { promotionId: id },
+    });
+
+    if (!currentPromotion) {
+      throw new NotFoundException(`Promotion with ID ${id} not found`);
+    }
+
+    // Check if the type or end date has changed
+    const typeChanged =
+      currentPromotion.promotionType !== updatePromotionDto.promotionType;
+    const endDateChanged =
+      currentPromotion.endDate !== updatePromotionDto.endDate;
+
+    if (typeChanged || endDateChanged) {
+      // Soft remove the current promotion
+      await this.promotionRepository.softRemove(currentPromotion);
+
+      // Create a new promotion with the updated data
+      const newPromotion = this.promotionRepository.create(updatePromotionDto);
+      return this.promotionRepository.save(newPromotion);
+    } else {
+      // Update the existing promotion
+      await this.promotionRepository.update(id, updatePromotionDto);
+      return this.promotionRepository.findOne({ where: { promotionId: id } });
+    }
   }
 
   async remove(id: number) {
@@ -87,17 +172,12 @@ export class PromotionsService {
       const promotion = await this.promotionRepository.findOne({
         where: { promotionId: id },
       });
+
       if (!promotion) {
-        throw new HttpException('Promotion not found', HttpStatus.NOT_FOUND);
+        throw new NotFoundException(`Promotion with ID ${id} not found`);
       }
 
-      // Set associated receiptPromotions to null
-      await this.receiptPromotionRepository.update(
-        { promotion: { promotionId: id } },
-        { promotion: null },
-      );
-
-      await this.promotionRepository.delete({ promotionId: id });
+      await this.promotionRepository.softRemove(promotion);
     } catch (error) {
       throw new HttpException(
         'Failed to delete promotion',

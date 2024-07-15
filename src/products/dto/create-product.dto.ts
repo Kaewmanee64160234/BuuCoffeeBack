@@ -21,10 +21,13 @@ export class CreateProductDto {
 
   productImage: string;
 
+  barcode: string;
+
   @IsNumber()
   @IsNotEmpty()
   categoryId: string;
   category: Category;
   product: Product;
+  countingPoint: boolean;
   productTypes: CreateProductTypeDto[];
 }

@@ -35,32 +35,6 @@ export class ProductsController {
     return this.productsService.create(createProductDto);
   }
 
-  //uplode image product file
-  @Post('upload/:productId')
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: diskStorage({
-        destination: './product_images',
-        filename: (req, file, cb) => {
-          const name = uuidv4();
-          return cb(null, `${name}${extname(file.originalname)}`);
-        },
-      }),
-    }),
-  )
-  uploadImage(
-    @Param('productId') id: string,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    console.log('File:', file);
-    if (!file) {
-      console.error('File upload attempt without file.');
-      throw new BadRequestException('No file uploaded');
-    }
-    console.log('Uploaded file:', file.filename);
-    return this.productsService.uploadImage(+id, file.filename);
-  }
-
   @Post('update-image/:productId')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -88,26 +62,63 @@ export class ProductsController {
 
     const oldImagePath = join('./product_images', product.productImage);
     const tempImagePath = join('./product_images', file.filename);
-    const newImagePath = join('./product_images', product.productImage);
 
     try {
-      // Rename the temporary file to the old file name
-      await promisify(rename)(tempImagePath, newImagePath);
+      // Check if the old image exists before renaming
+      if (product.productImage) {
+        const newImagePath = join('./product_images', file.filename);
+        // Rename the temporary file to the old file name
+        await promisify(rename)(tempImagePath, newImagePath);
 
-      // Update the product's image information in the database if needed
-      await this.productsService.uploadImage(+id, product.productImage);
+        // Update the product's image information in the database
+        await this.productsService.uploadImage(+id, file.filename);
 
-      // Optionally, you can remove the old image if necessary
-      // await promisify(unlink)(oldImagePath);
+        // Optionally, remove the old image if it exists
+        if (fs.existsSync(oldImagePath)) {
+          await promisify(unlink)(oldImagePath);
+        }
 
-      console.log('Image updated successfully:', newImagePath);
-      return { message: 'Image updated successfully' };
+        console.log('Image updated successfully:', newImagePath);
+        return { message: 'Image updated successfully' };
+      } else {
+        // If there was no previous image, just rename and update the path
+        await promisify(rename)(tempImagePath, oldImagePath);
+        await this.productsService.uploadImage(+id, file.filename);
+        console.log('Image updated successfully:', oldImagePath);
+        return { message: 'Image updated successfully' };
+      }
     } catch (error) {
       console.error('Error updating image:', error);
       // Cleanup in case of error
       await promisify(unlink)(tempImagePath);
       throw new BadRequestException('Error updating image');
     }
+  }
+
+  //uplode image product file
+  @Post('upload/:productId')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './product_images',
+        filename: (req, file, cb) => {
+          const name = uuidv4();
+          return cb(null, `${name}${extname(file.originalname)}`);
+        },
+      }),
+    }),
+  )
+  uploadImage(
+    @Param('productId') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    console.log('File:', file);
+    if (!file) {
+      console.error('File upload attempt without file.');
+      throw new BadRequestException('No file uploaded');
+    }
+    console.log('Uploaded file:', file.filename);
+    return this.productsService.uploadImage(+id, file.filename);
   }
 
   @Get('paginate')

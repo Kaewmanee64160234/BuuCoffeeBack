@@ -1,7 +1,15 @@
 import { Checkingredientitem } from 'src/checkingredientitems/entities/checkingredientitem.entity';
 import { Importingredientitem } from 'src/importingredientitems/entities/importingredientitem.entity';
 import { Recipe } from 'src/recipes/entities/recipe.entity';
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  DeleteDateColumn,
+  Entity,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 @Entity()
 export class Ingredient {
   @PrimaryGeneratedColumn()
@@ -36,4 +44,10 @@ export class Ingredient {
     (checkingredientitem) => checkingredientitem.ingredient,
   )
   checkingredientitem: Checkingredientitem[];
+  @CreateDateColumn()
+  createdDate: Date;
+  @UpdateDateColumn()
+  updatedDate: Date;
+  @DeleteDateColumn()
+  deletedDate: Date;
 }

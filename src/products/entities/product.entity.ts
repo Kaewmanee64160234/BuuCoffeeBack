@@ -3,10 +3,13 @@ import { ProductType } from 'src/product-types/entities/product-type.entity';
 import { ReceiptItem } from 'src/receipt-item/entities/receipt-item.entity';
 import {
   Column,
+  CreateDateColumn,
+  DeleteDateColumn,
   Entity,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity()
@@ -14,7 +17,7 @@ export class Product {
   @PrimaryGeneratedColumn()
   productId: number;
 
-  @Column({ unique: true })
+  @Column()
   productName: string;
 
   @Column({ type: 'float' })
@@ -31,4 +34,17 @@ export class Product {
 
   @OneToMany(() => ReceiptItem, (receiptItem) => receiptItem.product)
   receiptItems: ReceiptItem[];
+
+  @Column({ default: false })
+  countingPoint: boolean;
+
+  @Column({ default: false })
+  barcode: string;
+
+  @CreateDateColumn()
+  createdDate: Date;
+  @UpdateDateColumn()
+  updatedDate: Date;
+  @DeleteDateColumn()
+  deletedDate: Date;
 }

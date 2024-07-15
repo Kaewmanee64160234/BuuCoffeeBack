@@ -7,6 +7,9 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
   JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 
 @Entity()
@@ -26,4 +29,10 @@ export class Checkingredient {
     (checkingredientitem) => checkingredientitem.checkingredient,
   )
   checkingredientitem: Checkingredientitem[];
+  @CreateDateColumn()
+  createdDate: Date;
+  @UpdateDateColumn()
+  updatedDate: Date;
+  @DeleteDateColumn()
+  deletedDate: Date;
 }

@@ -1,6 +1,14 @@
 import { Promotion } from 'src/promotions/entities/promotion.entity';
 import { Reciept } from 'src/reciept/entities/reciept.entity';
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  DeleteDateColumn,
+  Entity,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 @Entity()
 export class ReceiptPromotion {
   @PrimaryGeneratedColumn()
@@ -17,4 +25,10 @@ export class ReceiptPromotion {
 
   @Column('date')
   date: Date;
+  @CreateDateColumn()
+  createdDate: Date;
+  @UpdateDateColumn()
+  updatedDate: Date;
+  @DeleteDateColumn()
+  deletedDate: Date;
 }

@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Reciept } from './entities/reciept.entity';
 import { User } from 'src/users/entities/user.entity';
 import { Customer } from 'src/customers/entities/customer.entity';
-import { Repository, getConnection, Between } from 'typeorm';
+import { Repository, Between } from 'typeorm';
 import { ProductType } from 'src/product-types/entities/product-type.entity';
 import { Product } from 'src/products/entities/product.entity';
 import { ProductTypeTopping } from 'src/product-type-toppings/entities/product-type-topping.entity';
@@ -13,6 +13,7 @@ import { Topping } from 'src/toppings/entities/topping.entity';
 import { ReceiptItem } from 'src/receipt-item/entities/receipt-item.entity';
 import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 import { ReceiptPromotion } from 'src/receipt-promotions/entities/receipt-promotion.entity';
+import { Importingredient } from 'src/importingredients/entities/importingredient.entity';
 import * as moment from 'moment-timezone';
 @Injectable()
 export class RecieptService {
@@ -39,6 +40,8 @@ export class RecieptService {
     private customerRepository: Repository<Customer>,
     @InjectRepository(ReceiptPromotion)
     private recieptPromotionRepository: Repository<ReceiptPromotion>,
+    @InjectRepository(Importingredient)
+    private importIngredientRepository: Repository<Importingredient>,
   ) {}
 
   async create(createRecieptDto: CreateRecieptDto) {
@@ -50,22 +53,17 @@ export class RecieptService {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
 
-      const customer = createRecieptDto.customer
-        ? await this.customerRepository.findOne({
-            where: { customerId: createRecieptDto.customer.customerId },
-          })
-        : null;
-
-      if (createRecieptDto.customer && !customer) {
-        throw new HttpException('Customer not found', HttpStatus.NOT_FOUND);
-      }
-
-      if (customer !== null) {
-        customer.customerNumberOfStamp += createRecieptDto.receiptItems.reduce(
-          (acc, item) => item.quantity + acc,
-          0,
-        );
-        await this.customerRepository.save(customer);
+      let customer = null;
+      if (
+        createRecieptDto.customer != null &&
+        createRecieptDto.customer.customerId
+      ) {
+        customer = await this.customerRepository.findOne({
+          where: { customerId: createRecieptDto.customer.customerId },
+        });
+        if (!customer) {
+          throw new HttpException('Customer not found', HttpStatus.NOT_FOUND);
+        }
       }
 
       const newReciept = this.recieptRepository.create({
@@ -81,6 +79,7 @@ export class RecieptService {
       });
 
       const recieptSave = await this.recieptRepository.save(newReciept);
+      let totalPoints = 0;
 
       for (const receiptItemDto of createRecieptDto.receiptItems) {
         if (isNaN(receiptItemDto.quantity) || receiptItemDto.quantity <= 0) {
@@ -92,7 +91,9 @@ export class RecieptService {
 
         const product = await this.productRepository.findOne({
           where: { productId: receiptItemDto.product.productId },
+          relations: ['category'],
         });
+
         if (!product) {
           throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
         }
@@ -108,7 +109,7 @@ export class RecieptService {
         const recieptItemSave = await this.recieptItemRepository.save(
           newRecieptItem,
         );
-        console.log(receiptItemDto.productTypeToppings);
+
         for (const productTypeToppingDto of receiptItemDto.productTypeToppings) {
           const productType = await this.productTypeRepository.findOne({
             where: { productTypeId: productTypeToppingDto.productTypeId },
@@ -117,7 +118,7 @@ export class RecieptService {
           const topping = await this.toppingRepository.findOne({
             where: { toppingId: productTypeToppingDto.topping.toppingId },
           });
-          console.log(topping);
+
           if (!productType) {
             throw new HttpException(
               'Product Type not found',
@@ -136,20 +137,22 @@ export class RecieptService {
               topping: topping,
             });
 
-          if (
-            productType.product.category.haveTopping &&
-            productTypeToppingDto.toppingId
-          ) {
+          if (product.category.haveTopping && productTypeToppingDto.toppingId) {
             recieptItemSave.receiptSubTotal +=
               topping.toppingPrice * productTypeToppingDto.quantity;
           } else {
             recieptItemSave.receiptSubTotal +=
-              productType.product.productPrice * productTypeToppingDto.quantity;
+              product.productPrice * productTypeToppingDto.quantity;
           }
 
           recieptItemSave.receiptSubTotal +=
-            productType.product.productPrice + productType.productTypePrice;
+            product.productPrice + productType.productTypePrice;
           await this.productTypeToppingRepository.save(newProductTypeTopping);
+        }
+
+        // Calculate points if the product has countingPoint = true
+        if (product.countingPoint) {
+          totalPoints += receiptItemDto.quantity;
         }
       }
 
@@ -166,6 +169,12 @@ export class RecieptService {
       const receiptFinish = await this.recieptRepository.save(newReciept);
 
       await this.updateIngredientStock(createRecieptDto.receiptItems);
+
+      // Update customer points if customer exists
+      if (customer) {
+        customer.customerNumberOfStamp += totalPoints;
+        await this.customerRepository.save(customer);
+      }
 
       return await this.recieptRepository.findOne({
         where: { receiptId: receiptFinish.receiptId },
@@ -186,6 +195,7 @@ export class RecieptService {
         ],
       });
     } catch (error) {
+      console.error(error);
       this.logger.error('Error creating receipt', error.stack);
       throw new HttpException(
         'Error creating receipt',
@@ -256,7 +266,7 @@ export class RecieptService {
       const diff = Math.abs(currentDate.getTime() - receiptDate.getTime());
       const minutes = Math.floor(diff / 60000);
 
-      if (minutes > 30) {
+      if (minutes > 1440) {
         throw new HttpException(
           'Receipt can not be cancelled after 30 minutes',
           HttpStatus.BAD_REQUEST,
@@ -557,7 +567,7 @@ export class RecieptService {
     return { cash: cashSum, qrcode: qrcodeSum };
   }
 
-  async getDailyReport(): Promise<{
+  async getDailyReport(receiptType: string): Promise<{
     totalSales: number;
     totalDiscount: number;
     totalTransactions: number;
@@ -567,6 +577,7 @@ export class RecieptService {
         .createQueryBuilder('receipt')
         .select('SUM(receipt.receiptNetPrice)', 'totalSales')
         .where('DATE(receipt.createdDate) = CURDATE()')
+        .andWhere('receipt.receiptType = :receiptType', { receiptType })
         .getRawOne();
       const totalSales = totalSalesResult.totalSales || 0;
 
@@ -574,6 +585,7 @@ export class RecieptService {
         .createQueryBuilder('receipt')
         .select('SUM(receipt.receiptTotalDiscount)', 'totalDiscount')
         .where('DATE(receipt.createdDate) = CURDATE()')
+        .andWhere('receipt.receiptType = :receiptType', { receiptType })
         .getRawOne();
       const totalDiscount = totalDiscountResult.totalDiscount || 0;
 
@@ -581,6 +593,7 @@ export class RecieptService {
         .createQueryBuilder('receipt')
         .select('COUNT(receipt.receiptId)', 'totalTransactions')
         .where('DATE(receipt.createdDate) = CURDATE()')
+        .andWhere('receipt.receiptType = :receiptType', { receiptType })
         .getRawOne();
       const totalTransactions = totalTransactionsResult.totalTransactions || 0;
 
@@ -726,98 +739,157 @@ export class RecieptService {
       );
     }
   }
-
-  async getTopSellingProductsByDate(date: Date): Promise<any[]> {
+  async getCoffeeReceiptsWithCostAndDiscounts(start: Date, end: Date) {
     try {
-      const startOfDay = moment(date)
-        .tz('Asia/Bangkok')
-        .startOf('day')
-        .toDate();
-      const endOfDay = moment(date).tz('Asia/Bangkok').endOf('day').toDate();
-      const products = await this.productRepository.find({
-        relations: ['productTypes'],
-      });
-      const receipts = await this.recieptRepository.find({
-        where: {
-          createdDate: Between(startOfDay, endOfDay),
-        },
-        relations: [
-          'receiptItems',
-          'receiptItems.product',
-          'receiptItems.productType',
-        ],
-      });
-      const productSalesMap = new Map<
-        number,
-        {
-          productId: number;
-          productName: string;
-          productType: string;
-          count: number;
-        }
-      >();
-      products.forEach((product) => {
-        if (product.productTypes.length > 0) {
-          product.productTypes.forEach((type) => {
-            productSalesMap.set(type.productTypeId, {
-              productId: product.productId,
-              productName: product.productName,
-              productType: type.productTypeName,
-              count: 0,
-            });
-          });
-        } else {
-          productSalesMap.set(product.productId, {
-            productId: product.productId,
-            productName: product.productName,
-            productType: 'No Type',
-            count: 0,
-          });
-        }
+      if (!(start instanceof Date) || isNaN(start.getTime())) {
+        start = null;
+      }
+      if (!(end instanceof Date) || isNaN(end.getTime())) {
+        end = new Date();
+      }
+
+      if (!start) {
+        const earliestReceipt = await this.recieptRepository
+          .createQueryBuilder('receipt')
+          .select('MIN(receipt.createdDate)', 'min')
+          .where('receipt.receiptType = :receiptType', {
+            receiptType: 'coffee',
+          })
+          .getRawOne();
+
+        start = earliestReceipt ? new Date(earliestReceipt.min) : new Date(0);
+      }
+
+      const receipts = await this.recieptRepository
+        .createQueryBuilder('receipt')
+        .where('receipt.createdDate BETWEEN :startDate AND :endDate', {
+          startDate: moment(start)
+            .tz('Asia/Bangkok')
+            .startOf('day')
+            .toISOString(),
+          endDate: moment(end).tz('Asia/Bangkok').endOf('day').toISOString(),
+        })
+        .andWhere('receipt.receiptType = :receiptType', {
+          receiptType: 'coffee',
+        })
+        .getMany();
+
+      const importIngredients = await this.importIngredientRepository
+        .createQueryBuilder('importingredient')
+        .where('importingredient.date BETWEEN :startDate AND :endDate', {
+          startDate: moment(start)
+            .tz('Asia/Bangkok')
+            .startOf('day')
+            .toISOString(),
+          endDate: moment(end).tz('Asia/Bangkok').endOf('day').toISOString(),
+        })
+        .andWhere('importingredient.importStoreType = :storeType', {
+          storeType: 'coffee',
+        })
+        .getMany();
+
+      let totalCost = 0;
+      let totalDiscount = 0;
+      let totalSales = 0;
+      const totalOrders = receipts.length;
+
+      importIngredients.forEach((ingredient) => {
+        totalCost += ingredient.total;
       });
 
       receipts.forEach((receipt) => {
-        receipt.receiptItems.forEach((item) => {
-          const productId = item.product.productId;
-          const productTypeId = item.productType?.productTypeId;
-
-          if (productTypeId && productSalesMap.has(productTypeId)) {
-            productSalesMap.get(productTypeId).count += parseInt(
-              String(item.quantity),
-            );
-          } else if (!item.productType && productSalesMap.has(productId)) {
-            productSalesMap.get(productId).count += parseInt(
-              String(item.quantity),
-            );
-          }
-        });
+        totalSales += receipt.receiptNetPrice;
+        totalDiscount += receipt.receiptTotalDiscount;
       });
-      const productsArray = Array.from(productSalesMap.values());
-      productsArray.sort((a, b) => b.count - a.count);
-      const response = productsArray.map((product) => ({
-        productId: product.productId,
-        productName: product.productName,
-        productType: product.productType,
-        count: product.count,
-      }));
 
-      return response;
+      return {
+        totalSales,
+        totalCost,
+        totalDiscount,
+        totalOrders,
+      };
     } catch (error) {
+      this.logger.error(
+        'Error in getCoffeeReceiptsWithCostAndDiscounts',
+        error.stack,
+      );
       throw new HttpException(
-        'Failed to fetch top selling products',
+        'Error while grouping coffee receipts with cost and discounts',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
-  async getRecieptIn30Min(): Promise<Reciept[]> {
+  async findAllProductsUsageByDateRangeAndReceiptType(
+    startDate: Date,
+    endDate: Date,
+    receiptType: string,
+  ) {
+    try {
+      const productsUsage = await this.recieptItemRepository
+        .createQueryBuilder('receiptItem')
+        .leftJoinAndSelect('receiptItem.product', 'product')
+        .leftJoinAndSelect('receiptItem.reciept', 'reciept')
+        .where('reciept.createdDate BETWEEN :startDate AND :endDate', {
+          startDate,
+          endDate,
+        })
+        .andWhere('reciept.receiptType = :receiptType', { receiptType })
+        .getMany();
+
+      const allProducts = await this.productRepository.find();
+
+      const productSummary = productsUsage.reduce((summary, receiptItem) => {
+        const productName = receiptItem.product.productName;
+        if (!summary[productName]) {
+          summary[productName] = {
+            usageCount: 0,
+            totalQuantity: 0,
+          };
+        }
+        summary[productName].usageCount += 1;
+        summary[productName].totalQuantity += Number(receiptItem.quantity); // แปลง quantity เป็นตัวเลข
+        return summary;
+      }, {});
+
+      allProducts.forEach((product) => {
+        if (!productSummary[product.productName]) {
+          productSummary[product.productName] = {
+            usageCount: 0,
+            totalQuantity: 0,
+          };
+        }
+      });
+
+      const result = Object.keys(productSummary).map((productName) => ({
+        productName,
+        usageCount: productSummary[productName].usageCount,
+        totalQuantity: productSummary[productName].totalQuantity,
+      }));
+
+      return {
+        startDate,
+        endDate,
+        receiptType,
+        productsUsage: result,
+      };
+    } catch (error) {
+      throw new HttpException(
+        'Failed to find products usage',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async getRecieptIn1Day(typeOfStore: string): Promise<Reciept[]> {
     const currentDate = new Date();
-    const startDate = new Date(currentDate.getTime() - 30 * 60000);
+    const startDate = new Date(currentDate.getTime() - 24 * 60 * 60000); // 24 hours in milliseconds
     const endDate = new Date(currentDate.getTime());
     return await this.recieptRepository.find({
       where: {
         createdDate: Between(startDate, endDate),
         receiptStatus: 'paid',
+        receiptType: typeOfStore,
       },
       relations: [
         'receiptItems',
@@ -835,5 +907,44 @@ export class RecieptService {
         'receiptPromotions.promotion',
       ],
     });
+  }
+  async generateIngredientUsageReport(startDate: Date, endDate: Date) {
+    const receipts = await this.recieptRepository.find({
+      where: {
+        createdDate: Between(startDate, endDate),
+      },
+      relations: [
+        'receiptItems',
+        'receiptItems.productType',
+        'receiptItems.productType.recipes',
+        'receiptItems.productType.recipes.ingredient',
+      ],
+    });
+    const ingredientUsage: Record<
+      string,
+      { ingredientName: string; quantity: number; unit: string }
+    > = {};
+
+    receipts.forEach((receipt) => {
+      receipt.receiptItems.forEach((receiptItem) => {
+        const productType = receiptItem.productType;
+        productType.recipes.forEach((recipe) => {
+          const ingredient = recipe.ingredient;
+          const quantityUsed = recipe.quantity * receiptItem.quantity;
+
+          if (ingredientUsage[ingredient.ingredientId]) {
+            ingredientUsage[ingredient.ingredientId].quantity += quantityUsed;
+          } else {
+            ingredientUsage[ingredient.ingredientId] = {
+              ingredientName: ingredient.ingredientName,
+              quantity: quantityUsed,
+              unit: ingredient.ingredientUnit,
+            };
+          }
+        });
+      });
+    });
+
+    return ingredientUsage;
   }
 }
