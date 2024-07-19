@@ -118,9 +118,6 @@ export class RecieptService {
               where: { productTypeId: productTypeToppingDto.productTypeId },
               relations: ['product', 'product.category'],
             });
-            const topping = await this.toppingRepository.findOne({
-              where: { toppingId: productTypeToppingDto.topping.toppingId },
-            });
 
             if (!productType) {
               throw new HttpException(
@@ -128,23 +125,45 @@ export class RecieptService {
                 HttpStatus.NOT_FOUND,
               );
             }
-            if (!topping) {
-              throw new HttpException(
-                'Topping not found',
-                HttpStatus.NOT_FOUND,
-              );
+
+            let topping = null;
+            if (
+              productTypeToppingDto.topping &&
+              productTypeToppingDto.topping.toppingId
+            ) {
+              topping = await this.toppingRepository.findOne({
+                where: { toppingId: productTypeToppingDto.topping.toppingId },
+              });
+
+              if (!topping) {
+                throw new HttpException(
+                  'Topping not found',
+                  HttpStatus.NOT_FOUND,
+                );
+              }
             }
 
-            const newProductTypeTopping =
-              this.productTypeToppingRepository.create({
+            let newProductTypeTopping = new ProductTypeTopping();
+
+            if (topping) {
+              newProductTypeTopping = this.productTypeToppingRepository.create({
                 quantity: productTypeToppingDto.quantity,
                 productType: productType,
                 receiptItem: recieptItemSave,
                 topping: topping,
               });
+              recieptItemSave.receiptSubTotal +=
+                topping.toppingPrice * productTypeToppingDto.quantity;
+            } else {
+              newProductTypeTopping = this.productTypeToppingRepository.create({
+                quantity: productTypeToppingDto.quantity,
+                productType: productType,
+                receiptItem: recieptItemSave,
+              });
+              recieptItemSave.receiptSubTotal +=
+                product.productPrice * productTypeToppingDto.quantity;
+            }
 
-            recieptItemSave.receiptSubTotal +=
-              topping.toppingPrice * productTypeToppingDto.quantity;
             recieptItemSave.receiptSubTotal +=
               product.productPrice + productType.productTypePrice;
             await this.productTypeToppingRepository.save(newProductTypeTopping);
@@ -166,7 +185,6 @@ export class RecieptService {
               quantity: 1,
               productType: productType,
               receiptItem: recieptItemSave,
-              topping: null, // Set topping to null
             });
           await this.productTypeToppingRepository.save(newProductTypeTopping);
         }
@@ -216,6 +234,10 @@ export class RecieptService {
       await this.updateIngredientStock(recipt.receiptItems);
 
       console.log('Receipt:', recipt);
+      // productTypeToppings log
+      for (const receiptItem of recipt.receiptItems) {
+        console.log('Product Type Toppings:', receiptItem.productTypeToppings);
+      }
       return recipt;
     } catch (error) {
       console.error(error);
@@ -272,19 +294,16 @@ export class RecieptService {
             continue;
           }
 
-          const oldRemaining = ingredient.ingredientRemining;
           const usage = receiptItemDto.quantity * recipe.quantity;
           ingredient.ingredientRemining = Math.round(
             ingredient.ingredientRemining,
           );
-          ingredient.ingredientRemining += usage;
 
-          // If the remaining quantity exceeds the unit quantity, adjust the stock
-          if (
-            ingredient.ingredientRemining >=
-            ingredient.ingredientQuantityPerUnit
-          ) {
-            ingredient.ingredientRemining -=
+          ingredient.ingredientRemining -= usage;
+
+          // If the remaining quantity drops below zero, adjust the stock
+          while (ingredient.ingredientRemining < 0) {
+            ingredient.ingredientRemining +=
               ingredient.ingredientQuantityPerUnit;
             ingredient.ingredientQuantityInStock -= 1;
           }
