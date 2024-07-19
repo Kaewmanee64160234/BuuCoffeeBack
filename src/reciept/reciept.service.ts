@@ -874,7 +874,7 @@ export class RecieptService {
           .createQueryBuilder('receipt')
           .select('MIN(receipt.createdDate)', 'min')
           .where('receipt.receiptType = :receiptType', {
-            receiptType: 'coffee',
+            receiptType: 'ร้านกาแฟ',
           })
           .getRawOne();
 
@@ -891,7 +891,7 @@ export class RecieptService {
           endDate: moment(end).tz('Asia/Bangkok').endOf('day').toISOString(),
         })
         .andWhere('receipt.receiptType = :receiptType', {
-          receiptType: 'coffee',
+          receiptType: 'ร้านกาแฟ',
         })
         .getMany();
 
@@ -942,15 +942,34 @@ export class RecieptService {
   }
 
   async findAllProductsUsageByDateRangeAndReceiptType(
-    startDate: Date,
-    endDate: Date,
     receiptType: string,
+    startDate?: Date,
+    endDate?: Date,
   ) {
     try {
+      if (!startDate || !endDate) {
+        const dates = await this.recieptItemRepository
+          .createQueryBuilder('receiptItem')
+          .select('MIN(reciept.createdDate)', 'minDate')
+          .addSelect('MAX(reciept.createdDate)', 'maxDate')
+          .leftJoin('receiptItem.reciept', 'reciept')
+          .getRawOne();
+
+        if (!startDate) {
+          startDate = new Date(dates.minDate);
+        }
+
+        if (!endDate) {
+          endDate = new Date(dates.maxDate);
+          endDate.setDate(endDate.getDate() + 1); // เพิ่มวันให้ endDate
+        }
+      }
+
       const productsUsage = await this.recieptItemRepository
         .createQueryBuilder('receiptItem')
         .leftJoinAndSelect('receiptItem.product', 'product')
         .leftJoinAndSelect('receiptItem.reciept', 'reciept')
+        .leftJoinAndSelect('receiptItem.productType', 'productType')
         .where('reciept.createdDate BETWEEN :startDate AND :endDate', {
           startDate,
           endDate,
@@ -958,40 +977,24 @@ export class RecieptService {
         .andWhere('reciept.receiptType = :receiptType', { receiptType })
         .getMany();
 
-      const allProducts = await this.productRepository.find();
-
       const productSummary = productsUsage.reduce((summary, receiptItem) => {
-        const productName = receiptItem.product.productName;
-        if (!summary[productName]) {
-          summary[productName] = {
+        const key = `${receiptItem.product.productId}-${receiptItem.productType.productTypeId}`;
+        if (!summary[key]) {
+          summary[key] = {
+            productName: receiptItem.product.productName,
+            productTypeName: receiptItem.productType.productTypeName,
             usageCount: 0,
             totalQuantity: 0,
           };
         }
-        summary[productName].usageCount += 1;
-        summary[productName].totalQuantity += Number(receiptItem.quantity); // แปลง quantity เป็นตัวเลข
+        summary[key].usageCount += 1;
+        summary[key].totalQuantity += Number(receiptItem.quantity);
         return summary;
       }, {});
 
-      allProducts.forEach((product) => {
-        if (!productSummary[product.productName]) {
-          productSummary[product.productName] = {
-            usageCount: 0,
-            totalQuantity: 0,
-          };
-        }
-      });
-
-      const result = Object.keys(productSummary).map((productName) => ({
-        productName,
-        usageCount: productSummary[productName].usageCount,
-        totalQuantity: productSummary[productName].totalQuantity,
-      }));
+      const result = Object.values(productSummary);
 
       return {
-        startDate,
-        endDate,
-        receiptType,
         productsUsage: result,
       };
     } catch (error) {
@@ -1041,6 +1044,7 @@ export class RecieptService {
         'receiptItems.productType.recipes.ingredient',
       ],
     });
+
     const ingredientUsage: Record<
       string,
       { ingredientName: string; quantity: number; unit: string }
@@ -1049,6 +1053,7 @@ export class RecieptService {
     receipts.forEach((receipt) => {
       receipt.receiptItems.forEach((receiptItem) => {
         const productType = receiptItem.productType;
+
         productType.recipes.forEach((recipe) => {
           const ingredient = recipe.ingredient;
           const quantityUsed = recipe.quantity * receiptItem.quantity;
@@ -1066,6 +1071,10 @@ export class RecieptService {
       });
     });
 
-    return ingredientUsage;
+    const formattedResult = {
+      ingredients: Object.values(ingredientUsage),
+    };
+
+    return formattedResult;
   }
 }

@@ -61,16 +61,30 @@ export class RecieptController {
   }
   @Get('products-usage')
   async getProductsUsageByDateRangeAndReceiptType(
-    @Query('startDate') startDate: string,
-    @Query('endDate') endDate: string,
-    @Query('receiptType') receiptType: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('receiptType') receiptType?: string,
   ) {
     try {
-      const parsedStartDate = new Date(startDate);
-      const parsedEndDate = new Date(endDate);
+      const parsedStartDate: Date | undefined = startDate
+        ? new Date(startDate)
+        : undefined;
+      const parsedEndDate: Date | undefined = endDate
+        ? new Date(endDate)
+        : undefined;
 
-      if (isNaN(parsedStartDate.getTime()) || isNaN(parsedEndDate.getTime())) {
-        throw new HttpException('Invalid date format', HttpStatus.BAD_REQUEST);
+      if (parsedStartDate && isNaN(parsedStartDate.getTime())) {
+        throw new HttpException(
+          'Invalid startDate format',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      if (parsedEndDate && isNaN(parsedEndDate.getTime())) {
+        throw new HttpException(
+          'Invalid endDate format',
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
       if (!receiptType) {
@@ -80,13 +94,15 @@ export class RecieptController {
         );
       }
 
-      // Adjust endDate to include the entire end date
-      parsedEndDate.setDate(parsedEndDate.getDate() + 1);
+      // Adjust endDate to include the entire end date if it is defined
+      if (parsedEndDate) {
+        parsedEndDate.setDate(parsedEndDate.getDate() + 1);
+      }
 
       return await this.recieptService.findAllProductsUsageByDateRangeAndReceiptType(
+        receiptType,
         parsedStartDate,
         parsedEndDate,
-        receiptType,
       );
     } catch (error) {
       throw new HttpException(
@@ -95,6 +111,7 @@ export class RecieptController {
       );
     }
   }
+
   @Get('/grouped')
   async getGroupedReceipts(
     @Query('startDate') startDate: string,

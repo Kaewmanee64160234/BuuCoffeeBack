@@ -2,12 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateImportingredientDto } from './dto/create-importingredient.dto';
 import { Importingredient } from './entities/importingredient.entity';
-import { Repository, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
+import { Repository, Between, MoreThanOrEqual } from 'typeorm';
 import { Importingredientitem } from 'src/importingredientitems/entities/importingredientitem.entity';
 import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 import { User } from 'src/users/entities/user.entity';
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { Reciept } from 'src/reciept/entities/reciept.entity';
+import { disconnect } from 'process';
 
 @Injectable()
 export class ImportingredientsService {
@@ -85,6 +86,62 @@ export class ImportingredientsService {
       });
     } catch (error) {
       console.error(error);
+    }
+  }
+
+  async getMinMaxDates(): Promise<{ minDate: Date; maxDate: Date }> {
+    try {
+      const [minResult, maxResult] = await Promise.all([
+        this.importingredientRepository
+          .createQueryBuilder('importingredient')
+          .select('MIN(importingredient.date)', 'minDate')
+          .getRawOne(),
+        this.importingredientRepository
+          .createQueryBuilder('importingredient')
+          .select('MAX(importingredient.date)', 'maxDate')
+          .getRawOne(),
+      ]);
+
+      return {
+        minDate: new Date(minResult.minDate),
+        maxDate: new Date(maxResult.maxDate),
+      };
+    } catch (error) {
+      console.error(error);
+      throw new Error('Error fetching min and max dates');
+    }
+  }
+
+  async findDate(startDate?: string, endDate?: string) {
+    try {
+      const { minDate, maxDate } = await this.getMinMaxDates();
+      const start = startDate ? new Date(startDate) : minDate;
+      const end = endDate
+        ? new Date(endDate)
+        : new Date(maxDate.getTime() + 86400000); // เพิ่ม 1 วัน
+
+      const results = await this.importingredientRepository.find({
+        relations: [
+          'importingredientitem',
+          'user',
+          'importingredientitem.ingredient',
+        ],
+        where: {
+          date: Between(start, end),
+        },
+      });
+
+      // กรองข้อมูลให้แสดงเฉพาะฟิลด์ที่ต้องการ
+      return results.map((result) => ({
+        date: result.date,
+        store: result.store,
+        discount: result.discount,
+        importStoreType: result.importStoreType,
+        total: result.total,
+      }));
+    } catch (error) {
+      console.error(error);
+      throw new Error('Error fetching data');
     }
   }
 
