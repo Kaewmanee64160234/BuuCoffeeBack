@@ -269,13 +269,14 @@ export class RecieptService {
           'receiptPromotions.promotion',
         ],
       });
-      await this.updateIngredientStock(recipt.receiptItems);
 
       console.log('Receipt:', recipt);
       // productTypeToppings log
       for (const receiptItem of recipt.receiptItems) {
         console.log('Product Type Toppings:', receiptItem.productTypeToppings);
       }
+      await this.updateIngredientStock(recipt.receiptItems);
+
       return recipt;
     } catch (error) {
       console.error(error);
@@ -286,7 +287,7 @@ export class RecieptService {
       );
     }
   }
-  private async updateIngredientStock(receiptItems) {
+  private async updateIngredientStock(receiptItems: ReceiptItem[]) {
     for (const receiptItemDto of receiptItems) {
       // Fetch the receipt item and related entities
       const receiptItem = await this.recieptItemRepository.findOne({
@@ -307,7 +308,7 @@ export class RecieptService {
         continue;
       }
 
-      console.log('Product type toppings:', receiptItem.productTypeToppings);
+      console.log('Product type toppings', receiptItem.productTypeToppings);
 
       for (const productTypeTopping of receiptItem.productTypeToppings) {
         if (
@@ -330,24 +331,30 @@ export class RecieptService {
             console.log('Ingredient not found for recipe:', recipe);
             continue;
           }
+          if (receiptItemDto.product.category.haveTopping) {
+            const usage = receiptItemDto.quantity * recipe.quantity;
+            ingredient.ingredientRemining = Math.round(
+              ingredient.ingredientRemining,
+            );
 
-          const usage = receiptItemDto.quantity * recipe.quantity;
-          ingredient.ingredientRemining = Math.round(
-            ingredient.ingredientRemining,
-          );
+            ingredient.ingredientRemining += usage;
 
-          ingredient.ingredientRemining += usage;
+            // If the remaining quantity exceeds the unit quantity, adjust the stock
+            if (
+              ingredient.ingredientRemining >
+              ingredient.ingredientQuantityPerUnit
+            ) {
+              ingredient.ingredientRemining -=
+                ingredient.ingredientQuantityPerUnit;
+              ingredient.ingredientQuantityInStock -= 1;
+            }
 
-          // If the remaining quantity exceeds the unit quantity, adjust the stock
-          if (
-            ingredient.ingredientRemining > ingredient.ingredientQuantityPerUnit
-          ) {
-            ingredient.ingredientRemining -=
-              ingredient.ingredientQuantityPerUnit;
-            ingredient.ingredientQuantityInStock -= 1;
+            console.log('Updated ingredient:', ingredient);
+          } else {
+            //  minus stock
+            const usage = receiptItemDto.quantity * recipe.quantity;
+            ingredient.ingredientQuantityInStock -= usage;
           }
-
-          console.log('Updated ingredient:', ingredient);
 
           // Save the updated ingredient
           await this.ingredientRepository.save(ingredient);
@@ -624,10 +631,9 @@ export class RecieptService {
       const receiptFinish = await this.recieptRepository.save(existingReceipt);
 
       // Update ingredient stock
-      await this.updateIngredientStock(updateReceiptDto.receiptItems);
 
       // Return the updated receipt with all relations
-      return await this.recieptRepository.findOne({
+      const rec = await this.recieptRepository.findOne({
         where: { receiptId: receiptFinish.receiptId },
         relations: [
           'receiptItems.productType',
@@ -644,6 +650,8 @@ export class RecieptService {
           'receiptPromotions.promotion',
         ],
       });
+      await this.updateIngredientStock(rec.receiptItems);
+      return rec;
     } catch (error) {
       this.logger.error('Error updating receipt', error.stack);
       throw new HttpException(
