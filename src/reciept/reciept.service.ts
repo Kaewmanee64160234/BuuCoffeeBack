@@ -99,6 +99,22 @@ export class RecieptService {
         if (!product) {
           throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
         }
+        const productType = await this.productTypeRepository.findOne({
+          where: { productTypeId: receiptItemDto.productType.productTypeId },
+          relations: [
+            'product',
+            'product.category',
+            'recipes',
+            'recipes.ingredient',
+          ],
+        });
+        if (!productType) {
+          throw new HttpException(
+            'Product Type not found',
+            HttpStatus.NOT_FOUND,
+          );
+        }
+        console.log('Product Type:', productType);
 
         const newRecieptItem = this.recieptItemRepository.create({
           quantity: receiptItemDto.quantity,
@@ -106,13 +122,16 @@ export class RecieptService {
           sweetnessLevel: receiptItemDto.sweetnessLevel,
           receiptSubTotal: receiptItemDto.receiptSubTotal,
           product: product,
-          productType: receiptItemDto.productType,
+          productType: productType,
         });
         const recieptItemSave = await this.recieptItemRepository.save(
           newRecieptItem,
         );
 
-        if (product.category.haveTopping) {
+        if (
+          product.category.haveTopping &&
+          receiptItemDto.productTypeToppings.length > 0
+        ) {
           for (const productTypeToppingDto of receiptItemDto.productTypeToppings) {
             const productType = await this.productTypeRepository.findOne({
               where: { productTypeId: productTypeToppingDto.productTypeId },
@@ -143,23 +162,18 @@ export class RecieptService {
               }
             }
 
-            let newProductTypeTopping = new ProductTypeTopping();
-
-            if (topping) {
-              newProductTypeTopping = this.productTypeToppingRepository.create({
+            const newProductTypeTopping =
+              this.productTypeToppingRepository.create({
                 quantity: productTypeToppingDto.quantity,
                 productType: productType,
                 receiptItem: recieptItemSave,
                 topping: topping,
               });
+
+            if (topping) {
               recieptItemSave.receiptSubTotal +=
                 topping.toppingPrice * productTypeToppingDto.quantity;
             } else {
-              newProductTypeTopping = this.productTypeToppingRepository.create({
-                quantity: productTypeToppingDto.quantity,
-                productType: productType,
-                receiptItem: recieptItemSave,
-              });
               recieptItemSave.receiptSubTotal +=
                 product.productPrice * productTypeToppingDto.quantity;
             }
@@ -169,22 +183,29 @@ export class RecieptService {
             await this.productTypeToppingRepository.save(newProductTypeTopping);
           }
         } else {
-          // Create productTypeTopping for product without topping
-          const productType = await this.productTypeRepository.findOne({
-            where: { productTypeId: product.productTypes[0].productTypeId },
-            relations: ['product', 'product.category'],
-          });
-          if (!productType) {
+          // Create productTypeTopping with null topping
+          const productType = receiptItemDto.productType
+            ? await this.productTypeRepository.findOne({
+                where: {
+                  productTypeId: receiptItemDto.productType.productTypeId,
+                },
+                relations: ['product', 'product.category'],
+              })
+            : null;
+
+          if (!productType && receiptItemDto.productType) {
             throw new HttpException(
               'Product Type not found',
               HttpStatus.NOT_FOUND,
             );
           }
+
           const newProductTypeTopping =
             this.productTypeToppingRepository.create({
               quantity: 1,
               productType: productType,
               receiptItem: recieptItemSave,
+              topping: null,
             });
           await this.productTypeToppingRepository.save(newProductTypeTopping);
         }
@@ -220,8 +241,7 @@ export class RecieptService {
           'receiptItems',
           'receiptItems.productTypeToppings',
           'receiptItems.productTypeToppings.productType',
-          'receiptItems.productTypeToppings.productType.product',
-          'receiptItems.productTypeToppings.productType.product',
+          'receiptItems.productTypeToppings.productType.recipes',
           'receiptItems.productTypeToppings.topping',
           'receiptItems.product',
           'receiptItems.product.category',
