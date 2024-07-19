@@ -22,6 +22,10 @@ export class Importingredient {
   @Column()
   discount: number;
   @Column()
+  importStoreType: string;
+  @Column()
+  importDescription: string;
+  @Column()
   total: number;
   @ManyToOne(() => User, (user) => user.importingredients)
   @JoinColumn({ name: 'userId' })

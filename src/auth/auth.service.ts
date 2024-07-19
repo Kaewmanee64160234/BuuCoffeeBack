@@ -30,6 +30,8 @@ export class AuthService {
       const isMatch = await bcrypt.compare(password, user.userPassword);
       if (!isMatch) {
         console.error('Invalid credentials for user:', email);
+        console.log(password);
+        console.log(user.userPassword);
         throw new NotFoundException('Invalid credentials');
       }
 

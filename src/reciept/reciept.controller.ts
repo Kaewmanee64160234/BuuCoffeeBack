@@ -28,20 +28,71 @@ export class RecieptController {
   update(@Param('id') id: string, @Body() updateRecieptDto: UpdateRecieptDto) {
     return this.recieptService.update(+id, updateRecieptDto);
   }
+  @Get('ingredient-usage-report')
+  async getIngredientUsageReport(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const today = new Date();
+    const formatDate = (date: Date) => {
+      return date.toISOString().split('T')[0];
+    };
 
-  @Get('/top-selling-products')
-  async getTopSellingProductsByDate(
-    @Query('date') dateString: string,
-  ): Promise<Product[]> {
+    const start = startDate ? new Date(startDate) : new Date(formatDate(today));
+    const end = endDate ? new Date(endDate) : new Date(formatDate(today));
+    end.setDate(end.getDate() + 1);
+    return this.recieptService.generateIngredientUsageReport(start, end);
+  }
+
+  @Get('daily-report')
+  async getDailyReport(@Query('receiptType') receiptType: string) {
     try {
-      const date = new Date(dateString); // Convert query string to Date object
-      const topProducts = await this.recieptService.getTopSellingProductsByDate(
-        date,
-      );
-      return topProducts;
+      if (!receiptType) {
+        throw new HttpException(
+          'receiptType is required',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      return await this.recieptService.getDailyReport(receiptType);
     } catch (error) {
-      // Handle errors here
-      throw error; // or return appropriate error response
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+  @Get('products-usage')
+  async getProductsUsageByDateRangeAndReceiptType(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+    @Query('receiptType') receiptType: string,
+  ) {
+    try {
+      const parsedStartDate = new Date(startDate);
+      const parsedEndDate = new Date(endDate);
+
+      if (isNaN(parsedStartDate.getTime()) || isNaN(parsedEndDate.getTime())) {
+        throw new HttpException('Invalid date format', HttpStatus.BAD_REQUEST);
+      }
+
+      if (!receiptType) {
+        throw new HttpException(
+          'receiptType is required',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // Adjust endDate to include the entire end date
+      parsedEndDate.setDate(parsedEndDate.getDate() + 1);
+
+      return await this.recieptService.findAllProductsUsageByDateRangeAndReceiptType(
+        parsedStartDate,
+        parsedEndDate,
+        receiptType,
+      );
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Failed to get products usage',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
   @Get('/grouped')
@@ -68,6 +119,23 @@ export class RecieptController {
       );
     }
   }
+  @Get('/coffee-summary')
+  async getCoffeeReceiptsWithCostAndDiscounts(
+    @Query('start') start: string,
+    @Query('end') end: string,
+  ) {
+    try {
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+
+      return await this.recieptService.getCoffeeReceiptsWithCostAndDiscounts(
+        startDate,
+        endDate,
+      );
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
 
   // getRecieptIn1Day
   // param typeOfProduct
@@ -88,10 +156,6 @@ export class RecieptController {
     const cashSum = await this.recieptService.getSumByPaymentMethod('cash');
     const qrcodeSum = await this.recieptService.getSumByPaymentMethod('qrcode');
     return { cash: cashSum, qrcode: qrcodeSum };
-  }
-  @Get('daily-report')
-  async getDailyReport() {
-    return this.recieptService.getDailyReport();
   }
 
   @Get(':id')

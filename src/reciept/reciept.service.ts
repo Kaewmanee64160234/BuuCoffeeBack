@@ -13,6 +13,7 @@ import { Topping } from 'src/toppings/entities/topping.entity';
 import { ReceiptItem } from 'src/receipt-item/entities/receipt-item.entity';
 import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 import { ReceiptPromotion } from 'src/receipt-promotions/entities/receipt-promotion.entity';
+import { Importingredient } from 'src/importingredients/entities/importingredient.entity';
 import * as moment from 'moment-timezone';
 @Injectable()
 export class RecieptService {
@@ -39,6 +40,8 @@ export class RecieptService {
     private customerRepository: Repository<Customer>,
     @InjectRepository(ReceiptPromotion)
     private recieptPromotionRepository: Repository<ReceiptPromotion>,
+    @InjectRepository(Importingredient)
+    private importIngredientRepository: Repository<Importingredient>,
   ) {}
 
   async create(createRecieptDto: CreateRecieptDto) {
@@ -549,6 +552,9 @@ export class RecieptService {
       .createQueryBuilder('receipt')
       .select('SUM(receipt.receiptTotalPrice)', 'totalPrice')
       .where('receipt.paymentMethod = :paymentMethod', { paymentMethod })
+      .andWhere('receipt.receiptType = :receiptType', {
+        receiptType: 'ร้านกาแฟ',
+      })
       .andWhere('DATE(receipt.createdDate) = CURDATE()')
       .getRawOne();
 
@@ -564,7 +570,7 @@ export class RecieptService {
     return { cash: cashSum, qrcode: qrcodeSum };
   }
 
-  async getDailyReport(): Promise<{
+  async getDailyReport(receiptType: string): Promise<{
     totalSales: number;
     totalDiscount: number;
     totalTransactions: number;
@@ -574,6 +580,7 @@ export class RecieptService {
         .createQueryBuilder('receipt')
         .select('SUM(receipt.receiptNetPrice)', 'totalSales')
         .where('DATE(receipt.createdDate) = CURDATE()')
+        .andWhere('receipt.receiptType = :receiptType', { receiptType })
         .getRawOne();
       const totalSales = totalSalesResult.totalSales || 0;
 
@@ -581,6 +588,7 @@ export class RecieptService {
         .createQueryBuilder('receipt')
         .select('SUM(receipt.receiptTotalDiscount)', 'totalDiscount')
         .where('DATE(receipt.createdDate) = CURDATE()')
+        .andWhere('receipt.receiptType = :receiptType', { receiptType })
         .getRawOne();
       const totalDiscount = totalDiscountResult.totalDiscount || 0;
 
@@ -588,6 +596,7 @@ export class RecieptService {
         .createQueryBuilder('receipt')
         .select('COUNT(receipt.receiptId)', 'totalTransactions')
         .where('DATE(receipt.createdDate) = CURDATE()')
+        .andWhere('receipt.receiptType = :receiptType', { receiptType })
         .getRawOne();
       const totalTransactions = totalTransactionsResult.totalTransactions || 0;
 
@@ -669,11 +678,15 @@ export class RecieptService {
   async getGroupedReceipts(start: Date, end: Date, receiptType: string) {
     try {
       if (!(start instanceof Date) || isNaN(start.getTime())) {
-        throw new Error('Invalid start date');
+        start = moment().tz('Asia/Bangkok').startOf('day').toDate();
       }
 
       if (!(end instanceof Date) || isNaN(end.getTime())) {
-        end = new Date();
+        end = moment(start)
+          .tz('Asia/Bangkok')
+          .add(1, 'day')
+          .endOf('day')
+          .toDate();
       }
 
       const receipts = await this.recieptRepository
@@ -733,85 +746,143 @@ export class RecieptService {
       );
     }
   }
-
-  async getTopSellingProductsByDate(date: Date): Promise<any[]> {
+  async getCoffeeReceiptsWithCostAndDiscounts(start: Date, end: Date) {
     try {
-      const startOfDay = moment(date)
-        .tz('Asia/Bangkok')
-        .startOf('day')
-        .toDate();
-      const endOfDay = moment(date).tz('Asia/Bangkok').endOf('day').toDate();
-      const products = await this.productRepository.find({
-        relations: ['productTypes'],
-      });
-      const receipts = await this.recieptRepository.find({
-        where: {
-          createdDate: Between(startOfDay, endOfDay),
-        },
-        relations: [
-          'receiptItems',
-          'receiptItems.product',
-          'receiptItems.productType',
-        ],
-      });
-      const productSalesMap = new Map<
-        number,
-        {
-          productId: number;
-          productName: string;
-          productType: string;
-          count: number;
-        }
-      >();
-      products.forEach((product) => {
-        if (product.productTypes.length > 0) {
-          product.productTypes.forEach((type) => {
-            productSalesMap.set(type.productTypeId, {
-              productId: product.productId,
-              productName: product.productName,
-              productType: type.productTypeName,
-              count: 0,
-            });
-          });
-        } else {
-          productSalesMap.set(product.productId, {
-            productId: product.productId,
-            productName: product.productName,
-            productType: 'No Type',
-            count: 0,
-          });
-        }
+      if (!(start instanceof Date) || isNaN(start.getTime())) {
+        start = null;
+      }
+      if (!(end instanceof Date) || isNaN(end.getTime())) {
+        end = new Date();
+      }
+
+      if (!start) {
+        const earliestReceipt = await this.recieptRepository
+          .createQueryBuilder('receipt')
+          .select('MIN(receipt.createdDate)', 'min')
+          .where('receipt.receiptType = :receiptType', {
+            receiptType: 'coffee',
+          })
+          .getRawOne();
+
+        start = earliestReceipt ? new Date(earliestReceipt.min) : new Date(0);
+      }
+
+      const receipts = await this.recieptRepository
+        .createQueryBuilder('receipt')
+        .where('receipt.createdDate BETWEEN :startDate AND :endDate', {
+          startDate: moment(start)
+            .tz('Asia/Bangkok')
+            .startOf('day')
+            .toISOString(),
+          endDate: moment(end).tz('Asia/Bangkok').endOf('day').toISOString(),
+        })
+        .andWhere('receipt.receiptType = :receiptType', {
+          receiptType: 'coffee',
+        })
+        .getMany();
+
+      const importIngredients = await this.importIngredientRepository
+        .createQueryBuilder('importingredient')
+        .where('importingredient.date BETWEEN :startDate AND :endDate', {
+          startDate: moment(start)
+            .tz('Asia/Bangkok')
+            .startOf('day')
+            .toISOString(),
+          endDate: moment(end).tz('Asia/Bangkok').endOf('day').toISOString(),
+        })
+        .andWhere('importingredient.importStoreType = :storeType', {
+          storeType: 'coffee',
+        })
+        .getMany();
+
+      let totalCost = 0;
+      let totalDiscount = 0;
+      let totalSales = 0;
+      const totalOrders = receipts.length;
+
+      importIngredients.forEach((ingredient) => {
+        totalCost += ingredient.total;
       });
 
       receipts.forEach((receipt) => {
-        receipt.receiptItems.forEach((item) => {
-          const productId = item.product.productId;
-          const productTypeId = item.productType?.productTypeId;
-
-          if (productTypeId && productSalesMap.has(productTypeId)) {
-            productSalesMap.get(productTypeId).count += parseInt(
-              String(item.quantity),
-            );
-          } else if (!item.productType && productSalesMap.has(productId)) {
-            productSalesMap.get(productId).count += parseInt(
-              String(item.quantity),
-            );
-          }
-        });
+        totalSales += receipt.receiptNetPrice;
+        totalDiscount += receipt.receiptTotalDiscount;
       });
-      const productsArray = Array.from(productSalesMap.values());
-      productsArray.sort((a, b) => b.count - a.count);
-      const response = productsArray.map((product) => ({
-        productId: product.productId,
-        productName: product.productName,
-        productType: product.productType,
-        count: product.count,
+
+      return {
+        totalSales,
+        totalCost,
+        totalDiscount,
+        totalOrders,
+      };
+    } catch (error) {
+      this.logger.error(
+        'Error in getCoffeeReceiptsWithCostAndDiscounts',
+        error.stack,
+      );
+      throw new HttpException(
+        'Error while grouping coffee receipts with cost and discounts',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async findAllProductsUsageByDateRangeAndReceiptType(
+    startDate: Date,
+    endDate: Date,
+    receiptType: string,
+  ) {
+    try {
+      const productsUsage = await this.recieptItemRepository
+        .createQueryBuilder('receiptItem')
+        .leftJoinAndSelect('receiptItem.product', 'product')
+        .leftJoinAndSelect('receiptItem.reciept', 'reciept')
+        .where('reciept.createdDate BETWEEN :startDate AND :endDate', {
+          startDate,
+          endDate,
+        })
+        .andWhere('reciept.receiptType = :receiptType', { receiptType })
+        .getMany();
+
+      const allProducts = await this.productRepository.find();
+
+      const productSummary = productsUsage.reduce((summary, receiptItem) => {
+        const productName = receiptItem.product.productName;
+        if (!summary[productName]) {
+          summary[productName] = {
+            usageCount: 0,
+            totalQuantity: 0,
+          };
+        }
+        summary[productName].usageCount += 1;
+        summary[productName].totalQuantity += Number(receiptItem.quantity); // แปลง quantity เป็นตัวเลข
+        return summary;
+      }, {});
+
+      allProducts.forEach((product) => {
+        if (!productSummary[product.productName]) {
+          productSummary[product.productName] = {
+            usageCount: 0,
+            totalQuantity: 0,
+          };
+        }
+      });
+
+      const result = Object.keys(productSummary).map((productName) => ({
+        productName,
+        usageCount: productSummary[productName].usageCount,
+        totalQuantity: productSummary[productName].totalQuantity,
       }));
 
-      return response;
+      return {
+        startDate,
+        endDate,
+        receiptType,
+        productsUsage: result,
+      };
     } catch (error) {
       throw new HttpException(
-        'Failed to fetch top selling products',
+        'Failed to find products usage',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -843,5 +914,44 @@ export class RecieptService {
         'receiptPromotions.promotion',
       ],
     });
+  }
+  async generateIngredientUsageReport(startDate: Date, endDate: Date) {
+    const receipts = await this.recieptRepository.find({
+      where: {
+        createdDate: Between(startDate, endDate),
+      },
+      relations: [
+        'receiptItems',
+        'receiptItems.productType',
+        'receiptItems.productType.recipes',
+        'receiptItems.productType.recipes.ingredient',
+      ],
+    });
+    const ingredientUsage: Record<
+      string,
+      { ingredientName: string; quantity: number; unit: string }
+    > = {};
+
+    receipts.forEach((receipt) => {
+      receipt.receiptItems.forEach((receiptItem) => {
+        const productType = receiptItem.productType;
+        productType.recipes.forEach((recipe) => {
+          const ingredient = recipe.ingredient;
+          const quantityUsed = recipe.quantity * receiptItem.quantity;
+
+          if (ingredientUsage[ingredient.ingredientId]) {
+            ingredientUsage[ingredient.ingredientId].quantity += quantityUsed;
+          } else {
+            ingredientUsage[ingredient.ingredientId] = {
+              ingredientName: ingredient.ingredientName,
+              quantity: quantityUsed,
+              unit: ingredient.ingredientUnit,
+            };
+          }
+        });
+      });
+    });
+
+    return ingredientUsage;
   }
 }
