@@ -552,6 +552,9 @@ export class RecieptService {
       .createQueryBuilder('receipt')
       .select('SUM(receipt.receiptTotalPrice)', 'totalPrice')
       .where('receipt.paymentMethod = :paymentMethod', { paymentMethod })
+      .andWhere('receipt.receiptType = :receiptType', {
+        receiptType: 'ร้านกาแฟ',
+      })
       .andWhere('DATE(receipt.createdDate) = CURDATE()')
       .getRawOne();
 
@@ -675,11 +678,15 @@ export class RecieptService {
   async getGroupedReceipts(start: Date, end: Date, receiptType: string) {
     try {
       if (!(start instanceof Date) || isNaN(start.getTime())) {
-        throw new Error('Invalid start date');
+        start = moment().tz('Asia/Bangkok').startOf('day').toDate();
       }
 
       if (!(end instanceof Date) || isNaN(end.getTime())) {
-        end = new Date();
+        end = moment(start)
+          .tz('Asia/Bangkok')
+          .add(1, 'day')
+          .endOf('day')
+          .toDate();
       }
 
       const receipts = await this.recieptRepository
