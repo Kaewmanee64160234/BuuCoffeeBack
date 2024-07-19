@@ -16,7 +16,21 @@ export class ImportingredientsController {
   constructor(
     private readonly importingredientsService: ImportingredientsService,
   ) {}
-
+  @Get('find-date')
+  async findDate(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    try {
+      const results = await this.importingredientsService.findDate(
+        startDate,
+        endDate,
+      );
+      return results;
+    } catch (error) {
+      throw new Error('Error fetching data');
+    }
+  }
   @Get('revenue')
   async getRevenue(): Promise<{
     receipts: { date: Date; receiptNetPrice: number }[];
