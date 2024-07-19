@@ -268,7 +268,6 @@ export class RecieptService {
       );
     }
   }
-
   private async updateIngredientStock(receiptItems) {
     for (const receiptItemDto of receiptItems) {
       // Fetch the receipt item and related entities
@@ -319,11 +318,13 @@ export class RecieptService {
             ingredient.ingredientRemining,
           );
 
-          ingredient.ingredientRemining -= usage;
+          ingredient.ingredientRemining += usage;
 
-          // If the remaining quantity drops below zero, adjust the stock
-          while (ingredient.ingredientRemining < 0) {
-            ingredient.ingredientRemining +=
+          // If the remaining quantity exceeds the unit quantity, adjust the stock
+          if (
+            ingredient.ingredientRemining > ingredient.ingredientQuantityPerUnit
+          ) {
+            ingredient.ingredientRemining -=
               ingredient.ingredientQuantityPerUnit;
             ingredient.ingredientQuantityInStock -= 1;
           }
