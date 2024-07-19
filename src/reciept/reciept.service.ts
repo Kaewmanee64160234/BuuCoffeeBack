@@ -54,10 +54,7 @@ export class RecieptService {
       }
 
       let customer = null;
-      if (
-        createRecieptDto.customer != null &&
-        createRecieptDto.customer.customerId
-      ) {
+      if (createRecieptDto.customer && createRecieptDto.customer.customerId) {
         customer = await this.customerRepository.findOne({
           where: { customerId: createRecieptDto.customer.customerId },
         });
@@ -91,7 +88,12 @@ export class RecieptService {
 
         const product = await this.productRepository.findOne({
           where: { productId: receiptItemDto.product.productId },
-          relations: ['category', 'productTypes'],
+          relations: [
+            'category',
+            'productTypes',
+            'productTypes.recipes',
+            'productTypes.recipes.ingredient',
+          ],
         });
 
         if (!product) {
@@ -110,7 +112,7 @@ export class RecieptService {
           newRecieptItem,
         );
 
-        if (product.category.haveTopping == true) {
+        if (product.category.haveTopping) {
           for (const productTypeToppingDto of receiptItemDto.productTypeToppings) {
             const productType = await this.productTypeRepository.findOne({
               where: { productTypeId: productTypeToppingDto.productTypeId },
@@ -141,35 +143,32 @@ export class RecieptService {
                 topping: topping,
               });
 
-            if (
-              product.category.haveTopping &&
-              productTypeToppingDto.toppingId
-            ) {
-              recieptItemSave.receiptSubTotal +=
-                topping.toppingPrice * productTypeToppingDto.quantity;
-            } else {
-              recieptItemSave.receiptSubTotal +=
-                product.productPrice * productTypeToppingDto.quantity;
-            }
-
+            recieptItemSave.receiptSubTotal +=
+              topping.toppingPrice * productTypeToppingDto.quantity;
             recieptItemSave.receiptSubTotal +=
               product.productPrice + productType.productTypePrice;
             await this.productTypeToppingRepository.save(newProductTypeTopping);
           }
         } else {
-          // create productTypeTopping for product without topping
+          // Create productTypeTopping for product without topping
           const productType = await this.productTypeRepository.findOne({
             where: { productTypeId: product.productTypes[0].productTypeId },
             relations: ['product', 'product.category'],
           });
-          console.log(productType);
+          if (!productType) {
+            throw new HttpException(
+              'Product Type not found',
+              HttpStatus.NOT_FOUND,
+            );
+          }
           const newProductTypeTopping =
             this.productTypeToppingRepository.create({
               quantity: 1,
               productType: productType,
               receiptItem: recieptItemSave,
+              topping: null, // Set topping to null
             });
-          console.log(newProductTypeTopping);
+          await this.productTypeToppingRepository.save(newProductTypeTopping);
         }
 
         // Calculate points if the product has countingPoint = true
@@ -216,7 +215,7 @@ export class RecieptService {
       });
       await this.updateIngredientStock(recipt.receiptItems);
 
-      console.log('recipt', recipt);
+      console.log('Receipt:', recipt);
       return recipt;
     } catch (error) {
       console.error(error);
@@ -227,6 +226,7 @@ export class RecieptService {
       );
     }
   }
+
   private async updateIngredientStock(receiptItems) {
     for (const receiptItemDto of receiptItems) {
       // Fetch the receipt item and related entities
@@ -253,7 +253,8 @@ export class RecieptService {
       for (const productTypeTopping of receiptItem.productTypeToppings) {
         if (
           !productTypeTopping.productType ||
-          !productTypeTopping.productType.recipes
+          !productTypeTopping.productType.recipes ||
+          productTypeTopping.productType.recipes.length == 0
         ) {
           console.log(
             'Product type or recipes not found for topping:',
