@@ -35,6 +35,7 @@ export class ProductsService {
       productTypes,
       barcode,
       storeType,
+      countingPoint,
     } = createProductDto; // Include barcode here
 
     // Parse and validate categoryId
@@ -53,9 +54,11 @@ export class ProductsService {
     const newProduct = new Product();
     newProduct.productName = productName;
     newProduct.productPrice = Number(productPrice);
-    newProduct.countingPoint = createProductDto.countingPoint;
+    newProduct.countingPoint = countingPoint;
     newProduct.storeType = storeType;
     newProduct.barcode = barcode; // Add this line
+    console.log('new Product', newProduct);
+
     if (isNaN(newProduct.productPrice)) {
       throw new HttpException('Invalid product price', HttpStatus.BAD_REQUEST);
     }
