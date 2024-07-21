@@ -26,6 +26,9 @@ export class Product {
   @Column({ default: 'no-image.jpg', nullable: true })
   productImage: string;
 
+  @Column()
+  storeType: string;
+
   @ManyToOne(() => Category, (category) => category.products)
   category: Category;
 

@@ -28,8 +28,14 @@ export class ProductsService {
   ) {}
 
   async create(createProductDto: CreateProductDto): Promise<Product> {
-    const { productName, productPrice, categoryId, productTypes, barcode } =
-      createProductDto; // Include barcode here
+    const {
+      productName,
+      productPrice,
+      categoryId,
+      productTypes,
+      barcode,
+      storeType,
+    } = createProductDto; // Include barcode here
 
     // Parse and validate categoryId
     const parsedCategoryId = Number(categoryId);
@@ -48,6 +54,7 @@ export class ProductsService {
     newProduct.productName = productName;
     newProduct.productPrice = Number(productPrice);
     newProduct.countingPoint = createProductDto.countingPoint;
+    newProduct.storeType = storeType;
     newProduct.barcode = barcode; // Add this line
     if (isNaN(newProduct.productPrice)) {
       throw new HttpException('Invalid product price', HttpStatus.BAD_REQUEST);
@@ -293,6 +300,8 @@ export class ProductsService {
   }
 
   // update
+
+  // update
   async update(id: number, updateProductDto: UpdateProductDto) {
     try {
       console.log('updateProductDto', updateProductDto);
@@ -321,6 +330,8 @@ export class ProductsService {
       const isCountingPointChanged =
         product.countingPoint !== updateProductDto.countingPoint;
       const isBarcodeChanged = product.barcode !== updateProductDto.barcode;
+      const isStoreTypeChanged =
+        product.storeType !== updateProductDto.storeType;
 
       const isProductTypesChanged = await this.isProductTypesChanged(
         product.productTypes,
@@ -333,7 +344,8 @@ export class ProductsService {
         isPriceChanged ||
         isProductTypesChanged ||
         isCountingPointChanged ||
-        isBarcodeChanged
+        isBarcodeChanged ||
+        isStoreTypeChanged
       ) {
         // Soft remove existing product and its associated ingredients if category has changed and haveTopping is false
         if (!product.category.haveTopping) {
@@ -348,6 +360,7 @@ export class ProductsService {
         newProduct.countingPoint = updateProductDto.countingPoint;
         newProduct.productImage = product.productImage;
         newProduct.barcode = updateProductDto.barcode;
+        newProduct.storeType = updateProductDto.storeType;
 
         if (isNaN(newProduct.productPrice)) {
           throw new HttpException(
@@ -372,6 +385,7 @@ export class ProductsService {
         product.countingPoint = updateProductDto.countingPoint;
         product.productImage = updateProductDto.productImage;
         product.barcode = updateProductDto.barcode;
+        product.storeType = updateProductDto.storeType;
 
         if (isNaN(product.productPrice)) {
           throw new HttpException(

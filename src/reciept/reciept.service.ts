@@ -275,7 +275,7 @@ export class RecieptService {
       for (const receiptItem of recipt.receiptItems) {
         console.log('Product Type Toppings:', receiptItem.productTypeToppings);
       }
-      await this.updateIngredientStock(recipt.receiptItems);
+      // await this.updateIngredientStock(recipt.receiptItems);
 
       return recipt;
     } catch (error) {
@@ -311,19 +311,35 @@ export class RecieptService {
       console.log('Product type toppings', receiptItem.productTypeToppings);
 
       for (const productTypeTopping of receiptItem.productTypeToppings) {
+        const productTypeTopping_ =
+          await this.productTypeToppingRepository.findOne({
+            where: {
+              productTypeToppingId: productTypeTopping.productTypeToppingId,
+            },
+            relations: [
+              'productType',
+              'productType.recipes',
+              'productType.recipes.ingredient',
+            ],
+          });
+
         if (
-          !productTypeTopping.productType ||
-          !productTypeTopping.productType.recipes ||
-          productTypeTopping.productType.recipes.length == 0
+          !productTypeTopping_.productType ||
+          !productTypeTopping_.productType.recipes ||
+          productTypeTopping_.productType.recipes.length == 0
         ) {
           console.log(
             'Product type or recipes not found for topping:',
-            productTypeTopping,
+            productTypeTopping_,
           );
-          continue;
+          // continue;
+          throw new HttpException(
+            'Product type or recipes not found for topping',
+            HttpStatus.NOT_FOUND,
+          );
         }
 
-        for (const recipe of productTypeTopping.productType.recipes) {
+        for (const recipe of productTypeTopping_.productType.recipes) {
           console.log('Recipe:', recipe);
 
           const ingredient = recipe.ingredient;
@@ -349,11 +365,12 @@ export class RecieptService {
               ingredient.ingredientQuantityInStock -= 1;
             }
 
-            console.log('Updated ingredient:', ingredient);
+            console.log('Updated have topping:', usage);
           } else {
             //  minus stock
             const usage = receiptItemDto.quantity * recipe.quantity;
             ingredient.ingredientQuantityInStock -= usage;
+            console.log('Updated ingredient:', usage);
           }
 
           // Save the updated ingredient

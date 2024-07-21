@@ -22,6 +22,7 @@ export class CreateProductDto {
   productImage: string;
 
   barcode: string;
+  storeType: string;
 
   @IsNumber()
   @IsNotEmpty()
