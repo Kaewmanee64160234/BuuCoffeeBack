@@ -396,12 +396,6 @@ export class ProductsService {
 
         const savedProduct = await this.productRepository.save(product);
 
-        await this.handleProductTypesAndRecipes(
-          savedProduct,
-          updateProductDto,
-          true,
-        );
-
         const result = await this.productRepository.findOne({
           where: { productId: savedProduct.productId },
           relations: ['productTypes', 'productTypes.recipes', 'category'],
