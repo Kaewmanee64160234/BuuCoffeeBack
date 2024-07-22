@@ -326,30 +326,26 @@ export class ProductsService {
 
       const isCategoryChanged =
         product.category.categoryId !== +updateProductDto.category.categoryId;
-      const isNameChanged =
-        product.productName !== updateProductDto.productName;
-      const isPriceChanged =
-        product.productPrice !== +updateProductDto.productPrice;
-      const isCountingPointChanged =
-        product.countingPoint !== updateProductDto.countingPoint;
-      const isBarcodeChanged = product.barcode !== updateProductDto.barcode;
-      const isStoreTypeChanged =
-        product.storeType !== updateProductDto.storeType;
 
       const isProductTypesChanged = await this.isProductTypesChanged(
         product.productTypes,
         updateProductDto.productTypes,
       );
 
-      if (
-        isCategoryChanged ||
-        isNameChanged ||
-        isPriceChanged ||
-        isProductTypesChanged ||
-        isCountingPointChanged ||
-        isBarcodeChanged ||
-        isStoreTypeChanged
-      ) {
+      console.log(
+        'isCategoryChanged',
+        isCategoryChanged,
+        'isProductTypesChanged',
+        isProductTypesChanged,
+      );
+      if (isProductTypesChanged) {
+        console.log('================================================');
+        console.log('existingProductTypes', product.productTypes);
+        console.log('newProductTypes', updateProductDto.productTypes);
+        console.log('================================================');
+      }
+
+      if (isCategoryChanged || isProductTypesChanged) {
         // Soft remove existing product and its associated ingredients if category has changed and haveTopping is false
         if (!product.category.haveTopping) {
           await this.softRemoveProductIngredients(product);
@@ -443,18 +439,33 @@ export class ProductsService {
     existingProductTypes: ProductType[],
     newProductTypes: UpdateProductTypeDto[],
   ): Promise<boolean> {
+    //map data to same format then compare
+
     if (existingProductTypes.length !== newProductTypes.length) {
       return true;
     }
 
     for (let i = 0; i < existingProductTypes.length; i++) {
       const existingType = existingProductTypes[i];
-      const newType = newProductTypes[i];
+      const newType = {
+        ...existingType,
+        ...newProductTypes[i],
+      };
+      const isRecipesChanged = await this.isRecipesChanged(
+        existingType.recipes,
+        newType.recipes,
+      );
+      if (isRecipesChanged) {
+        console.log('====================================');
+        console.log('existingType', existingType);
+        console.log('newType', newType);
+        console.log('====================================');
+      }
 
       if (
         existingType.productTypeName !== newType.productTypeName ||
-        existingType.productTypePrice !== Number(newType.productTypePrice) ||
-        (await this.isRecipesChanged(existingType.recipes, newType.recipes))
+        existingType.productTypePrice !== newType.productTypePrice ||
+        isRecipesChanged
       ) {
         return true;
       }
@@ -473,12 +484,15 @@ export class ProductsService {
 
     for (let i = 0; i < existingRecipes.length; i++) {
       const existingRecipe = existingRecipes[i];
-      const newRecipe = newRecipes[i];
+      const newRecipe = {
+        ...existingRecipes[i],
+        ...newRecipes[i],
+      };
 
       if (
-        existingRecipe.quantity !== Number(newRecipe.quantity) ||
-        existingRecipe.ingredient.ingredientId !==
-          Number(newRecipe.ingredient.ingredientId)
+        existingRecipe.quantity !== newRecipe.quantity ||
+        existingRecipe.ingredient.ingredientName !==
+          newRecipe.ingredient.ingredientName
       ) {
         return true;
       }
@@ -544,7 +558,9 @@ export class ProductsService {
               newRecipe.ingredient = ingredient;
               newRecipe.productType = savedProductType;
               await this.recipeRepository.save(newRecipe);
+              await this.recipeRepository.softDelete(recipeDto);
             }
+            await this.productTypeRepository.softDelete(typeDto);
           } else {
             throw new HttpException(
               'Recipe is required',
@@ -579,12 +595,21 @@ export class ProductsService {
         const savedProductType = await this.productTypeRepository.save(
           newProductType,
         );
-
         const newRecipe = new Recipe();
         newRecipe.quantity = 1;
         newRecipe.ingredient = ing;
         newRecipe.productType = savedProductType;
         await this.recipeRepository.save(newRecipe);
+        // soft dele old recip productTYpe and old ingeries
+        await this.recipeRepository.softDelete(
+          savedProduct.productTypes[0].recipes[0],
+        );
+        await this.productTypeRepository.softDelete(
+          savedProduct.productTypes[0],
+        );
+        await this.ingredientRepository.softDelete(
+          savedProduct.productTypes[0].recipes[0].ingredient,
+        );
       }
     }
   }
