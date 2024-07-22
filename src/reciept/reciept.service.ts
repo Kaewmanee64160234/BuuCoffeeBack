@@ -358,6 +358,16 @@ export class RecieptService {
                 );
               }
 
+              // Ensure remaining and stock quantities do not go below zero
+              ingredient.ingredientRemining = Math.max(
+                0,
+                ingredient.ingredientRemining,
+              );
+              ingredient.ingredientQuantityInStock = Math.max(
+                0,
+                ingredient.ingredientQuantityInStock,
+              );
+
               console.log(`New remaining: ${ingredient.ingredientRemining}`);
               await this.ingredientRepository.save(ingredient);
             }
@@ -397,6 +407,16 @@ export class RecieptService {
                 `Stock reduced for ingredient: ${ingredient.ingredientName}`,
               );
             }
+
+            // Ensure remaining and stock quantities do not go below zero
+            ingredient.ingredientRemining = Math.max(
+              0,
+              ingredient.ingredientRemining,
+            );
+            ingredient.ingredientQuantityInStock = Math.max(
+              0,
+              ingredient.ingredientQuantityInStock,
+            );
 
             console.log(`New remaining: ${ingredient.ingredientRemining}`);
             await this.ingredientRepository.save(ingredient);
