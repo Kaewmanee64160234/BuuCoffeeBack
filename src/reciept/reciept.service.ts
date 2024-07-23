@@ -301,6 +301,7 @@ export class RecieptService {
       const receiptItem = await this.recieptItemRepository.findOne({
         where: { receiptItemId: receiptItemDto.receiptItemId },
         relations: [
+          'productType',
           'productTypeToppings',
           'productTypeToppings.productType',
           'productTypeToppings.productType.recipes',
@@ -310,15 +311,18 @@ export class RecieptService {
 
       if (receiptItem.productTypeToppings.length == 0) {
         //  cutting stock from quantity
-        console.log('receiptItem');
+        console.log('receiptItem', receiptItem);
 
-        const productType = await this.productTypeRepository.findOne({
-          where: {
-            productTypeId: receiptItemDto.productType.productTypeId,
-          },
-          relations: ['recipes', 'recipes.ingredient'],
+        const product = await this.productRepository.findOne({
+          where: { productId: receiptItemDto.product.productId },
+          relations: [
+            'category',
+            'productTypes',
+            'productTypes.recipes',
+            'productTypes.recipes.ingredient',
+          ],
         });
-        const ingredient = productType.recipes[0].ingredient;
+        const ingredient = product.productTypes[0].recipes[0].ingredient;
 
         if (ingredient) {
           ingredient.ingredientRemining -= receiptItemDto.quantity;
@@ -440,6 +444,110 @@ export class RecieptService {
       }
     }
   }
+  private async revertIngredientStock(receiptItems: ReceiptItem[]) {
+    for (const receiptItemDto of receiptItems) {
+      const receiptItem = await this.recieptItemRepository.findOne({
+        where: { receiptItemId: receiptItemDto.receiptItemId },
+        relations: [
+          'productType',
+          'productTypeToppings',
+          'productTypeToppings.productType',
+          'productTypeToppings.productType.recipes',
+          'productTypeToppings.productType.recipes.ingredient',
+        ],
+      });
+      console.log('receiptItem', receiptItem);
+
+      if (receiptItem.productTypeToppings.length == 0) {
+        const productType = await this.productTypeRepository.findOne({
+          where: { productTypeId: receiptItem.productType.productTypeId },
+          relations: ['recipes', 'recipes.ingredient'],
+        });
+        const ingredient = productType.recipes[0].ingredient;
+
+        if (ingredient) {
+          ingredient.ingredientRemining =
+            parseInt(ingredient.ingredientRemining.toString()) +
+            parseInt(receiptItem.quantity.toString());
+          ingredient.ingredientQuantityInStock =
+            parseInt(ingredient.ingredientQuantityInStock.toString()) +
+            parseInt(receiptItem.quantity.toString());
+          await this.ingredientRepository.save(ingredient);
+        }
+      } else {
+        const processedIngredients = new Set<number>();
+
+        for (const productTypeTopping of receiptItem.productTypeToppings) {
+          if (
+            productTypeTopping.productType &&
+            productTypeTopping.productType.recipes
+          ) {
+            for (const recipe of productTypeTopping.productType.recipes) {
+              const ingredient = recipe.ingredient;
+              if (
+                ingredient &&
+                !processedIngredients.has(ingredient.ingredientId)
+              ) {
+                processedIngredients.add(ingredient.ingredientId);
+
+                ingredient.ingredientRemining =
+                  parseInt(ingredient.ingredientRemining.toString()) -
+                  parseInt(
+                    (receiptItemDto.quantity * recipe.quantity).toString(),
+                  );
+
+                if (ingredient.ingredientRemining < 0) {
+                  ingredient.ingredientRemining = parseInt(
+                    (
+                      ingredient.ingredientRemining +
+                      ingredient.ingredientQuantityPerUnit
+                    ).toString(),
+                  );
+                  ingredient.ingredientQuantityInStock = parseInt(
+                    (ingredient.ingredientQuantityInStock + 1).toString(),
+                  );
+                }
+
+                await this.ingredientRepository.save(ingredient);
+              }
+            }
+          }
+        }
+
+        if (receiptItem.productType?.recipes) {
+          for (const recipe of receiptItem.productType.recipes) {
+            const ingredient = recipe.ingredient;
+            if (
+              ingredient &&
+              !processedIngredients.has(ingredient.ingredientId)
+            ) {
+              processedIngredients.add(ingredient.ingredientId);
+
+              ingredient.ingredientRemining =
+                parseInt(ingredient.ingredientRemining.toString()) -
+                parseInt(
+                  (receiptItemDto.quantity * recipe.quantity).toString(),
+                );
+
+              if (ingredient.ingredientRemining < 0) {
+                ingredient.ingredientRemining = parseInt(
+                  (
+                    ingredient.ingredientRemining +
+                    ingredient.ingredientQuantityPerUnit
+                  ).toString(),
+                );
+                ingredient.ingredientQuantityInStock = parseInt(
+                  (ingredient.ingredientQuantityInStock + 1).toString(),
+                );
+              }
+
+              await this.ingredientRepository.save(ingredient);
+            }
+          }
+        }
+      }
+    }
+  }
 
   async cancelReceipt(id: number) {
     try {
@@ -465,6 +573,8 @@ export class RecieptService {
       }
 
       receipt.receiptStatus = 'cancel';
+      await this.revertIngredientStock(receipt.receiptItems);
+
       await this.recieptRepository.save(receipt);
     } catch (error) {
       this.logger.error('Failed to cancel receipt', error.stack);
@@ -1092,6 +1202,7 @@ export class RecieptService {
         receiptType: typeOfStore,
       },
       relations: [
+        'receiptItems',
         'receiptItems',
         'receiptItems.productType',
         'receiptItems.productType.recipes',
