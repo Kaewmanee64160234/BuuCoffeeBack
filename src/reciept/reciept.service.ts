@@ -746,6 +746,9 @@ export class RecieptService {
         receiptType: 'ร้านกาแฟ',
       })
       .andWhere('DATE(receipt.createdDate) = CURDATE()')
+      .andWhere('receipt.receiptStatus != :cancelStatus', {
+        cancelStatus: 'cancel',
+      })
       .getRawOne();
 
     return sum.totalPrice || 0;
@@ -771,6 +774,9 @@ export class RecieptService {
         .select('SUM(receipt.receiptNetPrice)', 'totalSales')
         .where('DATE(receipt.createdDate) = CURDATE()')
         .andWhere('receipt.receiptType = :receiptType', { receiptType })
+        .andWhere('receipt.receiptStatus != :cancelStatus', {
+          cancelStatus: 'cancel',
+        })
         .getRawOne();
       const totalSales = totalSalesResult.totalSales || 0;
 
@@ -779,6 +785,9 @@ export class RecieptService {
         .select('SUM(receipt.receiptTotalDiscount)', 'totalDiscount')
         .where('DATE(receipt.createdDate) = CURDATE()')
         .andWhere('receipt.receiptType = :receiptType', { receiptType })
+        .andWhere('receipt.receiptStatus != :cancelStatus', {
+          cancelStatus: 'cancel',
+        })
         .getRawOne();
       const totalDiscount = totalDiscountResult.totalDiscount || 0;
 
@@ -787,6 +796,9 @@ export class RecieptService {
         .select('COUNT(receipt.receiptId)', 'totalTransactions')
         .where('DATE(receipt.createdDate) = CURDATE()')
         .andWhere('receipt.receiptType = :receiptType', { receiptType })
+        .andWhere('receipt.receiptStatus != :cancelStatus', {
+          cancelStatus: 'cancel',
+        })
         .getRawOne();
       const totalTransactions = totalTransactionsResult.totalTransactions || 0;
 
@@ -891,6 +903,9 @@ export class RecieptService {
         .andWhere('receipt.receiptType = :receiptType', {
           receiptType: receiptType,
         })
+        .andWhere('receipt.receiptStatus != :cancelStatus', {
+          cancelStatus: 'cancel',
+        })
         .getMany();
 
       const groupedByDay = {};
@@ -903,25 +918,12 @@ export class RecieptService {
         const month = createdDate.format('YYYY-MM');
         const year = createdDate.year();
 
-        // Logging for debugging
-        // console.log(
-        //   `Receipt ID: ${
-        //     receipt.receiptId
-        //   }, Created Date: ${createdDate.format()}, Day: ${day}`,
-        // );
-
         groupedByDay[day] = (groupedByDay[day] || 0) + receipt.receiptNetPrice;
         groupedByMonth[month] =
           (groupedByMonth[month] || 0) + receipt.receiptNetPrice;
         groupedByYear[year] =
           (groupedByYear[year] || 0) + receipt.receiptNetPrice;
       });
-
-      // Logging for debugging
-      // console.log('Receipts:', receipts);
-      // console.log('Grouped by Day:', groupedByDay);
-      // console.log('Grouped by Month:', groupedByMonth);
-      // console.log('Grouped by Year:', groupedByYear);
 
       return {
         groupedByDay,
@@ -936,6 +938,7 @@ export class RecieptService {
       );
     }
   }
+
   async getCoffeeReceiptsWithCostAndDiscounts(start: Date, end: Date) {
     try {
       if (!(start instanceof Date) || isNaN(start.getTime())) {
