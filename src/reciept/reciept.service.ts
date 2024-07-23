@@ -279,6 +279,10 @@ export class RecieptService {
           'receiptPromotions.promotion',
         ],
       });
+      console.log('====================================');
+      console.log(recipt);
+      console.log('====================================');
+      await this.updateIngredientStock(recipt.receiptItems);
 
       return recipt;
     } catch (error) {
@@ -304,23 +308,91 @@ export class RecieptService {
         ],
       });
 
-      if (!receiptItem || !receiptItem.productTypeToppings) {
-        console.log(
-          `Receipt item not found or has no product type toppings: ${receiptItemDto.receiptItemId}`,
-        );
-        continue;
-      }
+      if (receiptItem.productTypeToppings.length == 0) {
+        //  cutting stock from quantity
+        console.log('receiptItem');
 
-      // Track ingredients processed for this receipt item
-      const processedIngredients = new Set<number>();
+        const productType = await this.productTypeRepository.findOne({
+          where: {
+            productTypeId: receiptItemDto.productType.productTypeId,
+          },
+          relations: ['recipes', 'recipes.ingredient'],
+        });
+        const ingredient = productType.recipes[0].ingredient;
 
-      // Process the productTypeToppings
-      for (const productTypeTopping of receiptItem.productTypeToppings) {
-        if (
-          productTypeTopping.productType &&
-          productTypeTopping.productType.recipes
-        ) {
-          for (const recipe of productTypeTopping.productType.recipes) {
+        if (ingredient) {
+          ingredient.ingredientRemining -= receiptItemDto.quantity;
+          ingredient.ingredientQuantityInStock -= receiptItemDto.quantity;
+          ingredient.ingredientRemining = Math.max(
+            0,
+            ingredient.ingredientRemining,
+          );
+          console.log('ingerdiam', ingredient);
+
+          await this.ingredientRepository.save(ingredient);
+        }
+      } else {
+        // Track ingredients processed for this receipt item
+        const processedIngredients = new Set<number>();
+
+        // Process the productTypeToppings
+        for (const productTypeTopping of receiptItem.productTypeToppings) {
+          if (
+            productTypeTopping.productType &&
+            productTypeTopping.productType.recipes
+          ) {
+            for (const recipe of productTypeTopping.productType.recipes) {
+              const ingredient = recipe.ingredient;
+              if (
+                ingredient &&
+                !processedIngredients.has(ingredient.ingredientId)
+              ) {
+                processedIngredients.add(ingredient.ingredientId);
+
+                const oldRemaining = ingredient.ingredientRemining;
+                ingredient.ingredientRemining = Math.round(
+                  ingredient.ingredientRemining,
+                );
+                ingredient.ingredientRemining +=
+                  receiptItemDto.quantity * recipe.quantity;
+
+                console.log(
+                  `Updating ingredient: ${ingredient.ingredientName}`,
+                );
+                console.log(`Old remaining: ${oldRemaining}`);
+                console.log(
+                  `Usage: ${receiptItemDto.quantity * recipe.quantity}`,
+                );
+
+                if (
+                  ingredient.ingredientRemining >
+                  ingredient.ingredientQuantityPerUnit
+                ) {
+                  ingredient.ingredientRemining -=
+                    ingredient.ingredientQuantityPerUnit;
+                  ingredient.ingredientQuantityInStock -= 1;
+                  console.log(
+                    `Stock reduced for ingredient: ${ingredient.ingredientName}`,
+                  );
+                }
+
+                // Ensure remaining quantity does not go below zero
+                ingredient.ingredientRemining = Math.max(
+                  0,
+                  ingredient.ingredientRemining,
+                );
+
+                // Allow stock quantity to go below zero
+                console.log(`New remaining: ${ingredient.ingredientRemining}`);
+                await this.ingredientRepository.save(ingredient);
+              }
+            }
+          }
+        }
+
+        // Process the main product itself
+        if (receiptItem.productType?.recipes) {
+          for (const recipe of receiptItem.productType.recipes) {
             const ingredient = recipe.ingredient;
             if (
               ingredient &&
@@ -363,52 +435,6 @@ export class RecieptService {
               console.log(`New remaining: ${ingredient.ingredientRemining}`);
               await this.ingredientRepository.save(ingredient);
             }
-          }
-        }
-      }
-
-      // Process the main product itself
-      if (receiptItem.productType?.recipes) {
-        for (const recipe of receiptItem.productType.recipes) {
-          const ingredient = recipe.ingredient;
-          if (
-            ingredient &&
-            !processedIngredients.has(ingredient.ingredientId)
-          ) {
-            processedIngredients.add(ingredient.ingredientId);
-
-            const oldRemaining = ingredient.ingredientRemining;
-            ingredient.ingredientRemining = Math.round(
-              ingredient.ingredientRemining,
-            );
-            ingredient.ingredientRemining +=
-              receiptItemDto.quantity * recipe.quantity;
-
-            console.log(`Updating ingredient: ${ingredient.ingredientName}`);
-            console.log(`Old remaining: ${oldRemaining}`);
-            console.log(`Usage: ${receiptItemDto.quantity * recipe.quantity}`);
-
-            if (
-              ingredient.ingredientRemining >
-              ingredient.ingredientQuantityPerUnit
-            ) {
-              ingredient.ingredientRemining -=
-                ingredient.ingredientQuantityPerUnit;
-              ingredient.ingredientQuantityInStock -= 1;
-              console.log(
-                `Stock reduced for ingredient: ${ingredient.ingredientName}`,
-              );
-            }
-
-            // Ensure remaining quantity does not go below zero
-            ingredient.ingredientRemining = Math.max(
-              0,
-              ingredient.ingredientRemining,
-            );
-
-            // Allow stock quantity to go below zero
-            console.log(`New remaining: ${ingredient.ingredientRemining}`);
-            await this.ingredientRepository.save(ingredient);
           }
         }
       }
@@ -700,6 +726,7 @@ export class RecieptService {
         ],
       });
       await this.updateIngredientStock(rec.receiptItems);
+      console.log(rec.receiptItems);
       return rec;
     } catch (error) {
       this.logger.error('Error updating receipt', error.stack);
