@@ -309,7 +309,10 @@ export class RecieptService {
         ],
       });
 
-      if (receiptItem.productTypeToppings.length == 0) {
+      if (
+        !receiptItemDto.productTypeToppings ||
+        receiptItemDto.productTypeToppings.length == 0
+      ) {
         //  cutting stock from quantity
         console.log('receiptItem', receiptItem);
 
@@ -340,7 +343,7 @@ export class RecieptService {
         const processedIngredients = new Set<number>();
 
         // Process the productTypeToppings
-        for (const productTypeTopping of receiptItem.productTypeToppings) {
+        for (const productTypeTopping of receiptItemDto.productTypeToppings) {
           if (
             productTypeTopping.productType &&
             productTypeTopping.productType.recipes
@@ -395,8 +398,8 @@ export class RecieptService {
         }
 
         // Process the main product itself
-        if (receiptItem.productType?.recipes) {
-          for (const recipe of receiptItem.productType.recipes) {
+        if (receiptItemDto.productType?.recipes) {
+          for (const recipe of receiptItemDto.productType.recipes) {
             const ingredient = recipe.ingredient;
             if (
               ingredient &&
@@ -460,7 +463,7 @@ export class RecieptService {
 
       if (receiptItem.productTypeToppings.length == 0) {
         const productType = await this.productTypeRepository.findOne({
-          where: { productTypeId: receiptItem.productType.productTypeId },
+          where: { productTypeId: receiptItemDto.productType.productTypeId },
           relations: ['recipes', 'recipes.ingredient'],
         });
         const ingredient = productType.recipes[0].ingredient;
@@ -726,6 +729,53 @@ export class RecieptService {
       existingReceipt.paymentMethod = updateReceiptDto.paymentMethod;
       existingReceipt.queueNumber = updateReceiptDto.queueNumber;
 
+      // Compare old and new receipt items
+      console.log('Old receipt items:', existingReceipt.receiptItems);
+      console.log('New receipt items:', updateReceiptDto.receiptItems);
+      const oldReceiptItems = existingReceipt.receiptItems;
+      const newReceiptItems = updateReceiptDto.receiptItems.map((itemDto) => {
+        const receiptItem = new ReceiptItem();
+        receiptItem.receiptItemId = itemDto.receiptItemId;
+        receiptItem.quantity = itemDto.quantity;
+        receiptItem.product = itemDto.product;
+        receiptItem.productType = itemDto.productType;
+        receiptItem.sweetnessLevel = itemDto.sweetnessLevel;
+        receiptItem.receiptSubTotal = itemDto.receiptSubTotal;
+        receiptItem.productTypeToppings =
+          itemDto.productTypeToppings?.map((toppingDto) => {
+            const productTypeTopping = new ProductTypeTopping();
+            productTypeTopping.productType = new ProductType();
+            productTypeTopping.productType.productTypeId =
+              toppingDto.productTypeId;
+            productTypeTopping.topping = toppingDto.topping;
+            productTypeTopping.quantity = toppingDto.quantity;
+            return productTypeTopping;
+          }) || [];
+        return receiptItem;
+      });
+
+      // Identify removed, updated, and new items
+      const removedItems = oldReceiptItems.filter(
+        (oldItem) =>
+          !newReceiptItems.find(
+            (newItem) => newItem.receiptItemId === oldItem.receiptItemId,
+          ),
+      );
+      const updatedItems = newReceiptItems.filter((newItem) =>
+        oldReceiptItems.find(
+          (oldItem) => oldItem.receiptItemId === newItem.receiptItemId,
+        ),
+      );
+      const addedItems = newReceiptItems.filter(
+        (newItem) =>
+          !oldReceiptItems.find(
+            (oldItem) => oldItem.receiptItemId === newItem.receiptItemId,
+          ),
+      );
+
+      // Revert ingredient stock for removed and updated items
+      await this.revertIngredientStock(removedItems.concat(updatedItems));
+
       // Remove existing receipt items and promotions
       await this.recieptItemRepository.remove(existingReceipt.receiptItems);
       await this.recieptPromotionRepository.remove(
@@ -734,8 +784,8 @@ export class RecieptService {
 
       // Add updated receipt items
       const updatedReceiptItems = [];
-      for (const receiptItemDto of updateReceiptDto.receiptItems) {
-        if (isNaN(receiptItemDto.quantity) || receiptItemDto.quantity <= 0) {
+      for (const receiptItem of newReceiptItems) {
+        if (isNaN(receiptItem.quantity) || receiptItem.quantity <= 0) {
           throw new HttpException(
             'Invalid quantity value',
             HttpStatus.BAD_REQUEST,
@@ -743,19 +793,19 @@ export class RecieptService {
         }
 
         const product = await this.productRepository.findOne({
-          where: { productId: receiptItemDto.product.productId },
+          where: { productId: receiptItem.product.productId },
         });
         if (!product) {
           throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
         }
 
         const newReceiptItem = this.recieptItemRepository.create({
-          quantity: receiptItemDto.quantity,
+          quantity: receiptItem.quantity,
           reciept: existingReceipt,
-          sweetnessLevel: receiptItemDto.sweetnessLevel,
-          receiptSubTotal: receiptItemDto.receiptSubTotal,
+          sweetnessLevel: receiptItem.sweetnessLevel,
+          receiptSubTotal: receiptItem.receiptSubTotal,
           product: product,
-          productType: receiptItemDto.productType,
+          productType: receiptItem.productType,
         });
 
         const savedReceiptItem = await this.recieptItemRepository.save(
@@ -763,13 +813,15 @@ export class RecieptService {
         );
 
         // Add product type toppings
-        for (const productTypeToppingDto of receiptItemDto.productTypeToppings) {
+        for (const productTypeTopping of receiptItem.productTypeToppings) {
           const productType = await this.productTypeRepository.findOne({
-            where: { productTypeId: productTypeToppingDto.productTypeId },
+            where: {
+              productTypeId: productTypeTopping.productType.productTypeId,
+            },
             relations: ['product', 'product.category'],
           });
           const topping = await this.toppingRepository.findOne({
-            where: { toppingId: productTypeToppingDto.topping.toppingId },
+            where: { toppingId: productTypeTopping.topping.toppingId },
           });
 
           if (!productType) {
@@ -784,7 +836,7 @@ export class RecieptService {
 
           const newProductTypeTopping =
             this.productTypeToppingRepository.create({
-              quantity: productTypeToppingDto.quantity,
+              quantity: productTypeTopping.quantity,
               productType: productType,
               receiptItem: savedReceiptItem,
               topping: topping,
@@ -814,8 +866,10 @@ export class RecieptService {
       existingReceipt.receiptPromotions = updatedReceiptPromotions;
 
       const receiptFinish = await this.recieptRepository.save(existingReceipt);
+      console.log('updated receipt:', updatedItems.concat(addedItems));
 
-      // Update ingredient stock
+      // Update ingredient stock for added and updated items
+      await this.updateIngredientStock(updatedItems.concat(addedItems));
 
       // Return the updated receipt with all relations
       const rec = await this.recieptRepository.findOne({
@@ -835,7 +889,7 @@ export class RecieptService {
           'receiptPromotions.promotion',
         ],
       });
-      await this.updateIngredientStock(rec.receiptItems);
+
       console.log(rec.receiptItems);
       return rec;
     } catch (error) {
