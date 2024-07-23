@@ -131,14 +131,20 @@ export class RecieptService {
           );
         }
 
+        // Ensure every productType has recipes
+        if (!productType.recipes || productType.recipes.length === 0) {
+          throw new HttpException(
+            'Product Type is missing recipes',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+
         const newRecieptItem = this.recieptItemRepository.create({
-          quantity: receiptItemDto.quantity,
+          ...receiptItemDto,
           reciept: recieptSave,
-          sweetnessLevel: receiptItemDto.sweetnessLevel,
-          receiptSubTotal: receiptItemDto.receiptSubTotal,
           product: product,
           productType: productType,
-          productTypeToppings: [],
+          receiptSubTotal: receiptItemDto.receiptSubTotal,
         });
 
         const recieptItemSave = await this.recieptItemRepository.save(
@@ -149,89 +155,84 @@ export class RecieptService {
           product.category.haveTopping &&
           receiptItemDto.productTypeToppings.length > 0
         ) {
-          for (const productTypeToppingDto of receiptItemDto.productTypeToppings) {
+          console.log(
+            'Product topping length:',
+            receiptItemDto.productTypeToppings.length,
+          );
+          const productTypeToppings = [];
+          for (let i = 0; i < receiptItemDto.productTypeToppings.length; i++) {
+            console.log(
+              'Topping name:',
+              receiptItemDto.productTypeToppings[i].topping.toppingName,
+            );
             const toppingProductType = await this.productTypeRepository.findOne(
               {
-                where: { productTypeId: productTypeToppingDto.productTypeId },
-                relations: ['product', 'product.category'],
+                where: {
+                  productTypeId:
+                    receiptItemDto.productTypeToppings[i].productType
+                      .productTypeId,
+                },
+                relations: [
+                  'product',
+                  'product.category',
+                  'recipes',
+                  'recipes.ingredient',
+                ],
               },
             );
 
+            console.log('Found Topping Product Type:', toppingProductType);
             if (!toppingProductType) {
               throw new HttpException(
-                'Product Type not found',
+                'Topping Product Type not found',
                 HttpStatus.NOT_FOUND,
               );
             }
 
-            let topping = null;
+            // Ensure every topping productType has recipes
             if (
-              productTypeToppingDto.topping &&
-              productTypeToppingDto.topping.toppingId
+              !toppingProductType.recipes ||
+              toppingProductType.recipes.length === 0
             ) {
-              topping = await this.toppingRepository.findOne({
-                where: { toppingId: productTypeToppingDto.topping.toppingId },
-              });
+              throw new HttpException(
+                'Topping Product Type is missing recipes',
+                HttpStatus.BAD_REQUEST,
+              );
+            }
 
-              if (!topping) {
-                throw new HttpException(
-                  'Topping not found',
-                  HttpStatus.NOT_FOUND,
-                );
-              }
+            const topping = await this.toppingRepository.findOne({
+              where: {
+                toppingId:
+                  receiptItemDto.productTypeToppings[i].topping.toppingId,
+              },
+            });
+
+            if (!topping) {
+              throw new HttpException(
+                'Topping not found',
+                HttpStatus.NOT_FOUND,
+              );
             }
 
             const newProductTypeTopping =
               this.productTypeToppingRepository.create({
-                quantity: productTypeToppingDto.quantity,
+                ...receiptItemDto.productTypeToppings[i],
                 productType: toppingProductType,
                 receiptItem: recieptItemSave,
                 topping: topping,
               });
 
-            if (topping) {
-              recieptItemSave.receiptSubTotal +=
-                topping.toppingPrice * productTypeToppingDto.quantity;
-            } else {
-              recieptItemSave.receiptSubTotal +=
-                product.productPrice * productTypeToppingDto.quantity;
-            }
-
-            recieptItemSave.receiptSubTotal +=
-              product.productPrice + productType.productTypePrice;
             const productTypeToppingSaved =
               await this.productTypeToppingRepository.save(
                 newProductTypeTopping,
               );
-            recieptItemSave.productTypeToppings.push(productTypeToppingSaved);
-          }
-        } else {
-          const productType = receiptItemDto.productType
-            ? await this.productTypeRepository.findOne({
-                where: {
-                  productTypeId: receiptItemDto.productType.productTypeId,
-                },
-                relations: ['product', 'product.category'],
-              })
-            : null;
-
-          if (!productType && receiptItemDto.productType) {
-            throw new HttpException(
-              'Product Type not found',
-              HttpStatus.NOT_FOUND,
-            );
+            productTypeToppings.push(productTypeToppingSaved);
           }
 
-          const newProductTypeTopping =
-            this.productTypeToppingRepository.create({
-              quantity: 1,
-              productType: productType,
-              receiptItem: recieptItemSave,
-            });
-          const producttypeToppingSaved =
-            await this.productTypeToppingRepository.save(newProductTypeTopping);
-          recieptItemSave.productTypeToppings.push(producttypeToppingSaved);
-          console.log('newProductTypeTopping:', newProductTypeTopping);
+          recieptItemSave.productTypeToppings = productTypeToppings;
+
+          // Add base product price and product type price only once per receipt item
+          await this.recieptItemRepository.save(recieptItemSave);
         }
 
         // Calculate points if the product has countingPoint = true
@@ -268,6 +269,7 @@ export class RecieptService {
           'receiptItems.productTypeToppings',
           'receiptItems.productTypeToppings.productType',
           'receiptItems.productTypeToppings.productType.recipes',
+          'receiptItems.productTypeToppings.productType.recipes.ingredient',
           'receiptItems.productTypeToppings.topping',
           'receiptItems.product',
           'receiptItems.product.category',
@@ -277,13 +279,6 @@ export class RecieptService {
           'receiptPromotions.promotion',
         ],
       });
-
-      console.log('Receipt:', recipt);
-      // productTypeToppings log
-      for (const receiptItem of recipt.receiptItems) {
-        console.log('Product Type Toppings:', receiptItem.productTypeToppings);
-      }
-      await this.updateIngredientStock(recipt.receiptItems);
 
       return recipt;
     } catch (error) {
@@ -358,16 +353,13 @@ export class RecieptService {
                 );
               }
 
-              // Ensure remaining and stock quantities do not go below zero
+              // Ensure remaining quantity does not go below zero
               ingredient.ingredientRemining = Math.max(
                 0,
                 ingredient.ingredientRemining,
               );
-              ingredient.ingredientQuantityInStock = Math.max(
-                0,
-                ingredient.ingredientQuantityInStock,
-              );
 
+              // Allow stock quantity to go below zero
               console.log(`New remaining: ${ingredient.ingredientRemining}`);
               await this.ingredientRepository.save(ingredient);
             }
@@ -408,16 +400,13 @@ export class RecieptService {
               );
             }
 
-            // Ensure remaining and stock quantities do not go below zero
+            // Ensure remaining quantity does not go below zero
             ingredient.ingredientRemining = Math.max(
               0,
               ingredient.ingredientRemining,
             );
-            ingredient.ingredientQuantityInStock = Math.max(
-              0,
-              ingredient.ingredientQuantityInStock,
-            );
 
+            // Allow stock quantity to go below zero
             console.log(`New remaining: ${ingredient.ingredientRemining}`);
             await this.ingredientRepository.save(ingredient);
           }
@@ -664,9 +653,6 @@ export class RecieptService {
               receiptItem: savedReceiptItem,
               topping: topping,
             });
-
-          savedReceiptItem.receiptSubTotal +=
-            topping.toppingPrice * productTypeToppingDto.quantity;
 
           await this.productTypeToppingRepository.save(newProductTypeTopping);
         }
