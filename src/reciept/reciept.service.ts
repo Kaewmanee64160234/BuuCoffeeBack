@@ -910,6 +910,9 @@ export class RecieptService {
         receiptType: 'ร้านกาแฟ',
       })
       .andWhere('DATE(receipt.createdDate) = CURDATE()')
+      .andWhere('receipt.receiptStatus != :cancelStatus', {
+        cancelStatus: 'cancel',
+      })
       .getRawOne();
 
     return sum.totalPrice || 0;
@@ -935,6 +938,9 @@ export class RecieptService {
         .select('SUM(receipt.receiptNetPrice)', 'totalSales')
         .where('DATE(receipt.createdDate) = CURDATE()')
         .andWhere('receipt.receiptType = :receiptType', { receiptType })
+        .andWhere('receipt.receiptStatus != :cancelStatus', {
+          cancelStatus: 'cancel',
+        })
         .getRawOne();
       const totalSales = totalSalesResult.totalSales || 0;
 
@@ -943,6 +949,9 @@ export class RecieptService {
         .select('SUM(receipt.receiptTotalDiscount)', 'totalDiscount')
         .where('DATE(receipt.createdDate) = CURDATE()')
         .andWhere('receipt.receiptType = :receiptType', { receiptType })
+        .andWhere('receipt.receiptStatus != :cancelStatus', {
+          cancelStatus: 'cancel',
+        })
         .getRawOne();
       const totalDiscount = totalDiscountResult.totalDiscount || 0;
 
@@ -951,6 +960,9 @@ export class RecieptService {
         .select('COUNT(receipt.receiptId)', 'totalTransactions')
         .where('DATE(receipt.createdDate) = CURDATE()')
         .andWhere('receipt.receiptType = :receiptType', { receiptType })
+        .andWhere('receipt.receiptStatus != :cancelStatus', {
+          cancelStatus: 'cancel',
+        })
         .getRawOne();
       const totalTransactions = totalTransactionsResult.totalTransactions || 0;
 
@@ -1055,6 +1067,9 @@ export class RecieptService {
         .andWhere('receipt.receiptType = :receiptType', {
           receiptType: receiptType,
         })
+        .andWhere('receipt.receiptStatus != :cancelStatus', {
+          cancelStatus: 'cancel',
+        })
         .getMany();
 
       const groupedByDay = {};
@@ -1067,25 +1082,12 @@ export class RecieptService {
         const month = createdDate.format('YYYY-MM');
         const year = createdDate.year();
 
-        // Logging for debugging
-        // console.log(
-        //   `Receipt ID: ${
-        //     receipt.receiptId
-        //   }, Created Date: ${createdDate.format()}, Day: ${day}`,
-        // );
-
         groupedByDay[day] = (groupedByDay[day] || 0) + receipt.receiptNetPrice;
         groupedByMonth[month] =
           (groupedByMonth[month] || 0) + receipt.receiptNetPrice;
         groupedByYear[year] =
           (groupedByYear[year] || 0) + receipt.receiptNetPrice;
       });
-
-      // Logging for debugging
-      // console.log('Receipts:', receipts);
-      // console.log('Grouped by Day:', groupedByDay);
-      // console.log('Grouped by Month:', groupedByMonth);
-      // console.log('Grouped by Year:', groupedByYear);
 
       return {
         groupedByDay,
@@ -1100,6 +1102,7 @@ export class RecieptService {
       );
     }
   }
+
   async getCoffeeReceiptsWithCostAndDiscounts(start: Date, end: Date) {
     try {
       if (!(start instanceof Date) || isNaN(start.getTime())) {
@@ -1116,38 +1119,53 @@ export class RecieptService {
           .where('receipt.receiptType = :receiptType', {
             receiptType: 'ร้านกาแฟ',
           })
+          .andWhere('receipt.receiptStatus != :cancelStatus', {
+            cancelStatus: 'cancel',
+          })
           .getRawOne();
 
         start = earliestReceipt ? new Date(earliestReceipt.min) : new Date(0);
       }
 
+      if (!end) {
+        end = new Date();
+      }
+
+      const startDate = moment(start)
+        .tz('Asia/Bangkok')
+        .startOf('day')
+        .toISOString();
+      const endDate = moment(end).tz('Asia/Bangkok').endOf('day').toISOString();
+
+      this.logger.log(`Querying receipts from ${startDate} to ${endDate}`);
       const receipts = await this.recieptRepository
         .createQueryBuilder('receipt')
         .where('receipt.createdDate BETWEEN :startDate AND :endDate', {
-          startDate: moment(start)
-            .tz('Asia/Bangkok')
-            .startOf('day')
-            .toISOString(),
-          endDate: moment(end).tz('Asia/Bangkok').endOf('day').toISOString(),
+          startDate,
+          endDate,
         })
         .andWhere('receipt.receiptType = :receiptType', {
           receiptType: 'ร้านกาแฟ',
         })
+        .andWhere('receipt.receiptStatus != :cancelStatus', {
+          cancelStatus: 'cancel',
+        })
         .getMany();
+
+      this.logger.log(`Found ${receipts.length} receipts`);
 
       const importIngredients = await this.importIngredientRepository
         .createQueryBuilder('importingredient')
         .where('importingredient.date BETWEEN :startDate AND :endDate', {
-          startDate: moment(start)
-            .tz('Asia/Bangkok')
-            .startOf('day')
-            .toISOString(),
-          endDate: moment(end).tz('Asia/Bangkok').endOf('day').toISOString(),
+          startDate,
+          endDate,
         })
         .andWhere('importingredient.importStoreType = :storeType', {
-          storeType: 'coffee',
+          storeType: '',
         })
         .getMany();
+
+      this.logger.log(`Found ${importIngredients.length} import ingredients`);
 
       let totalCost = 0;
       let totalDiscount = 0;
@@ -1155,13 +1173,21 @@ export class RecieptService {
       const totalOrders = receipts.length;
 
       importIngredients.forEach((ingredient) => {
+        this.logger.log(`Adding ingredient total: ${ingredient.total}`);
         totalCost += ingredient.total;
       });
 
       receipts.forEach((receipt) => {
+        this.logger.log(
+          `Receipt Net Price: ${receipt.receiptNetPrice}, Discount: ${receipt.receiptTotalDiscount}`,
+        );
         totalSales += receipt.receiptNetPrice;
         totalDiscount += receipt.receiptTotalDiscount;
       });
+
+      this.logger.log(`Calculated total cost: ${totalCost}`);
+      this.logger.log(`Calculated total sales: ${totalSales}`);
+      this.logger.log(`Calculated total discount: ${totalDiscount}`);
 
       return {
         totalSales,
@@ -1201,7 +1227,7 @@ export class RecieptService {
 
         if (!endDate) {
           endDate = new Date(dates.maxDate);
-          endDate.setDate(endDate.getDate() + 1); // เพิ่มวันให้ endDate
+          endDate.setDate(endDate.getDate() + 1);
         }
       }
 
