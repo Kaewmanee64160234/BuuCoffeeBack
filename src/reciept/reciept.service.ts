@@ -1065,38 +1065,53 @@ export class RecieptService {
           .where('receipt.receiptType = :receiptType', {
             receiptType: 'ร้านกาแฟ',
           })
+          .andWhere('receipt.receiptStatus != :cancelStatus', {
+            cancelStatus: 'cancel',
+          })
           .getRawOne();
 
         start = earliestReceipt ? new Date(earliestReceipt.min) : new Date(0);
       }
 
+      if (!end) {
+        end = new Date();
+      }
+
+      const startDate = moment(start)
+        .tz('Asia/Bangkok')
+        .startOf('day')
+        .toISOString();
+      const endDate = moment(end).tz('Asia/Bangkok').endOf('day').toISOString();
+
+      this.logger.log(`Querying receipts from ${startDate} to ${endDate}`);
       const receipts = await this.recieptRepository
         .createQueryBuilder('receipt')
         .where('receipt.createdDate BETWEEN :startDate AND :endDate', {
-          startDate: moment(start)
-            .tz('Asia/Bangkok')
-            .startOf('day')
-            .toISOString(),
-          endDate: moment(end).tz('Asia/Bangkok').endOf('day').toISOString(),
+          startDate,
+          endDate,
         })
         .andWhere('receipt.receiptType = :receiptType', {
           receiptType: 'ร้านกาแฟ',
         })
+        .andWhere('receipt.receiptStatus != :cancelStatus', {
+          cancelStatus: 'cancel',
+        })
         .getMany();
+
+      this.logger.log(`Found ${receipts.length} receipts`);
 
       const importIngredients = await this.importIngredientRepository
         .createQueryBuilder('importingredient')
         .where('importingredient.date BETWEEN :startDate AND :endDate', {
-          startDate: moment(start)
-            .tz('Asia/Bangkok')
-            .startOf('day')
-            .toISOString(),
-          endDate: moment(end).tz('Asia/Bangkok').endOf('day').toISOString(),
+          startDate,
+          endDate,
         })
         .andWhere('importingredient.importStoreType = :storeType', {
-          storeType: 'coffee',
+          storeType: '',
         })
         .getMany();
+
+      this.logger.log(`Found ${importIngredients.length} import ingredients`);
 
       let totalCost = 0;
       let totalDiscount = 0;
@@ -1104,13 +1119,21 @@ export class RecieptService {
       const totalOrders = receipts.length;
 
       importIngredients.forEach((ingredient) => {
+        this.logger.log(`Adding ingredient total: ${ingredient.total}`);
         totalCost += ingredient.total;
       });
 
       receipts.forEach((receipt) => {
+        this.logger.log(
+          `Receipt Net Price: ${receipt.receiptNetPrice}, Discount: ${receipt.receiptTotalDiscount}`,
+        );
         totalSales += receipt.receiptNetPrice;
         totalDiscount += receipt.receiptTotalDiscount;
       });
+
+      this.logger.log(`Calculated total cost: ${totalCost}`);
+      this.logger.log(`Calculated total sales: ${totalSales}`);
+      this.logger.log(`Calculated total discount: ${totalDiscount}`);
 
       return {
         totalSales,
@@ -1150,7 +1173,7 @@ export class RecieptService {
 
         if (!endDate) {
           endDate = new Date(dates.maxDate);
-          endDate.setDate(endDate.getDate() + 1); // เพิ่มวันให้ endDate
+          endDate.setDate(endDate.getDate() + 1);
         }
       }
 
