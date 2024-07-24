@@ -34,11 +34,6 @@ export class PromotionsController {
       const parsedStartDate = new Date(startDate);
       const parsedEndDate = new Date(endDate);
 
-      if (isNaN(parsedStartDate.getTime()) || isNaN(parsedEndDate.getTime())) {
-        throw new HttpException('Invalid date format', HttpStatus.BAD_REQUEST);
-      }
-
-      // Adjust endDate to include the entire end date
       parsedEndDate.setDate(parsedEndDate.getDate() + 1);
 
       return await this.promotionsService.findAllPromotionsUsageByDateRange(

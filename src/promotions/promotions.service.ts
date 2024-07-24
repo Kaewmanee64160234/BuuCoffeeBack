@@ -67,8 +67,21 @@ export class PromotionsService {
       );
     }
   }
-  async findAllPromotionsUsageByDateRange(startDate: Date, endDate: Date) {
+  async findAllPromotionsUsageByDateRange(startDate?: Date, endDate?: Date) {
     try {
+      // Determine the minimum and maximum dates if not provided
+      if (!startDate || !endDate) {
+        const dateRange = await this.receiptPromotionRepository
+          .createQueryBuilder('receiptPromotion')
+          .select('MIN(receiptPromotion.date)', 'minDate')
+          .addSelect('MAX(receiptPromotion.date)', 'maxDate')
+          .getRawOne();
+
+        startDate = startDate || new Date(dateRange.minDate);
+        endDate = endDate || new Date(dateRange.maxDate);
+        endDate.setDate(endDate.getDate() + 1); // Add one day to endDate
+      }
+
       const promotionsUsage = await this.receiptPromotionRepository
         .createQueryBuilder('receiptPromotion')
         .leftJoinAndSelect('receiptPromotion.promotion', 'promotion')
@@ -123,6 +136,7 @@ export class PromotionsService {
       );
     }
   }
+
   findOne(id: number) {
     try {
       return this.promotionRepository.findOne({ where: { promotionId: id } });
