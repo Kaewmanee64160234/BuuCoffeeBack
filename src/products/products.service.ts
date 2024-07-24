@@ -474,13 +474,17 @@ export class ProductsService {
     existingRecipes: Recipe[],
     newRecipes: UpdateRecipeDto[],
   ): Promise<boolean> {
+    console.log('existingRecipes', newRecipes);
     if (existingRecipes.length !== newRecipes.length) {
       return true;
     }
 
     for (let i = 0; i < existingRecipes.length; i++) {
       const existingRecipe = existingRecipes[i];
-      const newRecipe = newRecipes[i];
+      const newRecipe = await this.recipeRepository.findOne({
+        where: { recipeId: newRecipes[i].recipeId },
+        relations: ['ingredient'],
+      });
 
       if (
         existingRecipe.quantity !== newRecipe.quantity ||
@@ -522,6 +526,7 @@ export class ProductsService {
 
           if (typeDto.recipes) {
             for (const recipeDto of typeDto.recipes) {
+              console.log('recipeDto', recipeDto);
               const ingredient = await this.getIngredientById(
                 recipeDto.ingredient.ingredientId,
               );
