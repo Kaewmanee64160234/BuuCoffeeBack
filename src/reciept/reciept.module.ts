@@ -14,6 +14,7 @@ import { Customer } from 'src/customers/entities/customer.entity';
 import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 import { ReceiptPromotion } from 'src/receipt-promotions/entities/receipt-promotion.entity';
 import { Importingredient } from 'src/importingredients/entities/importingredient.entity';
+import { Recipe } from 'src/recipes/entities/recipe.entity';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { Importingredient } from 'src/importingredients/entities/importingredien
       User,
       Customer,
       Ingredient,
+      Recipe,
       ReceiptPromotion,
       Importingredient,
     ]),
