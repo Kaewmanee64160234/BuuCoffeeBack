@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Reciept } from './entities/reciept.entity';
 import { User } from 'src/users/entities/user.entity';
 import { Customer } from 'src/customers/entities/customer.entity';
-import { Repository, Between } from 'typeorm';
+import { Repository, Between, Not } from 'typeorm';
 import { ProductType } from 'src/product-types/entities/product-type.entity';
 import { Product } from 'src/products/entities/product.entity';
 import { ProductTypeTopping } from 'src/product-type-toppings/entities/product-type-topping.entity';
@@ -1291,6 +1291,7 @@ export class RecieptService {
       ],
     });
   }
+
   async generateIngredientUsageReport(startDate: Date, endDate: Date) {
     const receipts = await this.recieptRepository.find({
       where: {
@@ -1302,6 +1303,7 @@ export class RecieptService {
         'receiptItems.productType.recipes',
         'receiptItems.productType.recipes.ingredient',
       ],
+      withDeleted: true,
     });
 
     const ingredientUsage: Record<
@@ -1309,13 +1311,39 @@ export class RecieptService {
       { ingredientName: string; quantity: number; unit: string }
     > = {};
 
-    receipts.forEach((receipt) => {
-      receipt.receiptItems.forEach((receiptItem) => {
-        const productType = receiptItem.productType;
+    for (const receipt of receipts) {
+      for (const receiptItem of receipt.receiptItems) {
+        let productType = receiptItem.productType;
 
-        productType.recipes.forEach((recipe) => {
+        // If productType is null, fetch it with the withDeleted option
+        if (!productType) {
+          productType = await this.productTypeRepository.findOne({
+            where: { productTypeId: receiptItem.productType.productTypeId },
+            withDeleted: true,
+            relations: [
+              'recipes',
+              'recipes.ingredient',
+              'product',
+              'product.category',
+            ],
+          });
+        }
+
+        const product = await this.productRepository.findOne({
+          where: { productId: productType.productTypeId },
+          withDeleted: true,
+          relations: [
+            'category',
+            'productTypes',
+            'productTypes.recipes',
+            'productTypes.recipes.ingredient',
+          ],
+        });
+
+        for (const recipe of productType.recipes) {
           const ingredient = recipe.ingredient;
-          const quantityUsed = recipe.quantity * receiptItem.quantity;
+          const quantityUsed =
+            recipe.quantity * parseFloat(receiptItem.quantity + '');
 
           if (ingredientUsage[ingredient.ingredientId]) {
             ingredientUsage[ingredient.ingredientId].quantity += quantityUsed;
@@ -1326,12 +1354,25 @@ export class RecieptService {
               unit: ingredient.ingredientUnit,
             };
           }
-        });
-      });
-    });
+        }
+      }
+    }
 
     const formattedResult = {
-      ingredients: Object.values(ingredientUsage),
+      ingredients: Object.values(ingredientUsage).reduce(
+        (result, ingredient) => {
+          const existingIngredient = result.find(
+            (item) => item.ingredientName === ingredient.ingredientName,
+          );
+          if (existingIngredient) {
+            existingIngredient.quantity += ingredient.quantity;
+          } else {
+            result.push(ingredient);
+          }
+          return result;
+        },
+        [],
+      ),
     };
 
     return formattedResult;

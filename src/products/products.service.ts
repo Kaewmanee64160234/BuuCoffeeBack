@@ -141,6 +141,7 @@ export class ProductsService {
       ingredient.ingredientQuantityPerUnit = 1;
       ingredient.ingredientQuantityPerSubUnit = 'piece';
       ingredient.ingredientRemining = 0;
+      ingredient.ingredientImage = 'no-image.jpg';
 
       const ing = await this.ingredientRepository.save(ingredient);
 
@@ -249,6 +250,7 @@ export class ProductsService {
       if (!product.category.haveTopping) {
         await this.softRemoveProductIngredients(product);
       }
+      await this.productTypeRepository.softRemove(product.productTypes);
       await this.productRepository.softRemove(product);
     } catch (error) {
       console.log(error);
