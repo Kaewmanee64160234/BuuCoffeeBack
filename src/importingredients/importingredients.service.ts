@@ -37,6 +37,8 @@ export class ImportingredientsService {
     importingredient.discount = createImportingredientDto.discount;
     importingredient.store = createImportingredientDto.store;
     importingredient.total = createImportingredientDto.total;
+    importingredient.importStoreType =
+      createImportingredientDto.importStoreType;
 
     const savedImportingredient = await this.importingredientRepository.save(
       importingredient,
