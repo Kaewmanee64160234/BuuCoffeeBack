@@ -543,7 +543,109 @@ export class RecieptService {
       }
     }
   }
+  async findAllQueryDate(
+    startDate: string,
+    endDate: string,
+    receiptType?: string,
+  ): Promise<any[]> {
+    try {
+      // แปลงวันที่จาก string เป็น Date
+      const start = new Date(startDate);
+      const end = new Date(endDate);
 
+      // ตรวจสอบการแปลงวันที่
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        throw new HttpException('Invalid date format', HttpStatus.BAD_REQUEST);
+      }
+
+      const queryOptions: any = {
+        where: {
+          createdDate: Between(start, end),
+        },
+        relations: [
+          'receiptItems.productType',
+          'receiptItems.productTypeToppings',
+          'receiptItems.productTypeToppings.productType',
+          'receiptItems.productTypeToppings.productType.product',
+          'receiptItems.productTypeToppings.topping',
+          'receiptItems.product',
+          'receiptItems.product.category',
+          'user',
+          'customer',
+          'receiptPromotions',
+          'receiptPromotions.promotion',
+        ],
+      };
+
+      if (receiptType) {
+        queryOptions.where['receiptType'] = receiptType;
+      }
+
+      const receipts = await this.recieptRepository.find(queryOptions);
+
+      // <------จัดรูปแบบข้อมูล ----------------------------------->
+      return receipts.map((receipt) => ({
+        receiptTotalPrice: receipt.receiptTotalPrice,
+        receiptTotalDiscount: receipt.receiptTotalDiscount,
+        receiptNetPrice: receipt.receiptNetPrice,
+        receiptStatus: receipt.receiptStatus,
+        receiptType: receipt.receiptType,
+        queueNumber: receipt.queueNumber,
+        paymentMethod: receipt.paymentMethod,
+        createdDate: receipt.createdDate,
+        updatedDate: receipt.updatedDate,
+        receiptItems: receipt.receiptItems.map((item) => ({
+          quantity: item.quantity,
+          receiptSubTotal: item.receiptSubTotal,
+          sweetnessLevel: item.sweetnessLevel,
+          productType: item.productType
+            ? {
+                productTypeId: item.productType.productTypeId,
+                productTypeName: item.productType.productTypeName,
+                productTypePrice: item.productType.productTypePrice,
+              }
+            : null,
+          productTypeToppings: item.productTypeToppings.map((topping) => ({
+            productTypeToppingId: topping.productTypeToppingId,
+          })),
+          product: item.product
+            ? {
+                productId: item.product.productId,
+                productName: item.product.productName,
+                productPrice: item.product.productPrice,
+                productImage: item.product.productImage,
+                storeType: item.product.storeType,
+                category: item.product.category
+                  ? {
+                      categoryId: item.product.category.categoryId,
+                      categoryName: item.product.category.categoryName,
+                    }
+                  : null,
+              }
+            : null,
+        })),
+        user: receipt.user
+          ? {
+              userName: receipt.user.userName,
+            }
+          : null,
+        customer: receipt.customer,
+        receiptPromotions: receipt.receiptPromotions.map((promotion) => ({
+          discount: promotion.discount,
+          promotion: promotion.promotion
+            ? {
+                promotionName: promotion.promotion.promotionName,
+              }
+            : null,
+        })),
+      }));
+    } catch (error) {
+      throw new HttpException(
+        'Error fetching receipts',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
   async cancelReceipt(id: number) {
     try {
       // check if in 30 min can cancle

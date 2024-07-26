@@ -22,7 +22,36 @@ export class RecieptController {
   create(@Body() createRecieptDto: CreateRecieptDto) {
     return this.recieptService.create(createRecieptDto);
   }
+  @Get('query-date')
+  async findAllQueryDate(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+    @Query('receiptType') receiptType?: string,
+  ): Promise<any[]> {
+    try {
+      if (!startDate || !endDate) {
+        throw new HttpException(
+          'startDate and endDate are required',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
 
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        throw new HttpException('Invalid date format', HttpStatus.BAD_REQUEST);
+      }
+
+      return await this.recieptService.findAllQueryDate(
+        startDate,
+        endDate,
+        receiptType,
+      );
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
   // update
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateRecieptDto: UpdateRecieptDto) {
