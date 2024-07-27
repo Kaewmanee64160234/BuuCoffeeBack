@@ -141,7 +141,8 @@ export class ProductsService {
       ingredient.ingredientQuantityPerUnit = 1;
       ingredient.ingredientQuantityPerSubUnit = 'piece';
       ingredient.ingredientRemining = 0;
-      ingredient.ingredientImage = 'no-image.jpg';
+      ingredient.ingredientSupplier = productName;
+      ingredient.ingredientImage = 'no-image.png';
 
       const ing = await this.ingredientRepository.save(ingredient);
 
@@ -232,6 +233,26 @@ export class ProductsService {
     } catch (error) {
       throw new HttpException(
         'Failed to retrieve product',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  // get Product by Store Type
+  async getProductByStoreType(storeType: string) {
+    try {
+      return await this.productRepository.find({
+        where: { storeType: storeType },
+        relations: [
+          'productTypes',
+          'category',
+          'productTypes.recipes',
+          'productTypes.recipes.ingredient',
+        ],
+      });
+    } catch (error) {
+      throw new HttpException(
+        'Failed to retrieve products',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -369,11 +390,11 @@ export class ProductsService {
         this.updateProductFromDto(product, updateProductDto, category);
 
         const savedProduct = await this.productRepository.save(product);
-        await this.handleProductTypesAndRecipes(
-          savedProduct,
-          updateProductDto,
-          true,
-        );
+        // await this.handleProductTypesAndRecipes(
+        //   savedProduct,
+        //   updateProductDto,
+        //   true,
+        // );
 
         const result = await this.productRepository.findOne({
           where: { productId: savedProduct.productId },

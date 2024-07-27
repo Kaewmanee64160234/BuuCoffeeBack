@@ -35,6 +35,12 @@ export class ProductsController {
     return this.productsService.create(createProductDto);
   }
 
+  // getProductByStoreType
+  @Get('store-type/:storeType')
+  getProductByStoreType(@Param('storeType') storeType: string) {
+    return this.productsService.getProductByStoreType(storeType);
+  }
+
   @Post('update-image/:productId')
   @UseInterceptors(
     FileInterceptor('file', {
