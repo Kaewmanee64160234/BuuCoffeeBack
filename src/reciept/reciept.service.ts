@@ -337,14 +337,28 @@ export class RecieptService {
             console.log('================================================');
           } else {
             const processedIngredients = new Set<number>();
-            const recipe = await this.recipeRepository.findOne({
-              where: {
-                productType: {
-                  productTypeId: receiptItem.productType.productTypeId,
+            let recipe = null;
+
+            if (receiptItemDto.productType) {
+              recipe = await this.recipeRepository.findOne({
+                where: {
+                  productType: {
+                    productTypeId: receiptItemDto.productType.productTypeId,
+                  },
                 },
-              },
-              relations: ['ingredient'],
-            });
+                relations: ['ingredient'],
+              });
+            } else {
+              recipe = await this.recipeRepository.findOne({
+                where: {
+                  productType: {
+                    productTypeId: receiptItemDto.productType.productTypeId,
+                  },
+                },
+                relations: ['ingredient'],
+              });
+            }
+
             if (
               ingredient &&
               !processedIngredients.has(ingredient.ingredientId)
@@ -454,10 +468,18 @@ export class RecieptService {
       });
 
       if (receiptItem.productTypeToppings.length == 0) {
-        const productType = await this.productTypeRepository.findOne({
-          where: { productTypeId: receiptItem.productType.productTypeId },
-          relations: ['recipes', 'recipes.ingredient'],
-        });
+        let productType = null;
+        if (receiptItem.productType.productTypeId) {
+          productType = await this.productTypeRepository.findOne({
+            where: { productTypeId: receiptItem.productType.productTypeId },
+            relations: ['recipes', 'recipes.ingredient'],
+          });
+        } else {
+          productType = await this.productTypeRepository.findOne({
+            where: { productTypeId: receiptItemDto.productType.productTypeId },
+            relations: ['recipes', 'recipes.ingredient'],
+          });
+        }
         const ingredient = productType.recipes[0].ingredient;
 
         if (ingredient) {
@@ -888,19 +910,37 @@ export class RecieptService {
 
         const product = await this.productRepository.findOne({
           where: { productId: receiptItem.product.productId },
+          relations: [
+            'category',
+            'productTypes',
+            'productTypes.recipes',
+            'productTypes.recipes.ingredient',
+          ],
         });
         if (!product) {
           throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
         }
 
-        const newReceiptItem = this.recieptItemRepository.create({
-          quantity: receiptItem.quantity,
-          reciept: existingReceipt,
-          sweetnessLevel: receiptItem.sweetnessLevel,
-          receiptSubTotal: receiptItem.receiptSubTotal,
-          product: product,
-          productType: receiptItem.productType,
-        });
+        let newReceiptItem = null;
+        if (product.category.haveTopping == false) {
+          newReceiptItem = this.recieptItemRepository.create({
+            quantity: receiptItem.quantity,
+            reciept: existingReceipt,
+            sweetnessLevel: receiptItem.sweetnessLevel,
+            receiptSubTotal: receiptItem.receiptSubTotal,
+            product: product,
+            productType: product.productTypes[0],
+          });
+        } else {
+          newReceiptItem = this.recieptItemRepository.create({
+            quantity: receiptItem.quantity,
+            reciept: existingReceipt,
+            sweetnessLevel: receiptItem.sweetnessLevel,
+            receiptSubTotal: receiptItem.receiptSubTotal,
+            product: product,
+            productType: receiptItem.productType,
+          });
+        }
 
         const savedReceiptItem = await this.recieptItemRepository.save(
           newReceiptItem,
@@ -1416,11 +1456,20 @@ export class RecieptService {
     for (const receipt of receipts) {
       for (const receiptItem of receipt.receiptItems) {
         let productType = receiptItem.productType;
+        const receiptItem_ = await this.recieptItemRepository.findOne({
+          where: { receiptItemId: receiptItem.receiptItemId },
+          relations: [
+            'productType',
+            'productType.recipes',
+            'productType.recipes.ingredient',
+          ],
+        });
+        console.log('receiptItem_', receiptItem_);
 
         // If productType is null, fetch it with the withDeleted option
         if (!productType) {
           productType = await this.productTypeRepository.findOne({
-            where: { productTypeId: receiptItem.productType.productTypeId },
+            where: { productTypeId: receiptItem_.productType.productTypeId },
             withDeleted: true,
             relations: [
               'recipes',
