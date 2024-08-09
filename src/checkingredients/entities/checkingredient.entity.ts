@@ -19,11 +19,13 @@ export class Checkingredient {
 
   @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
   date: Date;
-
+  @Column({ type: 'varchar', length: 50 })
+  actionType: string; // เช็คสินค้า หรือ นำสินค้าออก
   @ManyToOne(() => User, (user) => user.checkingredients)
   @JoinColumn({ name: 'userId' })
   user: User;
-
+  @Column()
+  checkDescription: string;
   @OneToMany(
     () => Checkingredientitem,
     (checkingredientitem) => checkingredientitem.checkingredient,

@@ -4,7 +4,9 @@ export class CreateImportingredientitemDto {
   @IsNotEmpty()
   @IsNumber()
   ingredientId: number;
-
+  @IsNotEmpty()
+  @IsNumber()
+  unitPrice: number;
   @IsNotEmpty()
   @IsNumber()
   pricePerUnit: number;

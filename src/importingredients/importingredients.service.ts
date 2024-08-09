@@ -37,6 +37,8 @@ export class ImportingredientsService {
     importingredient.discount = createImportingredientDto.discount;
     importingredient.store = createImportingredientDto.store;
     importingredient.total = createImportingredientDto.total;
+    importingredient.importDescription =
+      createImportingredientDto.importDescription;
     importingredient.importStoreType =
       createImportingredientDto.importStoreType;
 
@@ -59,16 +61,15 @@ export class ImportingredientsService {
       importingredientitem.importingredient = savedImportingredient;
       importingredientitem.ingredient = ingredient;
       importingredientitem.pricePerUnit = importItemDto.pricePerUnit;
+      importingredientitem.unitPrice = importItemDto.unitPrice;
       importingredientitem.Quantity = importItemDto.Quantity;
-      // total += importItemDto.pricePerUnit * importItemDto.Quantity;
+
       await this.importingredientitemRepository.save(importingredientitem);
 
-      // Update the quantity in stock for the ingredient
+      // Update
       ingredient.ingredientQuantityInStock += importItemDto.Quantity;
       await this.ingredientRepository.save(ingredient);
     }
-
-    // savedImportingredient.total = total - savedImportingredient.discount;
     await this.importingredientRepository.save(savedImportingredient);
 
     return await this.importingredientRepository.findOne({

@@ -16,6 +16,8 @@ export class Importingredientitem {
   @Column()
   pricePerUnit: number;
   @Column()
+  unitPrice: number;
+  @Column()
   Quantity: number;
   @ManyToOne(
     () => Importingredient,
@@ -23,7 +25,7 @@ export class Importingredientitem {
   )
   importingredient: Importingredient;
   @ManyToOne(() => Ingredient, (ingredient) => ingredient.importingredientitem)
-  ingredient: Ingredient; // Ingredient Id
+  ingredient: Ingredient;
   @CreateDateColumn()
   createdDate: Date;
   @UpdateDateColumn()

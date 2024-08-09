@@ -12,7 +12,6 @@ import { Reciept } from 'src/reciept/entities/reciept.entity';
 import { Importingredient } from 'src/importingredients/entities/importingredient.entity';
 import { Checkingredient } from 'src/checkingredients/entities/checkingredient.entity';
 import { Cashier } from 'src/cashiers/entities/cashier.entity';
-import { Exportingredient } from 'src/exportingredients/entities/exportingredient.entity';
 @Entity()
 export class User {
   @PrimaryGeneratedColumn()
@@ -34,11 +33,6 @@ export class User {
     () => Importingredient,
     (importingredient) => importingredient.user,
   )
-  @OneToMany(
-    () => Exportingredient,
-    (exportingredient) => exportingredient.user,
-  )
-  exportingredients: Exportingredient[];
   @OneToMany(() => Reciept, (reciept) => reciept.customer)
   importingredients: Importingredient[];
   @OneToMany(() => Checkingredient, (checkingredient) => checkingredient.user)

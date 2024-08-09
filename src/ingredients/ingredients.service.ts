@@ -47,7 +47,8 @@ export class IngredientsService {
       );
     }
   }
-  async findAll(query): Promise<Paginate> {
+
+  async findAllQuery(query): Promise<Paginate> {
     try {
       const page = query.page || 1;
       const take = query.take || 10;
@@ -90,7 +91,16 @@ export class IngredientsService {
       );
     }
   }
-
+  async findAll() {
+    try {
+      return this.ingredientRepository.find();
+    } catch (error) {
+      throw new HttpException(
+        'Failed to fetch ingredients',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
   async uploadImage(
     ingredientId: number,
     fileName: string,

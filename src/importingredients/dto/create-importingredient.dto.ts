@@ -12,6 +12,8 @@ export class CreateImportingredientDto {
   @IsNotEmpty()
   total: number;
   @IsNotEmpty()
+  importDescription: string;
+  @IsNotEmpty()
   importingredientitem: CreateImportingredientitemDto[];
   @IsNotEmpty()
   importStoreType: string;

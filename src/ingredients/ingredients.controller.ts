@@ -86,9 +86,13 @@ export class IngredientsController {
     return this.ingredientsService.uploadImage(+id, file.filename);
   }
 
+  @Get(':all')
+  findAllQuery(@Query() query) {
+    return this.ingredientsService.findAllQuery(query);
+  }
   @Get()
-  findAll(@Query() query) {
-    return this.ingredientsService.findAll(query);
+  findAll() {
+    return this.ingredientsService.findAll();
   }
 
   @Get(':id')

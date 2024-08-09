@@ -39,10 +39,6 @@ import { Promotion } from './promotions/entities/promotion.entity';
 import { CashiersModule } from './cashiers/cashiers.module';
 import { Cashier } from './cashiers/entities/cashier.entity';
 import { AuthModule } from './auth/auth.module';
-import { ExportingredientsModule } from './exportingredients/exportingredients.module';
-import { ExportingredientitemsModule } from './exportingredientitems/exportingredientitems.module';
-import { Exportingredient } from './exportingredients/entities/exportingredient.entity';
-import { Exportingredientitem } from './exportingredientitems/entities/exportingredientitem.entity';
 
 @Module({
   imports: [
@@ -72,8 +68,6 @@ import { Exportingredientitem } from './exportingredientitems/entities/exporting
         Checkingredientitem,
         Promotion,
         Cashier,
-        Exportingredient,
-        Exportingredientitem,
       ],
       synchronize: true,
     }),
@@ -96,8 +90,6 @@ import { Exportingredientitem } from './exportingredientitems/entities/exporting
     PromotionsModule,
     CashiersModule,
     AuthModule,
-    ExportingredientsModule,
-    ExportingredientitemsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

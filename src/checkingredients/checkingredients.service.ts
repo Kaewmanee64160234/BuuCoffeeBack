@@ -31,6 +31,9 @@ export class CheckingredientsService {
     const checkingredient = new Checkingredient();
     checkingredient.user = user;
     checkingredient.date = createCheckingredientDto.date;
+    checkingredient.checkDescription =
+      createCheckingredientDto.checkDescription;
+    checkingredient.actionType = createCheckingredientDto.actionType;
 
     const savedCheckingredient = await this.checkingredientRepository.save(
       checkingredient,
@@ -54,8 +57,12 @@ export class CheckingredientsService {
 
       await this.checkingredientitemRepository.save(checkingredientitem);
 
-      // Update the quantity in stock for the ingredient
-      ingredient.ingredientQuantityInStock = itemDto.UsedQuantity;
+      // Update
+      if (createCheckingredientDto.actionType === 'issuing') {
+        ingredient.ingredientQuantityInStock -= itemDto.UsedQuantity;
+      } else if (createCheckingredientDto.actionType === 'check') {
+        ingredient.ingredientQuantityInStock = itemDto.UsedQuantity;
+      }
       await this.ingredientRepository.save(ingredient);
     }
 

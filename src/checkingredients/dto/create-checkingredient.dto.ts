@@ -6,6 +6,10 @@ export class CreateCheckingredientDto {
 
   @IsNotEmpty()
   userId: number;
+  @IsNotEmpty()
+  actionType: string;
+  @IsNotEmpty()
+  checkDescription: string;
 
   @IsNotEmpty()
   checkingredientitems: CreateCheckingredientitemDto[];
