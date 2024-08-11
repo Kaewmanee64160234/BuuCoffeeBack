@@ -67,7 +67,11 @@ export class RecieptService {
         }
       }
 
+      // Set the receipt number before creating the receipt
+      const receiptNumber = await this.getNextReceiptNumber();
+
       const newReciept = this.recieptRepository.create({
+        receiptNumber: receiptNumber,
         receiptTotalPrice: createRecieptDto.receiptTotalPrice,
         receiptTotalDiscount: createRecieptDto.receiptTotalDiscount,
         receiptNetPrice: createRecieptDto.receiptNetPrice,
@@ -82,6 +86,7 @@ export class RecieptService {
       const recieptSave = await this.recieptRepository.save(newReciept);
       let totalPoints = 0;
 
+      // Processing receipt items
       for (const receiptItemDto of createRecieptDto.receiptItems) {
         if (isNaN(receiptItemDto.quantity) || receiptItemDto.quantity <= 0) {
           throw new HttpException(
@@ -283,6 +288,35 @@ export class RecieptService {
         'Error creating receipt',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
+    }
+  }
+
+  private async getNextReceiptNumber(): Promise<number> {
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1; // JavaScript months are 0-based
+    const currentDay = currentDate.getDate();
+
+    if (currentMonth === 10 && currentDay === 1) {
+      // Reset receiptNumber to 1 on October 1st
+      return 1;
+    } else {
+      // Find the last receipt created in the current year
+      const lastReceipt = await this.recieptRepository
+        .createQueryBuilder('receipt')
+        .where('YEAR(receipt.createdDate) = :year', {
+          year: currentYear,
+        })
+        .orderBy('receipt.receiptNumber', 'DESC')
+        .getOne();
+
+      if (lastReceipt) {
+        // Increment the receiptNumber
+        return lastReceipt.receiptNumber + 1;
+      } else {
+        // If no receipts are found, start with 1
+        return 1;
+      }
     }
   }
 
