@@ -90,6 +90,7 @@ export class IngredientsController {
   findAllQuery(@Query() query) {
     return this.ingredientsService.findAllQuery(query);
   }
+
   @Get()
   findAll() {
     return this.ingredientsService.findAll();
