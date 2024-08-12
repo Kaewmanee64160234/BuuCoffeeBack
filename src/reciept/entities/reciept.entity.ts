@@ -15,6 +15,8 @@ import { ReceiptPromotion } from 'src/receipt-promotions/entities/receipt-promot
 export class Reciept {
   @PrimaryGeneratedColumn()
   receiptId: number;
+  @Column({ nullable: true })
+  receiptNumber: number;
   @Column()
   receiptTotalPrice: number;
   @Column()

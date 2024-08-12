@@ -38,4 +38,6 @@ export class CreateRecieptDto {
   paymentMethod: string;
   @IsNotEmpty()
   queueNumber: number;
+
+  receiptNumber: number;
 }
