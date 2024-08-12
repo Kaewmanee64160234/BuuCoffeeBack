@@ -19,12 +19,18 @@ export class Importingredientitem {
   unitPrice: number;
   @Column()
   Quantity: number;
+  @Column({ nullable: true }) // สำหรับ"ร้านข้าว"
+  name: string;
   @ManyToOne(
     () => Importingredient,
     (importingredient) => importingredient.importingredientitem,
   )
   importingredient: Importingredient;
-  @ManyToOne(() => Ingredient, (ingredient) => ingredient.importingredientitem)
+  @ManyToOne(
+    () => Ingredient,
+    (ingredient) => ingredient.importingredientitem,
+    { nullable: true },
+  )
   ingredient: Ingredient;
   @CreateDateColumn()
   createdDate: Date;

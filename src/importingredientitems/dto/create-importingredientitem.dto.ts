@@ -6,12 +6,12 @@ export class CreateImportingredientitemDto {
   ingredientId: number;
   @IsNotEmpty()
   @IsNumber()
-  unitPrice: number;
+  unitPrice?: number;
   @IsNotEmpty()
   @IsNumber()
-  pricePerUnit: number;
-
+  pricePerUnit?: number;
+  name?: string;
   @IsNotEmpty()
   @IsNumber()
-  Quantity: number;
+  Quantity?: number;
 }

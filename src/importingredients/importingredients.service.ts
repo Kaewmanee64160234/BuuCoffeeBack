@@ -2,14 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateImportingredientDto } from './dto/create-importingredient.dto';
 import { Importingredient } from './entities/importingredient.entity';
-import { Repository, Between, MoreThanOrEqual } from 'typeorm';
+import { Repository, Between } from 'typeorm';
 import { Importingredientitem } from 'src/importingredientitems/entities/importingredientitem.entity';
 import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 import { User } from 'src/users/entities/user.entity';
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { Reciept } from 'src/reciept/entities/reciept.entity';
-import { disconnect } from 'process';
-
 @Injectable()
 export class ImportingredientsService {
   constructor(
@@ -31,6 +29,7 @@ export class ImportingredientsService {
     if (!user) {
       throw new Error('User not found');
     }
+
     const importingredient = new Importingredient();
     importingredient.user = user;
     importingredient.date = createImportingredientDto.date;
@@ -46,31 +45,36 @@ export class ImportingredientsService {
       importingredient,
     );
 
-    // let total = 0;
     for (const importItemDto of createImportingredientDto.importingredientitem) {
-      const ingredient = await this.ingredientRepository.findOneBy({
-        ingredientId: importItemDto.ingredientId,
-      });
-      if (!ingredient) {
-        throw new Error(
-          `Ingredient with ID ${importItemDto.ingredientId} not found`,
-        );
-      }
-
       const importingredientitem = new Importingredientitem();
       importingredientitem.importingredient = savedImportingredient;
-      importingredientitem.ingredient = ingredient;
-      importingredientitem.pricePerUnit = importItemDto.pricePerUnit;
-      importingredientitem.unitPrice = importItemDto.unitPrice;
-      importingredientitem.Quantity = importItemDto.Quantity;
+
+      if (importingredient.importStoreType === 'ร้านกาแฟ') {
+        //ร้านกาแฟ
+        const ingredient = await this.ingredientRepository.findOneBy({
+          ingredientId: importItemDto.ingredientId,
+        });
+        if (!ingredient) {
+          throw new Error(
+            `Ingredient with ID ${importItemDto.ingredientId} not found`,
+          );
+        }
+
+        importingredientitem.ingredient = ingredient;
+        importingredientitem.pricePerUnit = importItemDto.pricePerUnit;
+        importingredientitem.unitPrice = importItemDto.unitPrice;
+        importingredientitem.Quantity = importItemDto.Quantity;
+
+        // Update stock
+        ingredient.ingredientQuantityInStock += importItemDto.Quantity;
+        await this.ingredientRepository.save(ingredient);
+      } else if (importingredient.importStoreType === 'ร้านข้าว') {
+        //ร้านข้าว
+        importingredientitem.name = importItemDto.name;
+      }
 
       await this.importingredientitemRepository.save(importingredientitem);
-
-      // Update
-      ingredient.ingredientQuantityInStock += importItemDto.Quantity;
-      await this.ingredientRepository.save(ingredient);
     }
-    await this.importingredientRepository.save(savedImportingredient);
 
     return await this.importingredientRepository.findOne({
       where: { importID: savedImportingredient.importID },
@@ -133,8 +137,6 @@ export class ImportingredientsService {
           date: Between(start, end),
         },
       });
-
-      // กรองข้อมูลให้แสดงเฉพาะฟิลด์ที่ต้องการ
       return results.map((result) => ({
         date: result.date,
         store: result.store,
