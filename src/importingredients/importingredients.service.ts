@@ -150,25 +150,15 @@ export class ImportingredientsService {
     }
   }
 
-  async findOne(id: number) {
-    try {
-      const importingredient = await this.importingredientRepository.findOne({
-        where: { importID: id },
-        relations: ['user', 'importingredientitem'],
-      });
-      if (!importingredient) {
-        throw new HttpException(
-          'importingredient not found',
-          HttpStatus.NOT_FOUND,
-        );
-      }
-      return importingredient;
-    } catch (error) {
-      throw new HttpException(
-        'Failed to fetch reciept',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+  async findOne(id: number): Promise<Importingredient | undefined> {
+    return await this.importingredientRepository.findOne({
+      where: { importID: id },
+      relations: [
+        'importingredientitem',
+        'user',
+        'importingredientitem.ingredient',
+      ],
+    });
   }
 
   async remove(id: number) {
