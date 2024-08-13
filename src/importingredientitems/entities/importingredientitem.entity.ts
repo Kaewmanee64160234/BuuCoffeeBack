@@ -13,9 +13,9 @@ import {
 export class Importingredientitem {
   @PrimaryGeneratedColumn()
   importIngredientsItemID: number;
-  @Column()
+  @Column('decimal', { precision: 10, scale: 2 })
   pricePerUnit: number;
-  @Column()
+  @Column('decimal', { precision: 10, scale: 2 })
   unitPrice: number;
   @Column()
   Quantity: number;
