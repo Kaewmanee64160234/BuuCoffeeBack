@@ -62,7 +62,10 @@ export class CheckingredientsService {
         ingredient.ingredientQuantityInStock -= itemDto.UsedQuantity;
       } else if (createCheckingredientDto.actionType === 'check') {
         ingredient.ingredientQuantityInStock = itemDto.UsedQuantity;
+      } else if (createCheckingredientDto.actionType === 'export') {
+        ingredient.ingredientQuantityInStock -= itemDto.UsedQuantity;
       }
+
       await this.ingredientRepository.save(ingredient);
     }
 
