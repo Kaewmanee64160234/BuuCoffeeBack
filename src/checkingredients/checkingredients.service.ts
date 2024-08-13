@@ -83,8 +83,15 @@ export class CheckingredientsService {
       ],
     });
   }
-  findOne(id: number) {
-    return `This action returns a #${id} checkingredient`;
+  async findOne(id: number): Promise<Checkingredient | undefined> {
+    return await this.checkingredientRepository.findOne({
+      where: { CheckID: id },
+      relations: [
+        'checkingredientitem',
+        'user',
+        'checkingredientitem.ingredient',
+      ],
+    });
   }
 
   remove(id: number) {
