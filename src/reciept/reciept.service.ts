@@ -62,6 +62,35 @@ export class RecieptService {
       if (!user) {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
+      if (createRecieptDto.receiptType == 'ร้านจัดเลี้ยง') {
+        if (createRecieptDto.receiptItems.length === 0) {
+          console.log('createRecieptDto.receiptType', createRecieptDto);
+
+          // Find the CheckIngredient entity based on checkStockId
+          const checkStock = await this.checkIngredientRepository.findOne({
+            where: { CheckID: createRecieptDto.checkStockId },
+          });
+          const receiptFinish = new Reciept();
+
+          if (checkStock) {
+            // Set the checkIngredient relationship on the receipt
+            receiptFinish.checkIngredientId = checkStock.CheckID;
+            receiptFinish.receiptType = createRecieptDto.receiptType;
+            receiptFinish.receiptTotalPrice =
+              createRecieptDto.receiptTotalPrice;
+            receiptFinish.receiptTotalDiscount =
+              createRecieptDto.receiptTotalDiscount;
+            receiptFinish.receiptNetPrice = createRecieptDto.receiptNetPrice;
+            receiptFinish.receiptStatus = createRecieptDto.receiptStatus;
+            receiptFinish.user = user;
+
+            // Save the receipt again to persist the relationship
+            await this.recieptRepository.save(receiptFinish);
+            console.log('receiptFinish', receiptFinish);
+            return;
+          }
+        }
+      }
 
       let customer = null;
       if (createRecieptDto.customer && createRecieptDto.customer.customerId) {
