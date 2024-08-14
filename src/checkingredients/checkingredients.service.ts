@@ -20,6 +20,8 @@ export class CheckingredientsService {
     private userRepository: Repository<User>,
   ) {}
   async create(createCheckingredientDto: CreateCheckingredientDto) {
+    console.log(createCheckingredientDto);
+
     const user = await this.userRepository.findOneBy({
       userId: createCheckingredientDto.userId,
     });

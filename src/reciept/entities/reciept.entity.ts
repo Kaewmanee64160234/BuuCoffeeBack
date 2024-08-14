@@ -38,6 +38,11 @@ export class Reciept {
   })
   receiptItems: ReceiptItem[];
 
+  @Column()
+  receive: number;
+  @Column()
+  change: number;
+
   @ManyToOne(() => User, (user) => user.reciepts)
   user: User;
   @ManyToOne(() => Customer, (customer) => customer.reciept)

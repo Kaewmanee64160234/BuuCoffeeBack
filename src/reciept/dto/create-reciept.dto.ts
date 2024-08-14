@@ -40,4 +40,6 @@ export class CreateRecieptDto {
   queueNumber: number;
 
   receiptNumber: number;
+  receive: number;
+  change: number;
 }

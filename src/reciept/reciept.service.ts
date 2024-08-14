@@ -81,6 +81,8 @@ export class RecieptService {
         receiptType: createRecieptDto.receiptType,
         paymentMethod: createRecieptDto.paymentMethod,
         queueNumber: createRecieptDto.queueNumber,
+        change: createRecieptDto.change,
+        receive: createRecieptDto.receive,
       });
 
       const recieptSave = await this.recieptRepository.save(newReciept);
@@ -878,6 +880,8 @@ export class RecieptService {
       existingReceipt.receiptType = updateReceiptDto.receiptType;
       existingReceipt.paymentMethod = updateReceiptDto.paymentMethod;
       existingReceipt.queueNumber = updateReceiptDto.queueNumber;
+      existingReceipt.change = updateReceiptDto.change;
+      existingReceipt.receive = updateReceiptDto.receive;
 
       // Compare old and new receipt items
       console.log('Old receipt items:', existingReceipt.receiptItems);
@@ -1448,6 +1452,36 @@ export class RecieptService {
         createdDate: Between(startDate, endDate),
         receiptStatus: 'paid',
         receiptType: typeOfStore,
+      },
+      relations: [
+        'receiptItems',
+        'receiptItems',
+        'receiptItems.productType',
+        'receiptItems.productType.recipes',
+        'receiptItems.productType.recipes.ingredient',
+        'receiptItems.productTypeToppings',
+        'receiptItems.productTypeToppings.productType',
+        'receiptItems.productTypeToppings.topping',
+        'receiptItems.product',
+        'receiptItems.product.category',
+        'user',
+        'customer',
+        'receiptPromotions',
+        'receiptPromotions.promotion',
+      ],
+    });
+  }
+
+  // getRecieptCateringIn24Hours
+  async getRecieptCateringIn24Hours(): Promise<Reciept[]> {
+    const currentDate = new Date();
+    const startDate = new Date(currentDate.getTime() - 24 * 60 * 60000); // 24 hours in milliseconds
+    const endDate = new Date(currentDate.getTime());
+    return await this.recieptRepository.find({
+      where: {
+        createdDate: Between(startDate, endDate),
+        receiptStatus: 'unpaid',
+        receiptType: 'ร้านจัดเลี้ยง',
       },
       relations: [
         'receiptItems',
