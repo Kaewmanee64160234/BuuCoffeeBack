@@ -16,6 +16,8 @@ import { ReceiptPromotion } from 'src/receipt-promotions/entities/receipt-promot
 import { Importingredient } from 'src/importingredients/entities/importingredient.entity';
 import * as moment from 'moment-timezone';
 import { Recipe } from 'src/recipes/entities/recipe.entity';
+import { Checkingredientitem } from 'src/checkingredientitems/entities/checkingredientitem.entity';
+import { Checkingredient } from 'src/checkingredients/entities/checkingredient.entity';
 @Injectable()
 export class RecieptService {
   private readonly logger = new Logger(RecieptService.name);
@@ -43,6 +45,10 @@ export class RecieptService {
     private recieptPromotionRepository: Repository<ReceiptPromotion>,
     @InjectRepository(Importingredient)
     private importIngredientRepository: Repository<Importingredient>,
+    // check stock
+    @InjectRepository(Checkingredient)
+    private checkIngredientRepository: Repository<Checkingredient>,
+
     // recipe
     @InjectRepository(Recipe)
     private recipeRepository: Repository<Recipe>,
@@ -256,6 +262,23 @@ export class RecieptService {
 
       const receiptFinish = await this.recieptRepository.save(newReciept);
 
+      if (createRecieptDto.receiptType === 'ร้านจัดเลี้ยง') {
+        console.log('createRecieptDto.receiptType', createRecieptDto);
+
+        // Find the CheckIngredient entity based on checkStockId
+        const checkStock = await this.checkIngredientRepository.findOne({
+          where: { CheckID: createRecieptDto.checkStockId },
+        });
+
+        if (checkStock) {
+          // Set the checkIngredient relationship on the receipt
+          receiptFinish.checkIngredientId = checkStock.CheckID;
+
+          // Save the receipt again to persist the relationship
+          await this.recieptRepository.save(receiptFinish);
+          console.log('receiptFinish', receiptFinish);
+        }
+      }
       // Update customer points if customer exists
       if (customer) {
         customer.customerNumberOfStamp += totalPoints;

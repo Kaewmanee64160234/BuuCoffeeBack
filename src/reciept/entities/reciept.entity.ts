@@ -9,8 +9,11 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToOne,
 } from 'typeorm';
 import { ReceiptPromotion } from 'src/receipt-promotions/entities/receipt-promotion.entity';
+import { Checkingredientitem } from 'src/checkingredientitems/entities/checkingredientitem.entity';
+import { Checkingredient } from 'src/checkingredients/entities/checkingredient.entity';
 @Entity()
 export class Reciept {
   @PrimaryGeneratedColumn()
@@ -42,6 +45,10 @@ export class Reciept {
   receive: number;
   @Column()
   change: number;
+
+  // onr to one  to checkstovk==ck id can null'
+  @Column()
+  checkIngredientId: number;
 
   @ManyToOne(() => User, (user) => user.reciepts)
   user: User;

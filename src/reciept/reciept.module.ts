@@ -15,6 +15,7 @@ import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 import { ReceiptPromotion } from 'src/receipt-promotions/entities/receipt-promotion.entity';
 import { Importingredient } from 'src/importingredients/entities/importingredient.entity';
 import { Recipe } from 'src/recipes/entities/recipe.entity';
+import { Checkingredient } from 'src/checkingredients/entities/checkingredient.entity';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { Recipe } from 'src/recipes/entities/recipe.entity';
       Recipe,
       ReceiptPromotion,
       Importingredient,
+      Checkingredient,
     ]),
   ],
   controllers: [RecieptController],

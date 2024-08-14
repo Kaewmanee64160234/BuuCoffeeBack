@@ -42,4 +42,5 @@ export class CreateRecieptDto {
   receiptNumber: number;
   receive: number;
   change: number;
+  checkStockId?: number;
 }
