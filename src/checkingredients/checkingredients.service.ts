@@ -54,6 +54,7 @@ export class CheckingredientsService {
       checkingredientitem.checkingredient = savedCheckingredient;
       checkingredientitem.ingredient = ingredient;
       checkingredientitem.UsedQuantity = itemDto.UsedQuantity;
+      checkingredientitem.oldRemain = ingredient.ingredientQuantityInStock;
 
       await this.checkingredientitemRepository.save(checkingredientitem);
 

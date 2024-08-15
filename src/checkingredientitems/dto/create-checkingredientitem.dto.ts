@@ -4,6 +4,8 @@ export class CreateCheckingredientitemDto {
   ingredientId: number;
   @IsNotEmpty()
   userId: number;
+  @IsNotEmpty()
+  oldRemain: number;
 
   @IsNotEmpty()
   UsedQuantity: number;

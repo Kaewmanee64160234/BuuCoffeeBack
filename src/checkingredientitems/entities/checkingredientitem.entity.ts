@@ -23,7 +23,8 @@ export class Checkingredientitem {
     (checkingredient) => checkingredient.checkingredientitem,
   )
   checkingredient: Checkingredient;
-
+  @Column()
+  oldRemain: number;
   @ManyToOne(() => Ingredient, (ingredient) => ingredient.checkingredientitem)
   ingredient: Ingredient;
   @CreateDateColumn()
