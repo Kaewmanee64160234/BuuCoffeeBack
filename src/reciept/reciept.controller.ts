@@ -190,6 +190,12 @@ export class RecieptController {
     return this.recieptService.getRecieptIn1Day(typeOfProduct);
   }
 
+  // getRecieptCateringIn24Hours
+  @Get('/receipt-catering-in-24-hours')
+  async getRecieptCateringIn24Hours() {
+    return this.recieptService.getRecieptCateringIn24Hours();
+  }
+
   @Get()
   findAll() {
     return this.recieptService.findAll();

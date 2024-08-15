@@ -1,4 +1,5 @@
 import { Checkingredientitem } from 'src/checkingredientitems/entities/checkingredientitem.entity';
+import { Reciept } from 'src/reciept/entities/reciept.entity';
 import { User } from 'src/users/entities/user.entity';
 import {
   Column,
@@ -10,6 +11,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
+  OneToOne,
 } from 'typeorm';
 
 @Entity()
@@ -31,6 +33,7 @@ export class Checkingredient {
     (checkingredientitem) => checkingredientitem.checkingredient,
   )
   checkingredientitem: Checkingredientitem[];
+
   @CreateDateColumn()
   createdDate: Date;
   @UpdateDateColumn()

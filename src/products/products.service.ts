@@ -136,10 +136,10 @@ export class ProductsService {
       const ingredient = new Ingredient();
       ingredient.ingredientName = productName;
       ingredient.ingredientMinimun = 10;
-      ingredient.ingredientUnit = 'piece';
+      ingredient.ingredientUnit = 'ชิ้น';
       ingredient.ingredientQuantityInStock = 0;
       ingredient.ingredientQuantityPerUnit = 1;
-      ingredient.ingredientQuantityPerSubUnit = 'piece';
+      ingredient.ingredientQuantityPerSubUnit = 'ชิ้น';
       ingredient.ingredientRemining = 0;
       ingredient.ingredientSupplier = productName;
       ingredient.ingredientImage = 'no-image.png';
@@ -616,10 +616,10 @@ export class ProductsService {
     const ingredient = new Ingredient();
     ingredient.ingredientName = name;
     ingredient.ingredientMinimun = 10;
-    ingredient.ingredientUnit = 'piece';
+    ingredient.ingredientUnit = 'ชิ้น';
     ingredient.ingredientQuantityInStock = 0;
     ingredient.ingredientQuantityPerUnit = 1;
-    ingredient.ingredientQuantityPerSubUnit = 'piece';
+    ingredient.ingredientQuantityPerSubUnit = 'ชิ้น';
     ingredient.ingredientRemining = 0;
 
     return this.ingredientRepository.save(ingredient);

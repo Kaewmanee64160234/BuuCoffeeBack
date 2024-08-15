@@ -16,6 +16,8 @@ import { ReceiptPromotion } from 'src/receipt-promotions/entities/receipt-promot
 import { Importingredient } from 'src/importingredients/entities/importingredient.entity';
 import * as moment from 'moment-timezone';
 import { Recipe } from 'src/recipes/entities/recipe.entity';
+import { Checkingredientitem } from 'src/checkingredientitems/entities/checkingredientitem.entity';
+import { Checkingredient } from 'src/checkingredients/entities/checkingredient.entity';
 @Injectable()
 export class RecieptService {
   private readonly logger = new Logger(RecieptService.name);
@@ -43,6 +45,10 @@ export class RecieptService {
     private recieptPromotionRepository: Repository<ReceiptPromotion>,
     @InjectRepository(Importingredient)
     private importIngredientRepository: Repository<Importingredient>,
+    // check stock
+    @InjectRepository(Checkingredient)
+    private checkIngredientRepository: Repository<Checkingredient>,
+
     // recipe
     @InjectRepository(Recipe)
     private recipeRepository: Repository<Recipe>,
@@ -55,6 +61,35 @@ export class RecieptService {
       });
       if (!user) {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+      if (createRecieptDto.receiptType == 'ร้านจัดเลี้ยง') {
+        if (createRecieptDto.receiptItems.length === 0) {
+          console.log('createRecieptDto.receiptType', createRecieptDto);
+
+          // Find the CheckIngredient entity based on checkStockId
+          const checkStock = await this.checkIngredientRepository.findOne({
+            where: { CheckID: createRecieptDto.checkStockId },
+          });
+          const receiptFinish = new Reciept();
+
+          if (checkStock) {
+            // Set the checkIngredient relationship on the receipt
+            receiptFinish.checkIngredientId = checkStock.CheckID;
+            receiptFinish.receiptType = createRecieptDto.receiptType;
+            receiptFinish.receiptTotalPrice =
+              createRecieptDto.receiptTotalPrice;
+            receiptFinish.receiptTotalDiscount =
+              createRecieptDto.receiptTotalDiscount;
+            receiptFinish.receiptNetPrice = createRecieptDto.receiptNetPrice;
+            receiptFinish.receiptStatus = createRecieptDto.receiptStatus;
+            receiptFinish.user = user;
+
+            // Save the receipt again to persist the relationship
+            await this.recieptRepository.save(receiptFinish);
+            console.log('receiptFinish', receiptFinish);
+            return;
+          }
+        }
       }
 
       let customer = null;
@@ -81,6 +116,8 @@ export class RecieptService {
         receiptType: createRecieptDto.receiptType,
         paymentMethod: createRecieptDto.paymentMethod,
         queueNumber: createRecieptDto.queueNumber,
+        change: createRecieptDto.change,
+        receive: createRecieptDto.receive,
       });
 
       const recieptSave = await this.recieptRepository.save(newReciept);
@@ -254,6 +291,23 @@ export class RecieptService {
 
       const receiptFinish = await this.recieptRepository.save(newReciept);
 
+      if (createRecieptDto.receiptType === 'ร้านจัดเลี้ยง') {
+        console.log('createRecieptDto.receiptType', createRecieptDto);
+
+        // Find the CheckIngredient entity based on checkStockId
+        const checkStock = await this.checkIngredientRepository.findOne({
+          where: { CheckID: createRecieptDto.checkStockId },
+        });
+
+        if (checkStock) {
+          // Set the checkIngredient relationship on the receipt
+          receiptFinish.checkIngredientId = checkStock.CheckID;
+
+          // Save the receipt again to persist the relationship
+          await this.recieptRepository.save(receiptFinish);
+          console.log('receiptFinish', receiptFinish);
+        }
+      }
       // Update customer points if customer exists
       if (customer) {
         customer.customerNumberOfStamp += totalPoints;
@@ -878,6 +932,8 @@ export class RecieptService {
       existingReceipt.receiptType = updateReceiptDto.receiptType;
       existingReceipt.paymentMethod = updateReceiptDto.paymentMethod;
       existingReceipt.queueNumber = updateReceiptDto.queueNumber;
+      existingReceipt.change = updateReceiptDto.change;
+      existingReceipt.receive = updateReceiptDto.receive;
 
       // Compare old and new receipt items
       console.log('Old receipt items:', existingReceipt.receiptItems);
@@ -1448,6 +1504,36 @@ export class RecieptService {
         createdDate: Between(startDate, endDate),
         receiptStatus: 'paid',
         receiptType: typeOfStore,
+      },
+      relations: [
+        'receiptItems',
+        'receiptItems',
+        'receiptItems.productType',
+        'receiptItems.productType.recipes',
+        'receiptItems.productType.recipes.ingredient',
+        'receiptItems.productTypeToppings',
+        'receiptItems.productTypeToppings.productType',
+        'receiptItems.productTypeToppings.topping',
+        'receiptItems.product',
+        'receiptItems.product.category',
+        'user',
+        'customer',
+        'receiptPromotions',
+        'receiptPromotions.promotion',
+      ],
+    });
+  }
+
+  // getRecieptCateringIn24Hours
+  async getRecieptCateringIn24Hours(): Promise<Reciept[]> {
+    const currentDate = new Date();
+    const startDate = new Date(currentDate.getTime() - 24 * 60 * 60000); // 24 hours in milliseconds
+    const endDate = new Date(currentDate.getTime());
+    return await this.recieptRepository.find({
+      where: {
+        createdDate: Between(startDate, endDate),
+        receiptStatus: 'unpaid',
+        receiptType: 'ร้านจัดเลี้ยง',
       },
       relations: [
         'receiptItems',
