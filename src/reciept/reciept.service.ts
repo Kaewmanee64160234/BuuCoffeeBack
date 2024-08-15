@@ -687,7 +687,8 @@ export class RecieptService {
         ],
       };
 
-      if (receiptType) {
+      // เพิ่มเงื่อนไขสำหรับ receiptType ถ้าไม่ใช่ "ทั้งหมด"
+      if (receiptType && receiptType !== 'ทั้งหมด') {
         queryOptions.where['receiptType'] = receiptType;
       }
 
@@ -756,6 +757,7 @@ export class RecieptService {
       );
     }
   }
+
   async cancelReceipt(id: number) {
     try {
       // check if in 30 min can cancle
