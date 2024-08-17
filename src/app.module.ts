@@ -39,6 +39,8 @@ import { Promotion } from './promotions/entities/promotion.entity';
 import { CashiersModule } from './cashiers/cashiers.module';
 import { Cashier } from './cashiers/entities/cashier.entity';
 import { AuthModule } from './auth/auth.module';
+import { SubInventoriesModule } from './sub-inventories/sub-inventories.module';
+import { SubInventory } from './sub-inventories/entities/sub-inventory.entity';
 
 @Module({
   imports: [
@@ -68,6 +70,7 @@ import { AuthModule } from './auth/auth.module';
         Checkingredientitem,
         Promotion,
         Cashier,
+        SubInventory,
       ],
       synchronize: true,
     }),
@@ -90,6 +93,7 @@ import { AuthModule } from './auth/auth.module';
     PromotionsModule,
     CashiersModule,
     AuthModule,
+    SubInventoriesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

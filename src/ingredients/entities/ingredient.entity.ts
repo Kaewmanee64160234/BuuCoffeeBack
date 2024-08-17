@@ -1,11 +1,13 @@
 import { Checkingredientitem } from 'src/checkingredientitems/entities/checkingredientitem.entity';
 import { Importingredientitem } from 'src/importingredientitems/entities/importingredientitem.entity';
 import { Recipe } from 'src/recipes/entities/recipe.entity';
+import { SubInventory } from 'src/sub-inventories/entities/sub-inventory.entity';
 import {
   Column,
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -44,6 +46,8 @@ export class Ingredient {
     (checkingredientitem) => checkingredientitem.ingredient,
   )
   checkingredientitem: Checkingredientitem[];
+  @OneToMany(() => SubInventory, (subInventory) => subInventory.ingredient)
+  subinventories: SubInventory[];
   @CreateDateColumn()
   createdDate: Date;
   @UpdateDateColumn()

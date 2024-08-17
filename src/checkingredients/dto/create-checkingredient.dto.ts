@@ -10,6 +10,8 @@ export class CreateCheckingredientDto {
   actionType: string;
   @IsNotEmpty()
   checkDescription: string;
+  @IsNotEmpty()
+  shopType: string;
 
   @IsNotEmpty()
   checkingredientitems: CreateCheckingredientitemDto[];
