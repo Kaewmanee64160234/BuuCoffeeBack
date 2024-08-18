@@ -140,7 +140,6 @@ export class ProductsService {
       ingredient.ingredientQuantityInStock = 0;
       ingredient.ingredientQuantityPerUnit = 1;
       ingredient.ingredientQuantityPerSubUnit = 'ชิ้น';
-      ingredient.ingredientRemining = 0;
       ingredient.ingredientSupplier = productName;
       ingredient.ingredientImage = 'no-image.png';
 
@@ -620,7 +619,6 @@ export class ProductsService {
     ingredient.ingredientQuantityInStock = 0;
     ingredient.ingredientQuantityPerUnit = 1;
     ingredient.ingredientQuantityPerSubUnit = 'ชิ้น';
-    ingredient.ingredientRemining = 0;
 
     return this.ingredientRepository.save(ingredient);
   }

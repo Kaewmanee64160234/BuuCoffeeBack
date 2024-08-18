@@ -26,7 +26,6 @@ export class IngredientsService {
       newIngredient.ingredientMinimun = createIngredientDto.ingredientMinimun;
       newIngredient.ingredientUnit = createIngredientDto.ingredientUnit;
       newIngredient.ingredientQuantityInStock = 0;
-      newIngredient.ingredientRemining = 0;
       newIngredient.ingredientQuantityPerUnit =
         createIngredientDto.ingredientQuantityPerUnit;
       newIngredient.ingredientQuantityPerSubUnit =

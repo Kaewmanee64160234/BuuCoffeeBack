@@ -12,6 +12,7 @@ import { ProductTypeTopping } from 'src/product-type-toppings/entities/product-t
 import { ProductType } from 'src/product-types/entities/product-type.entity';
 import { Product } from 'src/products/entities/product.entity';
 import { Reciept } from 'src/reciept/entities/reciept.entity';
+import { IngredientUsageLog } from 'src/ingredientusagelog/entities/ingredientusagelog.entity';
 
 @Entity()
 export class ReceiptItem {
@@ -44,6 +45,8 @@ export class ReceiptItem {
     onDelete: 'CASCADE',
   })
   productType: ProductType;
+  @OneToMany(() => IngredientUsageLog, (usageLog) => usageLog.recieptItem)
+  usageLogs: IngredientUsageLog[];
   @CreateDateColumn()
   createdDate: Date;
   @UpdateDateColumn()

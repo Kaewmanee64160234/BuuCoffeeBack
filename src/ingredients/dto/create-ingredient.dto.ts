@@ -36,8 +36,4 @@ export class CreateIngredientDto {
   @IsNumber()
   @IsNotEmpty()
   ingredientQuantityPerUnit: number;
-
-  @IsNumber()
-  @IsNotEmpty()
-  ingredientRemining: number;
 }

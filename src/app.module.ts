@@ -43,6 +43,8 @@ import { SubInventoriesCoffeeModule } from './sub-inventories-coffee/sub-invento
 import { SubInventoriesRiceModule } from './sub-inventories-rice/sub-inventories-rice.module';
 import { SubInventoriesCoffee } from './sub-inventories-coffee/entities/sub-inventories-coffee.entity';
 import { SubInventoriesRice } from './sub-inventories-rice/entities/sub-inventories-rice.entity';
+import { IngredientusagelogModule } from './ingredientusagelog/ingredientusagelog.module';
+import { IngredientUsageLog } from './ingredientusagelog/entities/ingredientusagelog.entity';
 
 @Module({
   imports: [
@@ -74,6 +76,7 @@ import { SubInventoriesRice } from './sub-inventories-rice/entities/sub-inventor
         Cashier,
         SubInventoriesCoffee,
         SubInventoriesRice,
+        IngredientUsageLog,
       ],
       synchronize: true,
     }),
@@ -98,6 +101,7 @@ import { SubInventoriesRice } from './sub-inventories-rice/entities/sub-inventor
     AuthModule,
     SubInventoriesCoffeeModule,
     SubInventoriesRiceModule,
+    IngredientusagelogModule,
   ],
   controllers: [AppController],
   providers: [AppService],

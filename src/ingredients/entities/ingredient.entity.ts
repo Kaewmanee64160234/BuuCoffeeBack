@@ -1,5 +1,6 @@
 import { Checkingredientitem } from 'src/checkingredientitems/entities/checkingredientitem.entity';
 import { Importingredientitem } from 'src/importingredientitems/entities/importingredientitem.entity';
+import { IngredientUsageLog } from 'src/ingredientusagelog/entities/ingredientusagelog.entity';
 import { Recipe } from 'src/recipes/entities/recipe.entity';
 import { SubInventoriesCoffee } from 'src/sub-inventories-coffee/entities/sub-inventories-coffee.entity';
 import { SubInventoriesRice } from 'src/sub-inventories-rice/entities/sub-inventories-rice.entity';
@@ -33,8 +34,6 @@ export class Ingredient {
   ingredientQuantityPerUnit: number;
   @Column()
   ingredientQuantityPerSubUnit: string;
-  @Column({ type: 'decimal', precision: 5, scale: 2 })
-  ingredientRemining: number;
   @OneToMany(() => Recipe, (recipe) => recipe.ingredient)
   recipes: Recipe[];
   @OneToMany(
@@ -58,6 +57,8 @@ export class Ingredient {
     (subInventory) => subInventory.ingredient,
   )
   coffeeShopSubInventories: SubInventoriesCoffee[];
+  @OneToMany(() => IngredientUsageLog, (usageLog) => usageLog.ingredient)
+  usageLogs: IngredientUsageLog[];
   @CreateDateColumn()
   createdDate: Date;
   @UpdateDateColumn()

@@ -18,6 +18,7 @@ import * as moment from 'moment-timezone';
 import { Recipe } from 'src/recipes/entities/recipe.entity';
 import { Checkingredientitem } from 'src/checkingredientitems/entities/checkingredientitem.entity';
 import { Checkingredient } from 'src/checkingredients/entities/checkingredient.entity';
+import { IngredientUsageLog } from 'src/ingredientusagelog/entities/ingredientusagelog.entity';
 @Injectable()
 export class RecieptService {
   private readonly logger = new Logger(RecieptService.name);
@@ -52,6 +53,8 @@ export class RecieptService {
     // recipe
     @InjectRepository(Recipe)
     private recipeRepository: Repository<Recipe>,
+    @InjectRepository(IngredientUsageLog)
+    private ingredientUsageLogRepository: Repository<IngredientUsageLog>,
   ) {}
 
   async create(createRecieptDto: CreateRecieptDto) {
@@ -191,6 +194,13 @@ export class RecieptService {
           productType: productType,
           receiptSubTotal: receiptItemDto.receiptSubTotal,
         });
+        //loging
+        // productType.recipes.forEach((recipe) => {
+        //   const usedQuantity = recipe.quantity * receiptItemDto.quantity;
+        //   this.logger.log(
+        //     `Ingredient ${recipe.ingredient.ingredientName} used: ${usedQuantity} ${recipe.ingredient.ingredientUnit}`,
+        //   );
+        // });
 
         const recieptItemSave = await this.recieptItemRepository.save(
           newRecieptItem,
@@ -270,6 +280,22 @@ export class RecieptService {
           // Add base product price and product type price only once per receipt item
           await this.recieptItemRepository.save(recieptItemSave);
         }
+        productType.recipes.forEach(async (recipe) => {
+          const usedQuantity = recipe.quantity * receiptItemDto.quantity;
+
+          const ingredientUsageLog = this.ingredientUsageLogRepository.create({
+            ingredient: recipe.ingredient,
+            recieptItem: recieptItemSave,
+            usedQuantity: usedQuantity,
+            unit: receiptItemDto.quantity,
+          });
+
+          await this.ingredientUsageLogRepository.save(ingredientUsageLog);
+
+          this.logger.log(
+            `Ingredient ${recipe.ingredient.ingredientName} used: ${usedQuantity} ${recipe.ingredient.ingredientUnit}`,
+          );
+        });
 
         // Calculate points if the product has countingPoint = true
         if (product.countingPoint) {
@@ -333,7 +359,7 @@ export class RecieptService {
         ],
       });
 
-      await this.updateIngredientStock(recipt.receiptItems);
+      // await this.updateIngredientStock(recipt.receiptItems);
 
       return recipt;
     } catch (error) {
@@ -374,173 +400,173 @@ export class RecieptService {
     }
   }
 
-  private async updateIngredientStock(receiptItems: ReceiptItem[]) {
-    for (const receiptItemDto of receiptItems) {
-      // Fetch the receipt item and related entities
-      const receiptItem = await this.recieptItemRepository.findOne({
-        where: { receiptItemId: receiptItemDto.receiptItemId },
-        relations: [
-          'product',
-          'productType',
-          'productTypeToppings',
-          'productTypeToppings.productType',
-          'productTypeToppings.productType.recipes',
-          'productTypeToppings.productType.recipes.ingredient',
-        ],
-      });
+  // private async updateIngredientStock(receiptItems: ReceiptItem[]) {
+  //   for (const receiptItemDto of receiptItems) {
+  //     // Fetch the receipt item and related entities
+  //     const receiptItem = await this.recieptItemRepository.findOne({
+  //       where: { receiptItemId: receiptItemDto.receiptItemId },
+  //       relations: [
+  //         'product',
+  //         'productType',
+  //         'productTypeToppings',
+  //         'productTypeToppings.productType',
+  //         'productTypeToppings.productType.recipes',
+  //         'productTypeToppings.productType.recipes.ingredient',
+  //       ],
+  //     });
 
-      if (
-        !receiptItemDto.productTypeToppings ||
-        receiptItemDto.productTypeToppings.length == 0
-      ) {
-        //  cutting stock from quantity
+  //     if (
+  //       !receiptItemDto.productTypeToppings ||
+  //       receiptItemDto.productTypeToppings.length == 0
+  //     ) {
+  //       //  cutting stock from quantity
 
-        const product = await this.productRepository.findOne({
-          where: { productId: receiptItemDto.product.productId },
-          relations: [
-            'category',
-            'productTypes',
-            'productTypes.recipes',
-            'productTypes.recipes.ingredient',
-          ],
-        });
-        const ingredient = await this.ingredientRepository.findOne({
-          where: {
-            ingredientId:
-              product.productTypes[0].recipes[0].ingredient.ingredientId,
-          },
-        });
+  //       const product = await this.productRepository.findOne({
+  //         where: { productId: receiptItemDto.product.productId },
+  //         relations: [
+  //           'category',
+  //           'productTypes',
+  //           'productTypes.recipes',
+  //           'productTypes.recipes.ingredient',
+  //         ],
+  //       });
+  //       const ingredient = await this.ingredientRepository.findOne({
+  //         where: {
+  //           ingredientId:
+  //             product.productTypes[0].recipes[0].ingredient.ingredientId,
+  //         },
+  //       });
 
-        if (ingredient) {
-          if (product.category.haveTopping == false) {
-            ingredient.ingredientRemining -= receiptItemDto.quantity;
-            ingredient.ingredientQuantityInStock -= receiptItemDto.quantity;
-            ingredient.ingredientRemining = Math.max(
-              0,
-              ingredient.ingredientRemining,
-            );
+  //       if (ingredient) {
+  //         if (product.category.haveTopping == false) {
+  //           ingredient.ingredientRemining -= receiptItemDto.quantity;
+  //           ingredient.ingredientQuantityInStock -= receiptItemDto.quantity;
+  //           ingredient.ingredientRemining = Math.max(
+  //             0,
+  //             ingredient.ingredientRemining,
+  //           );
 
-            console.log('No topping');
-            console.log('Ingredient Remaining:', ingredient.ingredientRemining);
-            console.log('================================================');
-          } else {
-            const processedIngredients = new Set<number>();
-            let recipe = null;
+  //           console.log('No topping');
+  //           console.log('Ingredient Remaining:', ingredient.ingredientRemining);
+  //           console.log('================================================');
+  //         } else {
+  //           const processedIngredients = new Set<number>();
+  //           let recipe = null;
 
-            if (receiptItemDto.productType) {
-              recipe = await this.recipeRepository.findOne({
-                where: {
-                  productType: {
-                    productTypeId: receiptItemDto.productType.productTypeId,
-                  },
-                },
-                relations: ['ingredient'],
-              });
-            } else {
-              recipe = await this.recipeRepository.findOne({
-                where: {
-                  productType: {
-                    productTypeId: receiptItemDto.productType.productTypeId,
-                  },
-                },
-                relations: ['ingredient'],
-              });
-            }
+  //           if (receiptItemDto.productType) {
+  //             recipe = await this.recipeRepository.findOne({
+  //               where: {
+  //                 productType: {
+  //                   productTypeId: receiptItemDto.productType.productTypeId,
+  //                 },
+  //               },
+  //               relations: ['ingredient'],
+  //             });
+  //           } else {
+  //             recipe = await this.recipeRepository.findOne({
+  //               where: {
+  //                 productType: {
+  //                   productTypeId: receiptItemDto.productType.productTypeId,
+  //                 },
+  //               },
+  //               relations: ['ingredient'],
+  //             });
+  //           }
 
-            if (
-              ingredient &&
-              !processedIngredients.has(ingredient.ingredientId)
-            ) {
-              processedIngredients.add(ingredient.ingredientId);
+  //           if (
+  //             ingredient &&
+  //             !processedIngredients.has(ingredient.ingredientId)
+  //           ) {
+  //             processedIngredients.add(ingredient.ingredientId);
 
-              const oldRemaining = ingredient.ingredientRemining;
-              ingredient.ingredientRemining = Math.round(
-                ingredient.ingredientRemining,
-              );
-              ingredient.ingredientRemining +=
-                receiptItemDto.quantity * recipe.quantity;
+  //             const oldRemaining = ingredient.ingredientRemining;
+  //             ingredient.ingredientRemining = Math.round(
+  //               ingredient.ingredientRemining,
+  //             );
+  //             ingredient.ingredientRemining +=
+  //               receiptItemDto.quantity * recipe.quantity;
 
-              if (
-                ingredient.ingredientRemining >
-                ingredient.ingredientQuantityPerUnit
-              ) {
-                ingredient.ingredientRemining -=
-                  ingredient.ingredientQuantityPerUnit;
-                ingredient.ingredientQuantityInStock -= 1;
-              }
+  //             if (
+  //               ingredient.ingredientRemining >
+  //               ingredient.ingredientQuantityPerUnit
+  //             ) {
+  //               ingredient.ingredientRemining -=
+  //                 ingredient.ingredientQuantityPerUnit;
+  //               ingredient.ingredientQuantityInStock -= 1;
+  //             }
 
-              // Ensure remaining quantity does not go below zero
-              ingredient.ingredientRemining = Math.max(
-                0,
-                ingredient.ingredientRemining,
-              );
+  //             // Ensure remaining quantity does not go below zero
+  //             ingredient.ingredientRemining = Math.max(
+  //               0,
+  //               ingredient.ingredientRemining,
+  //             );
 
-              // Allow stock quantity to go below zero
-            }
-            console.log('upate with havetopping but noy select');
+  //             // Allow stock quantity to go below zero
+  //           }
+  //           console.log('upate with havetopping but noy select');
 
-            console.log('Ingredient Remaining:', ingredient.ingredientRemining);
+  //           console.log('Ingredient Remaining:', ingredient.ingredientRemining);
 
-            console.log('================================================');
-          }
-        }
-        await this.ingredientRepository.save(ingredient);
-      } else {
-        // Track ingredients processed for this receipt item
-        const processedIngredients = new Set<number>();
+  //           console.log('================================================');
+  //         }
+  //       }
+  //       await this.ingredientRepository.save(ingredient);
+  //     } else {
+  //       // Track ingredients processed for this receipt item
+  //       const processedIngredients = new Set<number>();
 
-        // Process the productTypeToppings
-        for (const productTypeTopping of receiptItemDto.productTypeToppings) {
-          if (
-            productTypeTopping.productType &&
-            productTypeTopping.productType.recipes
-          ) {
-            for (const recipe of productTypeTopping.productType.recipes) {
-              // console.log('recipe', recipe);
-              const ingredient = await this.ingredientRepository.findOne({
-                where: { ingredientId: recipe.ingredient.ingredientId },
-              });
+  //       // Process the productTypeToppings
+  //       for (const productTypeTopping of receiptItemDto.productTypeToppings) {
+  //         if (
+  //           productTypeTopping.productType &&
+  //           productTypeTopping.productType.recipes
+  //         ) {
+  //           for (const recipe of productTypeTopping.productType.recipes) {
+  //             // console.log('recipe', recipe);
+  //             const ingredient = await this.ingredientRepository.findOne({
+  //               where: { ingredientId: recipe.ingredient.ingredientId },
+  //             });
 
-              if (
-                ingredient &&
-                !processedIngredients.has(ingredient.ingredientId)
-              ) {
-                processedIngredients.add(ingredient.ingredientId);
+  //             if (
+  //               ingredient &&
+  //               !processedIngredients.has(ingredient.ingredientId)
+  //             ) {
+  //               processedIngredients.add(ingredient.ingredientId);
 
-                const oldRemaining = ingredient.ingredientRemining;
-                ingredient.ingredientRemining = Math.round(
-                  ingredient.ingredientRemining,
-                );
-                ingredient.ingredientRemining +=
-                  receiptItem.quantity * recipe.quantity;
+  //               const oldRemaining = ingredient.ingredientRemining;
+  //               ingredient.ingredientRemining = Math.round(
+  //                 ingredient.ingredientRemining,
+  //               );
+  //               ingredient.ingredientRemining +=
+  //                 receiptItem.quantity * recipe.quantity;
 
-                if (
-                  ingredient.ingredientRemining >
-                  ingredient.ingredientQuantityPerUnit
-                ) {
-                  ingredient.ingredientRemining -=
-                    ingredient.ingredientQuantityPerUnit;
-                  ingredient.ingredientQuantityInStock -= 1;
-                }
+  //               if (
+  //                 ingredient.ingredientRemining >
+  //                 ingredient.ingredientQuantityPerUnit
+  //               ) {
+  //                 ingredient.ingredientRemining -=
+  //                   ingredient.ingredientQuantityPerUnit;
+  //                 ingredient.ingredientQuantityInStock -= 1;
+  //               }
 
-                // Allow stock quantity to go below zero
+  //               // Allow stock quantity to go below zero
 
-                console.log('have topping and select topping');
-                console.log('Old Remaining', oldRemaining);
+  //               console.log('have topping and select topping');
+  //               console.log('Old Remaining', oldRemaining);
 
-                console.log(
-                  'Ingredient Remaining:',
-                  ingredient.ingredientRemining,
-                );
-                console.log('================================================');
-                await this.ingredientRepository.save(ingredient);
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+  //               console.log(
+  //                 'Ingredient Remaining:',
+  //                 ingredient.ingredientRemining,
+  //               );
+  //               console.log('================================================');
+  //               await this.ingredientRepository.save(ingredient);
+  //             }
+  //           }
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
 
   private async revertIngredientStock(receiptItems: ReceiptItem[]) {
     for (const receiptItemDto of receiptItems) {
@@ -595,24 +621,6 @@ export class RecieptService {
               ) {
                 processedIngredients.add(ingredient.ingredientId);
 
-                ingredient.ingredientRemining =
-                  parseInt(ingredient.ingredientRemining.toString()) -
-                  parseInt(
-                    (receiptItemDto.quantity * recipe.quantity).toString(),
-                  );
-
-                if (ingredient.ingredientRemining < 0) {
-                  ingredient.ingredientRemining = parseInt(
-                    (
-                      ingredient.ingredientRemining +
-                      ingredient.ingredientQuantityPerUnit
-                    ).toString(),
-                  );
-                  ingredient.ingredientQuantityInStock = parseInt(
-                    (ingredient.ingredientQuantityInStock + 1).toString(),
-                  );
-                }
-
                 await this.ingredientRepository.save(ingredient);
               }
             }
@@ -627,24 +635,6 @@ export class RecieptService {
               !processedIngredients.has(ingredient.ingredientId)
             ) {
               processedIngredients.add(ingredient.ingredientId);
-
-              ingredient.ingredientRemining =
-                parseInt(ingredient.ingredientRemining.toString()) -
-                parseInt(
-                  (receiptItemDto.quantity * recipe.quantity).toString(),
-                );
-
-              if (ingredient.ingredientRemining < 0) {
-                ingredient.ingredientRemining = parseInt(
-                  (
-                    ingredient.ingredientRemining +
-                    ingredient.ingredientQuantityPerUnit
-                  ).toString(),
-                );
-                ingredient.ingredientQuantityInStock = parseInt(
-                  (ingredient.ingredientQuantityInStock + 1).toString(),
-                );
-              }
 
               await this.ingredientRepository.save(ingredient);
             }
@@ -1095,7 +1085,7 @@ export class RecieptService {
       console.log('updated receipt:', updatedItems.concat(addedItems));
 
       // Update ingredient stock for added and updated items
-      await this.updateIngredientStock(updatedItems.concat(addedItems));
+      // await this.updateIngredientStock(updatedItems.concat(addedItems));
 
       // Return the updated receipt with all relations
       const rec = await this.recieptRepository.findOne({
