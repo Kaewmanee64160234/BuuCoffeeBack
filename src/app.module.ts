@@ -39,8 +39,10 @@ import { Promotion } from './promotions/entities/promotion.entity';
 import { CashiersModule } from './cashiers/cashiers.module';
 import { Cashier } from './cashiers/entities/cashier.entity';
 import { AuthModule } from './auth/auth.module';
-import { SubInventoriesModule } from './sub-inventories/sub-inventories.module';
-import { SubInventory } from './sub-inventories/entities/sub-inventory.entity';
+import { SubInventoriesCoffeeModule } from './sub-inventories-coffee/sub-inventories-coffee.module';
+import { SubInventoriesRiceModule } from './sub-inventories-rice/sub-inventories-rice.module';
+import { SubInventoriesCoffee } from './sub-inventories-coffee/entities/sub-inventories-coffee.entity';
+import { SubInventoriesRice } from './sub-inventories-rice/entities/sub-inventories-rice.entity';
 
 @Module({
   imports: [
@@ -70,7 +72,8 @@ import { SubInventory } from './sub-inventories/entities/sub-inventory.entity';
         Checkingredientitem,
         Promotion,
         Cashier,
-        SubInventory,
+        SubInventoriesCoffee,
+        SubInventoriesRice,
       ],
       synchronize: true,
     }),
@@ -93,7 +96,8 @@ import { SubInventory } from './sub-inventories/entities/sub-inventory.entity';
     PromotionsModule,
     CashiersModule,
     AuthModule,
-    SubInventoriesModule,
+    SubInventoriesCoffeeModule,
+    SubInventoriesRiceModule,
   ],
   controllers: [AppController],
   providers: [AppService],

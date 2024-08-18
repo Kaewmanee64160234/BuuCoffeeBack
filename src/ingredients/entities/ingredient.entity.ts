@@ -1,7 +1,8 @@
 import { Checkingredientitem } from 'src/checkingredientitems/entities/checkingredientitem.entity';
 import { Importingredientitem } from 'src/importingredientitems/entities/importingredientitem.entity';
 import { Recipe } from 'src/recipes/entities/recipe.entity';
-import { SubInventory } from 'src/sub-inventories/entities/sub-inventory.entity';
+import { SubInventoriesCoffee } from 'src/sub-inventories-coffee/entities/sub-inventories-coffee.entity';
+import { SubInventoriesRice } from 'src/sub-inventories-rice/entities/sub-inventories-rice.entity';
 import {
   Column,
   CreateDateColumn,
@@ -46,8 +47,17 @@ export class Ingredient {
     (checkingredientitem) => checkingredientitem.ingredient,
   )
   checkingredientitem: Checkingredientitem[];
-  @OneToMany(() => SubInventory, (subInventory) => subInventory.ingredient)
-  subinventories: SubInventory[];
+  @OneToMany(
+    () => SubInventoriesRice,
+    (subInventory) => subInventory.ingredient,
+  )
+  riceShopSubInventories: SubInventoriesRice[];
+
+  @OneToMany(
+    () => SubInventoriesCoffee,
+    (subInventory) => subInventory.ingredient,
+  )
+  coffeeShopSubInventories: SubInventoriesCoffee[];
   @CreateDateColumn()
   createdDate: Date;
   @UpdateDateColumn()

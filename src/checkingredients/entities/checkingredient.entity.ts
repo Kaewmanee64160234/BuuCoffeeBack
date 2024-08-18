@@ -27,6 +27,8 @@ export class Checkingredient {
   @JoinColumn({ name: 'userId' })
   user: User;
   @Column()
+  shopType: string;
+  @Column()
   checkDescription: string;
   @OneToMany(
     () => Checkingredientitem,

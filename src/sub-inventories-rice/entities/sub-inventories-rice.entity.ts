@@ -8,16 +8,18 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-
 @Entity()
-export class SubInventory {
+export class SubInventoriesRice {
   @PrimaryGeneratedColumn()
   subInventoryId: number;
 
   @Column()
   shopType: string;
 
-  @ManyToOne(() => Ingredient, (ingredient) => ingredient.subinventories)
+  @ManyToOne(
+    () => Ingredient,
+    (ingredient) => ingredient.riceShopSubInventories,
+  )
   ingredient: Ingredient;
 
   @Column()
