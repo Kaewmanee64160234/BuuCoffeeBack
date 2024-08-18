@@ -62,37 +62,30 @@ export class CheckingredientsService {
           `Not enough stock for Ingredient ID ${itemDto.ingredientId}`,
         );
       }
-      let savedCheckingredient;
-      try {
-        savedCheckingredient = await this.checkingredientRepository.save(
-          checkingredient,
-        );
-      } catch (error) {
-        throw new Error('Failed to save checkingredient: ' + error.message);
-      }
 
       const checkingredientitem = new Checkingredientitem();
-      checkingredientitem.checkingredient = savedCheckingredient;
       checkingredientitem.ingredient = ingredient;
       checkingredientitem.UsedQuantity = itemDto.UsedQuantity;
       checkingredientitem.oldRemain = ingredient.ingredientQuantityInStock;
 
-      await this.checkingredientitemRepository.save(checkingredientitem);
-
-      if (createCheckingredientDto.actionType === 'withdrawal') {
-        ingredient.ingredientQuantityInStock -= itemDto.UsedQuantity;
-      } else if (createCheckingredientDto.actionType === 'return') {
-        ingredient.ingredientQuantityInStock += itemDto.UsedQuantity;
-      }
-
-      await this.ingredientRepository.save(ingredient);
-
-      // Update SubInventory for Rice Shop or Coffee Shop
+      // Update SubInventory
       try {
+        let subInventory;
+
         if (createCheckingredientDto.shopType === 'rice') {
-          let subInventory = await this.riceShopSubInventoryRepository.findOne({
+          subInventory = await this.riceShopSubInventoryRepository.findOne({
             where: { ingredient: { ingredientId: ingredient.ingredientId } },
           });
+
+          if (
+            subInventory &&
+            createCheckingredientDto.actionType === 'withdrawal' &&
+            subInventory.quantity > 0
+          ) {
+            throw new Error(
+              `Cannot withdraw from rice shop sub-inventory because quantity > 0 for ingredient ID: ${ingredient.ingredientId}`,
+            );
+          }
 
           if (!subInventory) {
             subInventory = new SubInventoriesRice();
@@ -110,10 +103,19 @@ export class CheckingredientsService {
 
           await this.riceShopSubInventoryRepository.save(subInventory);
         } else if (createCheckingredientDto.shopType === 'coffee') {
-          let subInventory =
-            await this.coffeeShopSubInventoryRepository.findOne({
-              where: { ingredient: { ingredientId: ingredient.ingredientId } },
-            });
+          subInventory = await this.coffeeShopSubInventoryRepository.findOne({
+            where: { ingredient: { ingredientId: ingredient.ingredientId } },
+          });
+
+          if (
+            subInventory &&
+            createCheckingredientDto.actionType === 'withdrawal' &&
+            subInventory.quantity > 0
+          ) {
+            throw new Error(
+              `Cannot withdraw from coffee shop sub-inventory because quantity > 0 for ingredient ID: ${ingredient.ingredientId}`,
+            );
+          }
 
           if (!subInventory) {
             subInventory = new SubInventoriesCoffee();
@@ -131,6 +133,21 @@ export class CheckingredientsService {
 
           await this.coffeeShopSubInventoryRepository.save(subInventory);
         }
+
+        if (createCheckingredientDto.actionType === 'withdrawal') {
+          ingredient.ingredientQuantityInStock -= itemDto.UsedQuantity;
+        } else if (createCheckingredientDto.actionType === 'return') {
+          ingredient.ingredientQuantityInStock += itemDto.UsedQuantity;
+        }
+
+        await this.ingredientRepository.save(ingredient);
+
+        const savedCheckingredient = await this.checkingredientRepository.save(
+          checkingredient,
+        );
+
+        checkingredientitem.checkingredient = savedCheckingredient;
+        await this.checkingredientitemRepository.save(checkingredientitem);
       } catch (error) {
         throw new Error('Failed to save SubInventory: ' + error.message);
       }
