@@ -22,12 +22,12 @@ export class Checkingredient {
   @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
   date: Date;
   @Column({ type: 'varchar', length: 50 })
-  actionType: string; // เช็คสินค้า หรือ นำสินค้าออก
+  actionType: string; // withdrawal  หรือ return
   @ManyToOne(() => User, (user) => user.checkingredients)
   @JoinColumn({ name: 'userId' })
   user: User;
   @Column()
-  shopType: string;
+  shopType: string; // coffee  หรือ rice
   @Column()
   checkDescription: string;
   @OneToMany(

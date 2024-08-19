@@ -97,7 +97,7 @@ export class CheckingredientsService {
             if (createCheckingredientDto.actionType === 'withdrawal') {
               subInventory.quantity += itemDto.UsedQuantity;
             } else if (createCheckingredientDto.actionType === 'return') {
-              subInventory.quantity -= itemDto.UsedQuantity;
+              subInventory.quantity = 0;
             }
           }
 
@@ -127,7 +127,7 @@ export class CheckingredientsService {
             if (createCheckingredientDto.actionType === 'withdrawal') {
               subInventory.quantity += itemDto.UsedQuantity;
             } else if (createCheckingredientDto.actionType === 'return') {
-              subInventory.quantity -= itemDto.UsedQuantity;
+              subInventory.quantity = 0;
             }
           }
 
@@ -150,6 +150,64 @@ export class CheckingredientsService {
         await this.checkingredientitemRepository.save(checkingredientitem);
       } catch (error) {
         throw new Error('Failed to save SubInventory: ' + error.message);
+      }
+    }
+
+    return await this.checkingredientRepository.findOne({
+      where: { CheckID: checkingredient.CheckID },
+      relations: ['checkingredientitem'],
+    });
+  }
+  async createWithoutInventory(
+    createCheckingredientDto: CreateCheckingredientDto,
+  ) {
+    const user = await this.userRepository.findOneBy({
+      userId: createCheckingredientDto.userId,
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const checkingredient = new Checkingredient();
+    checkingredient.user = user;
+    checkingredient.date = createCheckingredientDto.date;
+    checkingredient.shopType = createCheckingredientDto.shopType;
+    checkingredient.checkDescription =
+      createCheckingredientDto.checkDescription;
+    checkingredient.actionType = createCheckingredientDto.actionType;
+
+    for (const itemDto of createCheckingredientDto.checkingredientitems) {
+      const ingredient = await this.ingredientRepository.findOneBy({
+        ingredientId: itemDto.ingredientId,
+      });
+
+      if (!ingredient) {
+        throw new NotFoundException(
+          `Ingredient with ID ${itemDto.ingredientId} not found`,
+        );
+      }
+
+      if (createCheckingredientDto.actionType === 'issuing') {
+        if (ingredient.ingredientQuantityInStock < itemDto.UsedQuantity) {
+          throw new Error(
+            `Not enough stock for Ingredient ID ${itemDto.ingredientId}`,
+          );
+        }
+        ingredient.ingredientQuantityInStock -= itemDto.UsedQuantity;
+        await this.ingredientRepository.save(ingredient);
+
+        const checkingredientitem = new Checkingredientitem();
+        checkingredientitem.ingredient = ingredient;
+        checkingredientitem.UsedQuantity = itemDto.UsedQuantity;
+        checkingredientitem.oldRemain = ingredient.ingredientQuantityInStock;
+
+        const savedCheckingredient = await this.checkingredientRepository.save(
+          checkingredient,
+        );
+
+        checkingredientitem.checkingredient = savedCheckingredient;
+        await this.checkingredientitemRepository.save(checkingredientitem);
       }
     }
 
