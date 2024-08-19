@@ -1,15 +1,27 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { SubInventoriesCoffeeService } from './sub-inventories-coffee.service';
 import { CreateSubInventoriesCoffeeDto } from './dto/create-sub-inventories-coffee.dto';
 import { UpdateSubInventoriesCoffeeDto } from './dto/update-sub-inventories-coffee.dto';
 
 @Controller('sub-inventories-coffee')
 export class SubInventoriesCoffeeController {
-  constructor(private readonly subInventoriesCoffeeService: SubInventoriesCoffeeService) {}
+  constructor(
+    private readonly subInventoriesCoffeeService: SubInventoriesCoffeeService,
+  ) {}
 
   @Post()
   create(@Body() createSubInventoriesCoffeeDto: CreateSubInventoriesCoffeeDto) {
-    return this.subInventoriesCoffeeService.create(createSubInventoriesCoffeeDto);
+    return this.subInventoriesCoffeeService.create(
+      createSubInventoriesCoffeeDto,
+    );
   }
 
   @Get()
@@ -23,8 +35,14 @@ export class SubInventoriesCoffeeController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateSubInventoriesCoffeeDto: UpdateSubInventoriesCoffeeDto) {
-    return this.subInventoriesCoffeeService.update(+id, updateSubInventoriesCoffeeDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateSubInventoriesCoffeeDto: UpdateSubInventoriesCoffeeDto,
+  ) {
+    return this.subInventoriesCoffeeService.update(
+      +id,
+      updateSubInventoriesCoffeeDto,
+    );
   }
 
   @Delete(':id')
