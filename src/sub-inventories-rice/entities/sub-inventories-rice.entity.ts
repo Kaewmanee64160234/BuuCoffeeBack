@@ -13,9 +13,6 @@ export class SubInventoriesRice {
   @PrimaryGeneratedColumn()
   subInventoryId: number;
 
-  @Column()
-  shopType: string;
-
   @ManyToOne(
     () => Ingredient,
     (ingredient) => ingredient.riceShopSubInventories,
