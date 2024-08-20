@@ -1,12 +1,25 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { IngredientusagelogService } from './ingredientusagelog.service';
 import { CreateIngredientusagelogDto } from './dto/create-ingredientusagelog.dto';
 import { UpdateIngredientusagelogDto } from './dto/update-ingredientusagelog.dto';
 
 @Controller('ingredientusagelog')
 export class IngredientusagelogController {
-  constructor(private readonly ingredientusagelogService: IngredientusagelogService) {}
-
+  constructor(
+    private readonly ingredientusagelogService: IngredientusagelogService,
+  ) {}
+  @Get('withdrawal-return-pairs')
+  async getWithdrawalReturnPairsWithLogs() {
+    return this.ingredientusagelogService.getWithdrawalReturnPairsWithLogs();
+  }
   @Post()
   create(@Body() createIngredientusagelogDto: CreateIngredientusagelogDto) {
     return this.ingredientusagelogService.create(createIngredientusagelogDto);
@@ -23,8 +36,14 @@ export class IngredientusagelogController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateIngredientusagelogDto: UpdateIngredientusagelogDto) {
-    return this.ingredientusagelogService.update(+id, updateIngredientusagelogDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateIngredientusagelogDto: UpdateIngredientusagelogDto,
+  ) {
+    return this.ingredientusagelogService.update(
+      +id,
+      updateIngredientusagelogDto,
+    );
   }
 
   @Delete(':id')

@@ -217,15 +217,25 @@ export class CheckingredientsService {
     });
   }
 
-  async findAll(): Promise<Checkingredient[]> {
-    return await this.checkingredientRepository.find({
-      relations: [
+  async findAll(actionType?: string): Promise<Checkingredient[]> {
+    const query = this.checkingredientRepository
+      .createQueryBuilder('checkingredient')
+      .leftJoinAndSelect(
+        'checkingredient.checkingredientitem',
         'checkingredientitem',
-        'user',
-        'checkingredientitem.ingredient',
-      ],
-    });
+      )
+      .leftJoinAndSelect('checkingredient.user', 'user')
+      .leftJoinAndSelect('checkingredientitem.ingredient', 'ingredient');
+
+    if (actionType) {
+      query.andWhere('checkingredient.actionType = :actionType', {
+        actionType,
+      });
+    }
+
+    return await query.getMany();
   }
+
   async findOne(id: number): Promise<Checkingredient | undefined> {
     return await this.checkingredientRepository.findOne({
       where: { CheckID: id },

@@ -3,7 +3,7 @@ import {
   Get,
   Post,
   Body,
-  Patch,
+  Query,
   Param,
   Delete,
 } from '@nestjs/common';
@@ -31,8 +31,8 @@ export class CheckingredientsController {
   }
 
   @Get()
-  findAll() {
-    return this.checkingredientsService.findAll();
+  async findAll(@Query('actionType') actionType?: string) {
+    return this.checkingredientsService.findAll(actionType);
   }
 
   @Get(':id')
