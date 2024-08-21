@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateIngredientusagelogDto } from './dto/create-ingredientusagelog.dto';
 import { UpdateIngredientusagelogDto } from './dto/update-ingredientusagelog.dto';
 import { Checkingredient } from 'src/checkingredients/entities/checkingredient.entity';
@@ -181,7 +181,20 @@ export class IngredientusagelogService {
   }
 
   findAll() {
-    return `This action returns all ingredientusagelog`;
+    try {
+      return this.ingredientUsageLogRepository.find({
+        relations: [
+          'ingredient', // ใช้ชื่อที่ตรงกับชื่อฟิลด์ใน Entity
+          'recieptItem',
+          'recieptItem.productType', // หากต้องการรวมข้อมูลเพิ่มเติมจาก relation ของ ReceiptItem
+        ],
+      });
+    } catch (error) {
+      throw new HttpException(
+        'Failed to fetch ingredient usage logs',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
   }
 
   findOne(id: number) {

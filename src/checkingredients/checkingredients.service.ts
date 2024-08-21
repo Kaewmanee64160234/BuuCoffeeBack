@@ -235,6 +235,34 @@ export class CheckingredientsService {
 
     return await query.getMany();
   }
+  async findByShop(
+    actionType?: string,
+    shopType?: string,
+  ): Promise<Checkingredient[]> {
+    const query = this.checkingredientRepository
+      .createQueryBuilder('checkingredient')
+      .leftJoinAndSelect(
+        'checkingredient.checkingredientitem',
+        'checkingredientitem',
+      )
+      .leftJoinAndSelect('checkingredient.user', 'user')
+      .leftJoinAndSelect('checkingredientitem.ingredient', 'ingredient');
+
+    if (
+      actionType &&
+      (actionType === 'withdrawal' || actionType === 'return')
+    ) {
+      query.andWhere('checkingredient.actionType = :actionType', {
+        actionType,
+      });
+    }
+
+    if (shopType) {
+      query.andWhere('checkingredient.shopType = :shopType', { shopType });
+    }
+
+    return await query.getMany();
+  }
 
   async findOne(id: number): Promise<Checkingredient | undefined> {
     return await this.checkingredientRepository.findOne({
