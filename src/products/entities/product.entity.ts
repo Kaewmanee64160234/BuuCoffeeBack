@@ -44,6 +44,9 @@ export class Product {
   @Column({ default: false })
   barcode: string;
 
+  @Column({ default: false })
+  haveTopping: boolean;
+
   @CreateDateColumn()
   createdDate: Date;
   @UpdateDateColumn()

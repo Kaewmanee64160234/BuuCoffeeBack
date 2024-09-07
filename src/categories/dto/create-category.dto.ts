@@ -11,8 +11,4 @@ export class CreateCategoryDto {
   @MinLength(3)
   @MaxLength(50)
   categoryName: string;
-
-  @IsBoolean()
-  @IsNotEmpty()
-  haveTopping: boolean;
 }

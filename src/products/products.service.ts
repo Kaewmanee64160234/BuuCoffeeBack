@@ -36,6 +36,7 @@ export class ProductsService {
       barcode,
       storeType,
       countingPoint,
+      haveTopping,
     } = createProductDto; // Include barcode here
 
     // Parse and validate categoryId
@@ -57,6 +58,7 @@ export class ProductsService {
     newProduct.countingPoint = countingPoint;
     newProduct.storeType = storeType;
     newProduct.barcode = barcode; // Add this line
+    newProduct.haveTopping = haveTopping;
     console.log('new Product', newProduct);
 
     if (isNaN(newProduct.productPrice)) {
@@ -66,7 +68,7 @@ export class ProductsService {
 
     const savedProduct = await this.productRepository.save(newProduct);
     // create product have topping
-    if (category.haveTopping === true) {
+    if (haveTopping === true) {
       if (productTypes && productTypes.length > 0) {
         for (const typeDto of productTypes) {
           const newProductType = new ProductType();
@@ -262,7 +264,7 @@ export class ProductsService {
         throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
       }
 
-      if (!product.category.haveTopping) {
+      if (!product.haveTopping) {
         await this.softRemoveProductIngredients(product);
       }
       await this.productTypeRepository.softRemove(product.productTypes);
@@ -360,7 +362,7 @@ export class ProductsService {
       }
 
       if (isCategoryChanged || isProductTypesChanged) {
-        if (!product.category.haveTopping) {
+        if (!product.haveTopping) {
           await this.softRemoveProductIngredients(product);
         }
         await this.productRepository.softRemove(product);
@@ -520,7 +522,7 @@ export class ProductsService {
     updateProductDto: UpdateProductDto,
     isUpdate = false,
   ) {
-    if (savedProduct.category.haveTopping === true) {
+    if (savedProduct.haveTopping === true) {
       if (updateProductDto.productTypes.length > 0) {
         for (const typeDto of updateProductDto.productTypes) {
           const newProductType = new ProductType();

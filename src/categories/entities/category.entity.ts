@@ -17,9 +17,6 @@ export class Category {
   @Column({ unique: true })
   categoryName: string;
 
-  @Column({ default: false })
-  haveTopping: boolean;
-
   @OneToMany(() => Product, (product) => product.category)
   products: Product[];
 

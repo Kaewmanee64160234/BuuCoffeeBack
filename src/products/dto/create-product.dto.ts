@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsNotEmpty,
   IsNumber,
   IsString,
@@ -23,6 +24,9 @@ export class CreateProductDto {
 
   barcode: string;
   storeType: string;
+  @IsBoolean()
+  @IsNotEmpty()
+  haveTopping: boolean;
 
   @IsNumber()
   @IsNotEmpty()
