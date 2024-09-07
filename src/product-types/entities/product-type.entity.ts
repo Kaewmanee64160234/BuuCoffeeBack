@@ -36,7 +36,10 @@ export class ProductType {
   })
   product: Product;
 
-  @OneToMany(() => Recipe, (recipe) => recipe.productType, { cascade: true })
+  @OneToMany(() => Recipe, (recipe) => recipe.productType, {
+    cascade: true,
+    nullable: true,
+  })
   recipes: Recipe[];
 
   @OneToMany(() => ReceiptItem, (receiptItem) => receiptItem.productType, {

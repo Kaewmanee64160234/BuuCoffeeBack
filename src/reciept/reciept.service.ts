@@ -180,12 +180,12 @@ export class RecieptService {
         }
 
         // Ensure every productType has recipes
-        if (!productType.recipes || productType.recipes.length === 0) {
-          throw new HttpException(
-            'Product Type is missing recipes',
-            HttpStatus.BAD_REQUEST,
-          );
-        }
+        // if (!productType.recipes || productType.recipes.length === 0) {
+        //   throw new HttpException(
+        //     'Product Type is missing recipes',
+        //     HttpStatus.BAD_REQUEST,
+        //   );
+        // }
 
         const newRecieptItem = this.recieptItemRepository.create({
           ...receiptItemDto,
@@ -236,15 +236,15 @@ export class RecieptService {
             }
 
             // Ensure every topping productType has recipes
-            if (
-              !toppingProductType.recipes ||
-              toppingProductType.recipes.length === 0
-            ) {
-              throw new HttpException(
-                'Topping Product Type is missing recipes',
-                HttpStatus.BAD_REQUEST,
-              );
-            }
+            // if (
+            //   !toppingProductType.recipes ||
+            //   toppingProductType.recipes.length === 0
+            // ) {
+            //   throw new HttpException(
+            //     'Topping Product Type is missing recipes',
+            //     HttpStatus.BAD_REQUEST,
+            //   );
+            // }
 
             const topping = await this.toppingRepository.findOne({
               where: {
@@ -280,22 +280,22 @@ export class RecieptService {
           // Add base product price and product type price only once per receipt item
           await this.recieptItemRepository.save(recieptItemSave);
         }
-        productType.recipes.forEach(async (recipe) => {
-          const usedQuantity = recipe.quantity * receiptItemDto.quantity;
+        // productType.recipes.forEach(async (recipe) => {
+        //   const usedQuantity = recipe.quantity * receiptItemDto.quantity;
 
-          const ingredientUsageLog = this.ingredientUsageLogRepository.create({
-            ingredient: recipe.ingredient,
-            recieptItem: recieptItemSave,
-            usedQuantity: usedQuantity,
-            unit: receiptItemDto.quantity,
-          });
+        //   const ingredientUsageLog = this.ingredientUsageLogRepository.create({
+        //     ingredient: recipe.ingredient,
+        //     recieptItem: recieptItemSave,
+        //     usedQuantity: usedQuantity,
+        //     unit: receiptItemDto.quantity,
+        //   });
 
-          await this.ingredientUsageLogRepository.save(ingredientUsageLog);
+        //   await this.ingredientUsageLogRepository.save(ingredientUsageLog);
 
-          this.logger.log(
-            `Ingredient ${recipe.ingredient.ingredientName} used: ${usedQuantity} ${recipe.ingredient.ingredientUnit}`,
-          );
-        });
+        //   this.logger.log(
+        //     `Ingredient ${recipe.ingredient.ingredientName} used: ${usedQuantity} ${recipe.ingredient.ingredientUnit}`,
+        //   );
+        // });
 
         // Calculate points if the product has countingPoint = true
         if (product.countingPoint) {

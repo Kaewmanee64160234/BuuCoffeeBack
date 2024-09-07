@@ -11,7 +11,9 @@ describe('SubInventoriesRiceController', () => {
       providers: [SubInventoriesRiceService],
     }).compile();
 
-    controller = module.get<SubInventoriesRiceController>(SubInventoriesRiceController);
+    controller = module.get<SubInventoriesRiceController>(
+      SubInventoriesRiceController,
+    );
   });
 
   it('should be defined', () => {

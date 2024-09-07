@@ -1,11 +1,21 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { SubInventoriesRiceService } from './sub-inventories-rice.service';
 import { CreateSubInventoriesRiceDto } from './dto/create-sub-inventories-rice.dto';
 import { UpdateSubInventoriesRiceDto } from './dto/update-sub-inventories-rice.dto';
 
 @Controller('sub-inventories-rice')
 export class SubInventoriesRiceController {
-  constructor(private readonly subInventoriesRiceService: SubInventoriesRiceService) {}
+  constructor(
+    private readonly subInventoriesRiceService: SubInventoriesRiceService,
+  ) {}
 
   @Post()
   create(@Body() createSubInventoriesRiceDto: CreateSubInventoriesRiceDto) {
@@ -23,8 +33,14 @@ export class SubInventoriesRiceController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateSubInventoriesRiceDto: UpdateSubInventoriesRiceDto) {
-    return this.subInventoriesRiceService.update(+id, updateSubInventoriesRiceDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateSubInventoriesRiceDto: UpdateSubInventoriesRiceDto,
+  ) {
+    return this.subInventoriesRiceService.update(
+      +id,
+      updateSubInventoriesRiceDto,
+    );
   }
 
   @Delete(':id')

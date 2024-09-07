@@ -65,7 +65,7 @@ export class ProductsService {
     newProduct.category = category;
 
     const savedProduct = await this.productRepository.save(newProduct);
-
+    // create product have topping
     if (category.haveTopping === true) {
       if (productTypes && productTypes.length > 0) {
         for (const typeDto of productTypes) {
@@ -84,7 +84,7 @@ export class ProductsService {
           const savedProductType = await this.productTypeRepository.save(
             newProductType,
           );
-
+          // create recipe
           if (typeDto.recipes) {
             for (const recipeDto of typeDto.recipes) {
               const parsedIngredientId = Number(recipeDto.IngredientId);
@@ -118,11 +118,6 @@ export class ProductsService {
 
               await this.recipeRepository.save(newRecipe);
             }
-          } else {
-            throw new HttpException(
-              'Recipe is required',
-              HttpStatus.BAD_REQUEST,
-            );
           }
         }
       } else {
