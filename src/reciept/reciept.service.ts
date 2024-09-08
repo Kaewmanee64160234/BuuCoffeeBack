@@ -594,52 +594,52 @@ export class RecieptService {
             relations: ['recipes', 'recipes.ingredient'],
           });
         }
-        const ingredient = productType.recipes[0].ingredient;
+        // const ingredient = productType.recipes[0].ingredient;
 
-        if (ingredient) {
-          ingredient.ingredientRemining =
-            parseInt(ingredient.ingredientRemining.toString()) +
-            parseInt(receiptItem.quantity.toString());
-          ingredient.ingredientQuantityInStock =
-            parseInt(ingredient.ingredientQuantityInStock.toString()) +
-            parseInt(receiptItem.quantity.toString());
-          await this.ingredientRepository.save(ingredient);
-        }
+        // if (ingredient) {
+        //   ingredient.ingredientRemining =
+        //     parseInt(ingredient.ingredientRemining.toString()) +
+        //     parseInt(receiptItem.quantity.toString());
+        //   ingredient.ingredientQuantityInStock =
+        //     parseInt(ingredient.ingredientQuantityInStock.toString()) +
+        //     parseInt(receiptItem.quantity.toString());
+        //   await this.ingredientRepository.save(ingredient);
+        // }
       } else {
         const processedIngredients = new Set<number>();
 
-        for (const productTypeTopping of receiptItem.productTypeToppings) {
-          if (
-            productTypeTopping.productType &&
-            productTypeTopping.productType.recipes
-          ) {
-            for (const recipe of productTypeTopping.productType.recipes) {
-              const ingredient = recipe.ingredient;
-              if (
-                ingredient &&
-                !processedIngredients.has(ingredient.ingredientId)
-              ) {
-                processedIngredients.add(ingredient.ingredientId);
+        // for (const productTypeTopping of receiptItem.productTypeToppings) {
+        //   if (
+        //     productTypeTopping.productType &&
+        //     productTypeTopping.productType.recipes
+        //   ) {
+        //     for (const recipe of productTypeTopping.productType.recipes) {
+        //       const ingredient = recipe.ingredient;
+        //       if (
+        //         ingredient &&
+        //         !processedIngredients.has(ingredient.ingredientId)
+        //       ) {
+        //         processedIngredients.add(ingredient.ingredientId);
 
-                await this.ingredientRepository.save(ingredient);
-              }
-            }
-          }
-        }
+        //         await this.ingredientRepository.save(ingredient);
+        //       }
+        //     }
+        //   }
+        // }
 
-        if (receiptItem.productType?.recipes) {
-          for (const recipe of receiptItem.productType.recipes) {
-            const ingredient = recipe.ingredient;
-            if (
-              ingredient &&
-              !processedIngredients.has(ingredient.ingredientId)
-            ) {
-              processedIngredients.add(ingredient.ingredientId);
+        // if (receiptItem.productType?.recipes) {
+        //   for (const recipe of receiptItem.productType.recipes) {
+        //     const ingredient = recipe.ingredient;
+        //     if (
+        //       ingredient &&
+        //       !processedIngredients.has(ingredient.ingredientId)
+        //     ) {
+        //       processedIngredients.add(ingredient.ingredientId);
 
-              await this.ingredientRepository.save(ingredient);
-            }
-          }
-        }
+        //       await this.ingredientRepository.save(ingredient);
+        //     }
+        //   }
+        // }
       }
     }
   }
@@ -1488,9 +1488,12 @@ export class RecieptService {
   }
 
   async getRecieptIn1Day(typeOfStore: string): Promise<Reciept[]> {
+    console.log('typeOfStore', typeOfStore);
+
     const currentDate = new Date();
     const startDate = new Date(currentDate.getTime() - 24 * 60 * 60000); // 24 hours in milliseconds
     const endDate = new Date(currentDate.getTime());
+
     return await this.recieptRepository.find({
       where: {
         createdDate: Between(startDate, endDate),
@@ -1498,7 +1501,6 @@ export class RecieptService {
         receiptType: typeOfStore,
       },
       relations: [
-        'receiptItems',
         'receiptItems',
         'receiptItems.productType',
         'receiptItems.productType.recipes',
@@ -1513,6 +1515,7 @@ export class RecieptService {
         'receiptPromotions',
         'receiptPromotions.promotion',
       ],
+      order: { receiptId: 'desc' }, // Order by the creation date in descending order
     });
   }
 
