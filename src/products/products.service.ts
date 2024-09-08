@@ -39,6 +39,8 @@ export class ProductsService {
       haveTopping,
     } = createProductDto; // Include barcode here
 
+    console.log('createProductDto', createProductDto);
+
     // Parse and validate categoryId
     const parsedCategoryId = Number(categoryId);
     if (isNaN(parsedCategoryId)) {
@@ -59,6 +61,9 @@ export class ProductsService {
     newProduct.storeType = storeType;
     newProduct.barcode = barcode; // Add this line
     newProduct.haveTopping = haveTopping;
+    if (createProductDto.productImage) {
+      newProduct.productImage = createProductDto.productImage;
+    }
     console.log('new Product', newProduct);
 
     if (isNaN(newProduct.productPrice)) {
@@ -107,18 +112,18 @@ export class ProductsService {
                 );
               }
 
-              const newRecipe = new Recipe();
-              newRecipe.quantity = Number(recipeDto.quantity);
-              if (isNaN(newRecipe.quantity)) {
-                throw new HttpException(
-                  'Invalid recipe quantity',
-                  HttpStatus.BAD_REQUEST,
-                );
-              }
-              newRecipe.ingredient = ingredient;
-              newRecipe.productType = savedProductType;
+              // const newRecipe = new Recipe();
+              // newRecipe.quantity = Number(recipeDto.quantity);
+              // if (isNaN(newRecipe.quantity)) {
+              //   throw new HttpException(
+              //     'Invalid recipe quantity',
+              //     HttpStatus.BAD_REQUEST,
+              //   );
+              // }
+              // newRecipe.ingredient = ingredient;
+              // newRecipe.productType = savedProductType;
 
-              await this.recipeRepository.save(newRecipe);
+              // await this.recipeRepository.save(newRecipe);
             }
           }
         }
@@ -151,11 +156,11 @@ export class ProductsService {
         newProductType,
       );
 
-      const newRecipe = new Recipe();
-      newRecipe.quantity = 1;
-      newRecipe.ingredient = ing;
-      newRecipe.productType = savedProductType;
-      await this.recipeRepository.save(newRecipe);
+      // const newRecipe = new Recipe();
+      // newRecipe.quantity = 1;
+      // newRecipe.ingredient = ing;
+      // newRecipe.productType = savedProductType;
+      // await this.recipeRepository.save(newRecipe);
     }
 
     return this.productRepository.findOne({

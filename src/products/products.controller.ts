@@ -31,7 +31,24 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Post()
-  async createProduct(@Body() createProductDto: CreateProductDto) {
+  @UseInterceptors(
+    FileInterceptor('imageFile', {
+      storage: diskStorage({
+        destination: './product_images',
+        filename: (req, file, cb) => {
+          const name = uuidv4();
+          return cb(null, name + extname(file.originalname));
+        },
+      }),
+    }),
+  )
+  async createProduct(
+    @Body() createProductDto: CreateProductDto,
+    @UploadedFile() imageFile: Express.Multer.File,
+  ) {
+    if (imageFile) {
+      createProductDto.productImage = imageFile.filename;
+    }
     return this.productsService.create(createProductDto);
   }
 

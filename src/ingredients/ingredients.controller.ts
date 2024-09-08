@@ -37,6 +37,7 @@ export class IngredientsController {
       throw new InternalServerErrorException('Failed to search ingredients');
     }
   }
+
   @Get('low-stock')
   async findLowStockIngredients(): Promise<Ingredient[]> {
     try {
@@ -48,6 +49,7 @@ export class IngredientsController {
       );
     }
   }
+
   @Post()
   @UseInterceptors(
     FileInterceptor('imageFile', {
