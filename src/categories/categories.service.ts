@@ -15,7 +15,6 @@ export class CategoriesService {
     try {
       const newCategory = new Category();
       newCategory.categoryName = createCategoryDto.categoryName;
-      newCategory.haveTopping = createCategoryDto.haveTopping;
 
       return this.categoryrRepository.save(newCategory);
     } catch (error) {

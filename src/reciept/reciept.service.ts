@@ -207,7 +207,7 @@ export class RecieptService {
         );
 
         if (
-          product.category.haveTopping &&
+          product.haveTopping &&
           receiptItemDto.productTypeToppings.length > 0
         ) {
           const productTypeToppings = [];
@@ -438,7 +438,7 @@ export class RecieptService {
   //       });
 
   //       if (ingredient) {
-  //         if (product.category.haveTopping == false) {
+  //         if (product.haveTopping == false) {
   //           ingredient.ingredientRemining -= receiptItemDto.quantity;
   //           ingredient.ingredientQuantityInStock -= receiptItemDto.quantity;
   //           ingredient.ingredientRemining = Math.max(
@@ -1004,7 +1004,7 @@ export class RecieptService {
         }
 
         let newReceiptItem = null;
-        if (product.category.haveTopping == false) {
+        if (product.haveTopping == false) {
           newReceiptItem = this.recieptItemRepository.create({
             quantity: receiptItem.quantity,
             reciept: existingReceipt,
