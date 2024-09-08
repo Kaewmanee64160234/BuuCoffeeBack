@@ -24,15 +24,14 @@ export class CreateProductDto {
 
   barcode: string;
   storeType: string;
-  @IsBoolean()
   @IsNotEmpty()
-  haveTopping: boolean;
+  haveTopping: string;
 
   @IsNumber()
   @IsNotEmpty()
   categoryId: string;
   category: Category;
   product: Product;
-  countingPoint: boolean;
+  countingPoint: string;
   productTypes: CreateProductTypeDto[];
 }

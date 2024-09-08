@@ -20,6 +20,7 @@ export class CreateProductTypeDto {
   @IsNotEmpty()
   @IsNumber()
   productTypePrice: number;
+  disable?: string;
 
   recipes: CreateRecipeDto[];
 }

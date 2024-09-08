@@ -61,7 +61,7 @@ export class ProductTypesService {
     }
   }
 
-  update(id: number, updateProductTypeDto: UpdateProductTypeDto) {
+  async update(id: number, updateProductTypeDto: UpdateProductTypeDto) {
     try {
       const productType = this.productTypeRepository.findOne({
         where: { productTypeId: id },
@@ -69,9 +69,10 @@ export class ProductTypesService {
       if (!productType) {
         throw new HttpException('Product type not found', HttpStatus.NOT_FOUND);
       }
-      const updatedProductType = this.productTypeRepository.save({
+      const updatedProductType = await this.productTypeRepository.save({
         ...productType,
         ...updateProductTypeDto,
+        disable: false,
       });
       return updatedProductType;
     } catch (error) {

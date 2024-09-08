@@ -23,6 +23,8 @@ export class ProductType {
 
   @Column({ type: 'numeric' })
   productTypePrice: number;
+  @Column({ type: 'boolean', default: false })
+  disable: boolean;
 
   @OneToMany(
     () => ProductTypeTopping,
@@ -46,6 +48,7 @@ export class ProductType {
     cascade: true,
   })
   receiptItems: ReceiptItem[];
+
   @CreateDateColumn()
   createdDate: Date;
   @UpdateDateColumn()

@@ -1,4 +1,9 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  Injectable,
+  HttpException,
+  HttpStatus,
+  ParseBoolPipe,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Like, Repository } from 'typeorm';
 import { Product } from './entities/product.entity';
@@ -11,6 +16,7 @@ import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 import { Multer } from 'multer';
 import { UpdateRecipeDto } from 'src/recipes/dto/update-recipe.dto';
 import { UpdateProductTypeDto } from 'src/product-types/dto/update-product-type.dto';
+import { parse } from 'path';
 
 @Injectable()
 export class ProductsService {
@@ -39,7 +45,7 @@ export class ProductsService {
       haveTopping,
     } = createProductDto; // Include barcode here
 
-    console.log('createProductDto', createProductDto);
+    console.log('productTypes', productTypes);
 
     // Parse and validate categoryId
     const parsedCategoryId = Number(categoryId);
@@ -57,10 +63,18 @@ export class ProductsService {
     const newProduct = new Product();
     newProduct.productName = productName;
     newProduct.productPrice = Number(productPrice);
-    newProduct.countingPoint = countingPoint;
+    if (countingPoint == 'true') {
+      newProduct.countingPoint = true;
+    } else {
+      newProduct.countingPoint = false;
+    }
     newProduct.storeType = storeType;
     newProduct.barcode = barcode; // Add this line
-    newProduct.haveTopping = haveTopping;
+    if (haveTopping == 'true') {
+      newProduct.haveTopping = true;
+    } else {
+      newProduct.haveTopping = false;
+    }
     if (createProductDto.productImage) {
       newProduct.productImage = createProductDto.productImage;
     }
@@ -73,59 +87,24 @@ export class ProductsService {
 
     const savedProduct = await this.productRepository.save(newProduct);
     // create product have topping
-    if (haveTopping === true) {
+
+    if (haveTopping == 'true') {
       if (productTypes && productTypes.length > 0) {
         for (const typeDto of productTypes) {
           const newProductType = new ProductType();
           newProductType.productTypeName = typeDto.productTypeName;
-
           newProductType.productTypePrice = Number(typeDto.productTypePrice);
+          newProductType.product = savedProduct;
+
           if (isNaN(newProductType.productTypePrice)) {
             throw new HttpException(
               'Invalid product type price',
               HttpStatus.BAD_REQUEST,
             );
           }
-          newProductType.product = savedProduct;
 
-          const savedProductType = await this.productTypeRepository.save(
-            newProductType,
-          );
-          // create recipe
-          if (typeDto.recipes) {
-            for (const recipeDto of typeDto.recipes) {
-              const parsedIngredientId = Number(recipeDto.IngredientId);
-              if (isNaN(parsedIngredientId)) {
-                throw new HttpException(
-                  'Invalid ingredient ID',
-                  HttpStatus.BAD_REQUEST,
-                );
-              }
-
-              const ingredient = await this.ingredientRepository.findOne({
-                where: { ingredientId: parsedIngredientId },
-              });
-              if (!ingredient) {
-                throw new HttpException(
-                  'Ingredient not found',
-                  HttpStatus.NOT_FOUND,
-                );
-              }
-
-              // const newRecipe = new Recipe();
-              // newRecipe.quantity = Number(recipeDto.quantity);
-              // if (isNaN(newRecipe.quantity)) {
-              //   throw new HttpException(
-              //     'Invalid recipe quantity',
-              //     HttpStatus.BAD_REQUEST,
-              //   );
-              // }
-              // newRecipe.ingredient = ingredient;
-              // newRecipe.productType = savedProductType;
-
-              // await this.recipeRepository.save(newRecipe);
-            }
-          }
+          // Save the product type
+          await this.productTypeRepository.save(newProductType);
         }
       } else {
         throw new HttpException(
@@ -152,6 +131,7 @@ export class ProductsService {
       newProductType.productTypeName = '';
       newProductType.productTypePrice = 0;
       newProductType.product = savedProduct;
+
       const savedProductType = await this.productTypeRepository.save(
         newProductType,
       );
@@ -333,57 +313,47 @@ export class ProductsService {
 
       const product = await this.productRepository.findOne({
         where: { productId: id },
-        relations: ['category', 'productTypes', 'productTypes.recipes'],
+        relations: ['category', 'productTypes'],
       });
       if (!product) {
         throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
       }
 
       const category = await this.categoryRepository.findOne({
-        where: { categoryId: +updateProductDto.category.categoryId },
+        where: { categoryId: +updateProductDto.categoryId },
       });
       if (!category) {
         throw new HttpException('Category not found', HttpStatus.NOT_FOUND);
       }
 
-      const isCategoryChanged =
-        product.category.categoryId !== +updateProductDto.category.categoryId;
       const isProductTypesChanged = await this.isProductTypesChanged(
         product.productTypes,
         updateProductDto.productTypes,
       );
+      console.log('isProductTypesChanged', isProductTypesChanged);
 
-      console.log(
-        'isCategoryChanged',
-        isCategoryChanged,
-        'isProductTypesChanged',
-        isProductTypesChanged,
-      );
-      if (isProductTypesChanged) {
-        console.log('================================================');
-        console.log('existingProductTypes', product.productTypes);
-        console.log('newProductTypes', updateProductDto.productTypes);
-        console.log('================================================');
+      if (updateProductDto.productImage) {
+        product.productImage = updateProductDto.productImage;
       }
 
-      if (isCategoryChanged || isProductTypesChanged) {
-        if (!product.haveTopping) {
-          await this.softRemoveProductIngredients(product);
-        }
-        await this.productRepository.softRemove(product);
-
-        const newProduct = this.createProductFromDto(
-          updateProductDto,
-          product.productImage,
-          category,
+      if (isProductTypesChanged) {
+        // Disable old product types
+        await this.disableOldProductTypes(
+          product.productTypes,
+          updateProductDto.productTypes,
         );
 
-        const savedProduct = await this.productRepository.save(newProduct);
-        await this.handleProductTypesAndRecipes(savedProduct, updateProductDto);
+        // Create or enable new product types
+        await this.createOrUpdateProductTypes(
+          product,
+          updateProductDto.productTypes,
+        );
 
+        // Save product and return result
+        const savedProduct = await this.productRepository.save(product);
         const result = await this.productRepository.findOne({
           where: { productId: savedProduct.productId },
-          relations: ['productTypes', 'productTypes.recipes', 'category'],
+          relations: ['productTypes', 'category'],
         });
         console.log(result);
         return result;
@@ -391,15 +361,9 @@ export class ProductsService {
         this.updateProductFromDto(product, updateProductDto, category);
 
         const savedProduct = await this.productRepository.save(product);
-        // await this.handleProductTypesAndRecipes(
-        //   savedProduct,
-        //   updateProductDto,
-        //   true,
-        // );
-
         const result = await this.productRepository.findOne({
           where: { productId: savedProduct.productId },
-          relations: ['productTypes', 'productTypes.recipes', 'category'],
+          relations: ['productTypes', 'category'],
         });
         console.log(result);
         return result;
@@ -413,24 +377,29 @@ export class ProductsService {
     }
   }
 
-  private createProductFromDto(
-    dto: UpdateProductDto,
-    image: string,
-    category: Category,
-  ): Product {
-    const product = new Product();
-    product.productName = dto.productName;
-    product.countingPoint = dto.countingPoint;
-    product.productPrice = Number(dto.productPrice);
-    product.productImage = image;
-    product.barcode = dto.barcode;
-    product.storeType = dto.storeType;
-    product.category = category;
+  private async createOrUpdateProductTypes(
+    product: Product,
+    productTypesDto: UpdateProductTypeDto[],
+  ) {
+    for (const typeDto of productTypesDto) {
+      const existingType = product.productTypes.find(
+        (type) => type.productTypeName === typeDto.productTypeName,
+      );
 
-    if (isNaN(product.productPrice)) {
-      throw new HttpException('Invalid product price', HttpStatus.BAD_REQUEST);
+      if (existingType) {
+        existingType.disable = false;
+        existingType.productTypePrice = Number(typeDto.productTypePrice);
+      } else {
+        const newProductType = new ProductType();
+        newProductType.productTypeName = typeDto.productTypeName;
+        newProductType.productTypePrice = Number(typeDto.productTypePrice);
+        newProductType.product = product;
+        newProductType.disable = false;
+
+        product.productTypes.push(newProductType);
+      }
     }
-    return product;
+    await this.productTypeRepository.save(product.productTypes);
   }
 
   private updateProductFromDto(
@@ -440,7 +409,11 @@ export class ProductsService {
   ) {
     product.productName = dto.productName;
     product.productPrice = Number(dto.productPrice);
-    product.countingPoint = dto.countingPoint;
+    if (dto.countingPoint == 'true') {
+      product.countingPoint = true;
+    } else {
+      product.countingPoint = false;
+    }
     product.productImage = dto.productImage;
     product.barcode = dto.barcode;
     product.storeType = dto.storeType;
@@ -465,6 +438,22 @@ export class ProductsService {
       }
     }
   }
+  // disableOldProductTypes
+  private async disableOldProductTypes(
+    existingProductTypes: ProductType[],
+    newProductTypes: UpdateProductTypeDto[],
+  ) {
+    for (const existingType of existingProductTypes) {
+      const newType = newProductTypes.find(
+        (typeDto) => typeDto.productTypeName === existingType.productTypeName,
+      );
+
+      if (!newType) {
+        existingType.disable = true;
+      }
+    }
+    await this.productTypeRepository.save(existingProductTypes);
+  }
 
   private async isProductTypesChanged(
     existingProductTypes: ProductType[],
@@ -476,165 +465,18 @@ export class ProductsService {
 
     for (let i = 0; i < existingProductTypes.length; i++) {
       const existingType = existingProductTypes[i];
-      const newType = newProductTypes[i];
-      const isRecipesChanged = await this.isRecipesChanged(
-        existingType.recipes,
-        newType.recipes,
+      const newType = newProductTypes.find(
+        (typeDto) => typeDto.productTypeName === existingType.productTypeName,
       );
 
       if (
-        existingType.productTypeName !== newType.productTypeName ||
-        existingType.productTypePrice !== newType.productTypePrice ||
-        isRecipesChanged
+        !newType ||
+        existingType.productTypePrice !== newType.productTypePrice
       ) {
         return true;
       }
     }
 
     return false;
-  }
-
-  private async isRecipesChanged(
-    existingRecipes: Recipe[],
-    newRecipes: UpdateRecipeDto[],
-  ): Promise<boolean> {
-    console.log('existingRecipes', newRecipes);
-    if (existingRecipes.length !== newRecipes.length) {
-      return true;
-    }
-
-    for (let i = 0; i < existingRecipes.length; i++) {
-      const existingRecipe = existingRecipes[i];
-      const newRecipe = await this.recipeRepository.findOne({
-        where: { recipeId: newRecipes[i].recipeId },
-        relations: ['ingredient'],
-      });
-
-      if (
-        existingRecipe.quantity !== newRecipe.quantity ||
-        existingRecipe.ingredient.ingredientName !==
-          newRecipe.ingredient.ingredientName
-      ) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  private async handleProductTypesAndRecipes(
-    savedProduct: Product,
-    updateProductDto: UpdateProductDto,
-    isUpdate = false,
-  ) {
-    if (savedProduct.haveTopping === true) {
-      if (updateProductDto.productTypes.length > 0) {
-        for (const typeDto of updateProductDto.productTypes) {
-          const newProductType = new ProductType();
-          newProductType.productTypeName = this.getProductTypeName(
-            typeDto.productTypeName,
-          );
-          newProductType.productTypePrice = Number(typeDto.productTypePrice);
-
-          if (isNaN(newProductType.productTypePrice)) {
-            throw new HttpException(
-              'Invalid product type price',
-              HttpStatus.BAD_REQUEST,
-            );
-          }
-          newProductType.product = savedProduct;
-
-          const savedProductType = await this.productTypeRepository.save(
-            newProductType,
-          );
-
-          if (typeDto.recipes) {
-            for (const recipeDto of typeDto.recipes) {
-              console.log('recipeDto', recipeDto);
-              const ingredient = await this.getIngredientById(
-                recipeDto.ingredient.ingredientId,
-              );
-
-              const newRecipe = new Recipe();
-              newRecipe.quantity = Number(recipeDto.quantity);
-              if (isNaN(newRecipe.quantity)) {
-                throw new HttpException(
-                  'Invalid recipe quantity',
-                  HttpStatus.BAD_REQUEST,
-                );
-              }
-              newRecipe.ingredient = ingredient;
-              newRecipe.productType = savedProductType;
-              await this.recipeRepository.save(newRecipe);
-            }
-          } else {
-            throw new HttpException(
-              'Recipe is required',
-              HttpStatus.BAD_REQUEST,
-            );
-          }
-        }
-      } else {
-        throw new HttpException(
-          'Product type is required',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-    } else {
-      if (!isUpdate) {
-        const ingredient = await this.createIngredient(
-          updateProductDto.productName,
-        );
-
-        const newProductType = new ProductType();
-        newProductType.productTypeName = '';
-        newProductType.productTypePrice = 0;
-        newProductType.product = savedProduct;
-
-        const savedProductType = await this.productTypeRepository.save(
-          newProductType,
-        );
-        const newRecipe = new Recipe();
-        newRecipe.quantity = 1;
-        newRecipe.ingredient = ingredient;
-        newRecipe.productType = savedProductType;
-        await this.recipeRepository.save(newRecipe);
-      }
-    }
-  }
-
-  private async getIngredientById(ingredientId: number): Promise<Ingredient> {
-    const ingredient = await this.ingredientRepository.findOne({
-      where: { ingredientId },
-    });
-    if (!ingredient) {
-      throw new HttpException('Ingredient not found', HttpStatus.NOT_FOUND);
-    }
-    return ingredient;
-  }
-
-  private async createIngredient(name: string): Promise<Ingredient> {
-    const ingredient = new Ingredient();
-    ingredient.ingredientName = name;
-    ingredient.ingredientMinimun = 10;
-    ingredient.ingredientUnit = 'ชิ้น';
-    ingredient.ingredientQuantityInStock = 0;
-    ingredient.ingredientQuantityPerUnit = 1;
-    ingredient.ingredientQuantityPerSubUnit = 'ชิ้น';
-
-    return this.ingredientRepository.save(ingredient);
-  }
-
-  private getProductTypeName(name: string): string {
-    switch (name) {
-      case 'Hot':
-        return 'ร้อน';
-      case 'Cold':
-        return 'เย็น';
-      case 'Blend':
-        return 'ปั่น';
-      default:
-        return name;
-    }
   }
 }
