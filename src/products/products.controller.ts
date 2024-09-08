@@ -117,7 +117,30 @@ export class ProductsController {
       throw new BadRequestException('Error updating image');
     }
   }
+  @Patch(':id')
+  @UseInterceptors(
+    FileInterceptor('imageFile', {
+      storage: diskStorage({
+        destination: './product_images',
+        filename: (req, file, cb) => {
+          const name = uuidv4();
+          return cb(null, `${name}${extname(file.originalname)}`);
+        },
+      }),
+    }),
+  )
+  update(
+    @Param('id') id: string,
+    @Body() updateProductDto: UpdateProductDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    console.log('updateProductImage:', file);
 
+    if (file) {
+      updateProductDto.productImage = file.filename;
+    }
+    return this.productsService.update(+id, updateProductDto);
+  }
   //uplode image product file
   @Post('upload/:productId')
   @UseInterceptors(
@@ -161,29 +184,6 @@ export class ProductsController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.productsService.findOne(+id);
-  }
-
-  @Patch(':id')
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: diskStorage({
-        destination: './product_images',
-        filename: (req, file, cb) => {
-          const name = uuidv4();
-          return cb(null, `${name}${extname(file.originalname)}`);
-        },
-      }),
-    }),
-  )
-  update(
-    @Param('id') id: string,
-    @Body() updateProductDto: UpdateProductDto,
-    @UploadedFile() updateProductImage: Express.Multer.File,
-  ) {
-    if (updateProductImage) {
-      updateProductDto.productImage = updateProductImage.filename;
-    }
-    return this.productsService.update(+id, updateProductDto);
   }
 
   @Delete(':id')

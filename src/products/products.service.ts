@@ -325,6 +325,21 @@ export class ProductsService {
       if (!category) {
         throw new HttpException('Category not found', HttpStatus.NOT_FOUND);
       }
+      product.category = category;
+      product.productName = updateProductDto.productName;
+      product.productPrice = Number(updateProductDto.productPrice);
+      if (updateProductDto.countingPoint == 'true') {
+        product.countingPoint = true;
+      } else {
+        product.countingPoint = false;
+      }
+      product.storeType = updateProductDto.storeType;
+      product.barcode = updateProductDto.barcode;
+      if (updateProductDto.haveTopping == 'true') {
+        product.haveTopping = true;
+      } else {
+        product.haveTopping = false;
+      }
 
       const isProductTypesChanged = await this.isProductTypesChanged(
         product.productTypes,
