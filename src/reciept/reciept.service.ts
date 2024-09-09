@@ -377,21 +377,35 @@ export class RecieptService {
     const currentMonth = currentDate.getMonth() + 1; // JavaScript months are 0-based
     const currentDay = currentDate.getDate();
 
-    if (currentMonth === 10 && currentDay === 1) {
-      // Reset receiptNumber to 1 on October 1st
-      return 1;
+    // Check if it's the 9th of September
+    if (currentMonth === 9 && currentDay === 9) {
+      // Find the last receipt created on this specific day (9th September)
+      const lastReceiptOnSeptember9 = await this.recieptRepository
+        .createQueryBuilder('receipt')
+        .where('YEAR(receipt.createdDate) = :year', { year: currentYear })
+        .andWhere('MONTH(receipt.createdDate) = :month', { month: 10 })
+        .andWhere('DAY(receipt.createdDate) = :day', { day: 1 })
+        .orderBy('receipt.receiptId', 'DESC')
+        .getOne();
+      console.log('lastReceiptOnSeptember9', lastReceiptOnSeptember9);
+
+      if (lastReceiptOnSeptember9) {
+        // Increment from the last receipt number on 9th September
+        return lastReceiptOnSeptember9.receiptNumber + 1;
+      } else {
+        // Reset to 1 for the first receipt on 9th September
+        return 1;
+      }
     } else {
-      // Find the last receipt created in the current year
+      // For all other days, continue counting as normal
       const lastReceipt = await this.recieptRepository
         .createQueryBuilder('receipt')
-        .where('YEAR(receipt.createdDate) = :year', {
-          year: currentYear,
-        })
+        .where('YEAR(receipt.createdDate) = :year', { year: currentYear })
         .orderBy('receipt.receiptNumber', 'DESC')
         .getOne();
 
       if (lastReceipt) {
-        // Increment the receiptNumber
+        // Increment from the last receipt number
         return lastReceipt.receiptNumber + 1;
       } else {
         // If no receipts are found, start with 1
