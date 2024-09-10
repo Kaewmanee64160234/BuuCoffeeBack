@@ -45,6 +45,7 @@ import { SubInventoriesCoffee } from './sub-inventories-coffee/entities/sub-inve
 import { SubInventoriesRice } from './sub-inventories-rice/entities/sub-inventories-rice.entity';
 import { IngredientusagelogModule } from './ingredientusagelog/ingredientusagelog.module';
 import { IngredientUsageLog } from './ingredientusagelog/entities/ingredientusagelog.entity';
+import { SubIntventoriesCateringModule } from './sub-intventories-catering/sub-intventories-catering.module';
 
 @Module({
   imports: [
@@ -102,6 +103,7 @@ import { IngredientUsageLog } from './ingredientusagelog/entities/ingredientusag
     SubInventoriesCoffeeModule,
     SubInventoriesRiceModule,
     IngredientusagelogModule,
+    SubIntventoriesCateringModule,
   ],
   controllers: [AppController],
   providers: [AppService],
