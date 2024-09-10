@@ -6,6 +6,7 @@ export class CreateCheckingredientitemDto {
   userId: number;
   @IsNotEmpty()
   oldRemain: number;
+  type?: string;
 
   @IsNotEmpty()
   UsedQuantity: number;

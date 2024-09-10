@@ -166,6 +166,7 @@ export class CheckingredientsService {
     const user = await this.userRepository.findOneBy({
       userId: createCheckingredientDto.userId,
     });
+    console.log(createCheckingredientDto);
 
     if (!user) {
       throw new NotFoundException('User not found');
@@ -178,12 +179,17 @@ export class CheckingredientsService {
     checkingredient.checkDescription =
       createCheckingredientDto.checkDescription;
     checkingredient.actionType = createCheckingredientDto.actionType;
+    const checkingredientSave = await this.checkingredientRepository.save(
+      checkingredient,
+    );
 
     for (const itemDto of createCheckingredientDto.checkingredientitems) {
       // Handling sub-inventory for catering, depending on shopType
-      let subInventory;
+
       try {
-        if (createCheckingredientDto.shopType === 'cateringCoffee') {
+        if (itemDto.type === 'coffee') {
+          console.log('Checking coffee sub-inventory for catering');
+
           const subInvenCoffee =
             await this.coffeeShopSubInventoryRepository.findOne({
               where: { ingredient: { ingredientId: itemDto.ingredientId } },
@@ -194,18 +200,17 @@ export class CheckingredientsService {
               `Not enough stock for Ingredient ID ${itemDto.ingredientId}`,
             );
           }
-
           const subInventoryCatering = new SubIntventoriesCatering();
           subInventoryCatering.ingredient = subInvenCoffee.ingredient;
           subInventoryCatering.quantity = itemDto.UsedQuantity;
           subInventoryCatering.type = 'coffee';
           subInventoryCatering.createdDate = new Date();
           subInventoryCatering.updatedDate = new Date();
+          subInventoryCatering.checkingredient = checkingredientSave;
 
           await this.cateringShopSubInventoryRepository.save(
             subInventoryCatering,
           );
-
           // Deduct from general coffee sub-inventory
           const coffeeInventory =
             await this.coffeeShopSubInventoryRepository.findOne({
@@ -215,7 +220,9 @@ export class CheckingredientsService {
             coffeeInventory.quantity -= itemDto.UsedQuantity;
             await this.coffeeShopSubInventoryRepository.save(coffeeInventory);
           }
-        } else if (createCheckingredientDto.shopType === 'cateringRice') {
+        } else if (itemDto.type === 'rice') {
+          console.log('Checking rice sub-inventory for catering');
+
           const subInvenRice =
             await this.riceShopSubInventoryRepository.findOne({
               where: { ingredient: { ingredientId: itemDto.ingredientId } },
@@ -226,18 +233,16 @@ export class CheckingredientsService {
               `Not enough stock for Ingredient ID ${itemDto.ingredientId}`,
             );
           }
-
           const subInventoryCatering = new SubIntventoriesCatering();
           subInventoryCatering.ingredient = subInvenRice.ingredient;
           subInventoryCatering.quantity = itemDto.UsedQuantity;
           subInventoryCatering.type = 'rice';
           subInventoryCatering.createdDate = new Date();
           subInventoryCatering.updatedDate = new Date();
-
+          subInventoryCatering.checkingredient = checkingredientSave;
           await this.cateringShopSubInventoryRepository.save(
             subInventoryCatering,
           );
-
           // Deduct from general rice sub-inventory
           const riceInventory =
             await this.riceShopSubInventoryRepository.findOne({

@@ -1,3 +1,4 @@
+import { Checkingredient } from 'src/checkingredients/entities/checkingredient.entity';
 import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 import {
   Column,
@@ -19,6 +20,12 @@ export class SubIntventoriesCatering {
     (ingredient) => ingredient.coffeeShopSubInventories,
   )
   ingredient: Ingredient;
+
+  @ManyToOne(
+    () => Checkingredient,
+    (checkingredient) => checkingredient.subInventoriesCatering,
+  )
+  checkingredient: Checkingredient;
 
   @Column()
   quantity: number;
