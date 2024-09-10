@@ -8,6 +8,7 @@ import { User } from 'src/users/entities/user.entity';
 import { CreateCheckingredientDto } from './dto/create-checkingredient.dto';
 import { SubInventoriesCoffee } from 'src/sub-inventories-coffee/entities/sub-inventories-coffee.entity';
 import { SubInventoriesRice } from 'src/sub-inventories-rice/entities/sub-inventories-rice.entity';
+import { SubIntventoriesCatering } from 'src/sub-intventories-catering/entities/sub-intventories-catering.entity';
 
 @Injectable()
 export class CheckingredientsService {
@@ -24,6 +25,8 @@ export class CheckingredientsService {
     private coffeeShopSubInventoryRepository: Repository<SubInventoriesCoffee>,
     @InjectRepository(SubInventoriesRice)
     private riceShopSubInventoryRepository: Repository<SubInventoriesRice>,
+    @InjectRepository(SubIntventoriesCatering)
+    private cateringShopSubInventoryRepository: Repository<SubIntventoriesCatering>,
   ) {}
 
   async create(createCheckingredientDto: CreateCheckingredientDto) {
@@ -133,6 +136,86 @@ export class CheckingredientsService {
 
           await this.coffeeShopSubInventoryRepository.save(subInventory);
         }
+        // =================================================================
+        else if (createCheckingredientDto.shopType === 'cateringCoffee') {
+          subInventory = await this.cateringShopSubInventoryRepository.findOne({
+            where: { ingredient: { ingredientId: ingredient.ingredientId } },
+          });
+
+          if (
+            subInventory &&
+            createCheckingredientDto.actionType === 'withdrawalCoffee' &&
+            subInventory.quantity > 0
+          ) {
+            throw new Error(
+              `Cannot withdraw from coffee shop sub-inventory because quantity > 0 for ingredient ID: ${ingredient.ingredientId}`,
+            );
+          }
+
+          if (!subInventory) {
+            subInventory = new SubIntventoriesCatering();
+            subInventory.ingredient = ingredient;
+            subInventory.quantity = itemDto.UsedQuantity;
+            subInventory.createdDate = new Date();
+            subInventory.updatedDate = new Date();
+          } else {
+            if (createCheckingredientDto.actionType === 'withdrawalCoffee') {
+              subInventory.quantity += itemDto.UsedQuantity;
+            } else if (createCheckingredientDto.actionType === 'return') {
+              subInventory.quantity = 0;
+            }
+          }
+
+          await this.cateringShopSubInventoryRepository.save(subInventory);
+          const inventory = await this.coffeeShopSubInventoryRepository.findOne(
+            {
+              where: { ingredient: { ingredientId: ingredient.ingredientId } },
+            },
+          );
+          if (inventory) {
+            inventory.quantity -= itemDto.UsedQuantity;
+            await this.coffeeShopSubInventoryRepository.save(inventory);
+          }
+        } else if (createCheckingredientDto.shopType === 'cateringRice') {
+          subInventory = await this.cateringShopSubInventoryRepository.findOne({
+            where: { ingredient: { ingredientId: ingredient.ingredientId } },
+          });
+
+          if (
+            subInventory &&
+            createCheckingredientDto.actionType === 'withdrawalRice' &&
+            subInventory.quantity > 0
+          ) {
+            throw new Error(
+              `Cannot withdraw from coffee shop sub-inventory because quantity > 0 for ingredient ID: ${ingredient.ingredientId}`,
+            );
+          }
+
+          if (!subInventory) {
+            subInventory = new SubIntventoriesCatering();
+            subInventory.ingredient = ingredient;
+            subInventory.quantity = itemDto.UsedQuantity;
+            subInventory.createdDate = new Date();
+            subInventory.updatedDate = new Date();
+          } else {
+            if (createCheckingredientDto.actionType === 'withdrawalRice') {
+              subInventory.quantity += itemDto.UsedQuantity;
+            } else if (createCheckingredientDto.actionType === 'return') {
+              subInventory.quantity = 0;
+            }
+          }
+
+          await this.cateringShopSubInventoryRepository.save(subInventory);
+          const inventory = await this.riceShopSubInventoryRepository.findOne({
+            where: { ingredient: { ingredientId: ingredient.ingredientId } },
+          });
+          if (inventory) {
+            inventory.quantity -= itemDto.UsedQuantity;
+            await this.riceShopSubInventoryRepository.save(inventory);
+          }
+        }
+
+        // ======================================================
 
         if (createCheckingredientDto.actionType === 'withdrawal') {
           ingredient.ingredientQuantityInStock -= itemDto.UsedQuantity;
