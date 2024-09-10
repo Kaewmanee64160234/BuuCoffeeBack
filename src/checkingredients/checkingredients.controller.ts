@@ -22,6 +22,15 @@ export class CheckingredientsController {
   async create(@Body() createCheckingredientDto: CreateCheckingredientDto) {
     return await this.checkingredientsService.create(createCheckingredientDto);
   }
+
+  @Post('catering')
+  async createCatering(
+    @Body() createCheckingredientDto: CreateCheckingredientDto,
+  ) {
+    return await this.checkingredientsService.createForCatering(
+      createCheckingredientDto,
+    );
+  }
   @Post('without-inventory')
   async createWithoutSubInventory(
     @Body() createCheckingredientDto: CreateCheckingredientDto,
