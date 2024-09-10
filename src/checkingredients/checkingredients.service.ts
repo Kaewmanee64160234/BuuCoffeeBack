@@ -253,6 +253,8 @@ export class CheckingredientsService {
             await this.riceShopSubInventoryRepository.save(riceInventory);
           }
         }
+
+        return checkingredient;
       } catch (error) {
         throw new Error('Failed to save SubInventory: ' + error.message);
       }

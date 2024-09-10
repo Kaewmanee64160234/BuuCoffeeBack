@@ -66,13 +66,14 @@ export class RecieptService {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
       if (createRecieptDto.receiptType == 'ร้านจัดเลี้ยง') {
+        const checkStock = await this.checkIngredientRepository.findOne({
+          where: { CheckID: createRecieptDto.checkStockId },
+        });
         if (createRecieptDto.receiptItems.length === 0) {
           console.log('createRecieptDto.receiptType', createRecieptDto);
 
           // Find the CheckIngredient entity based on checkStockId
-          const checkStock = await this.checkIngredientRepository.findOne({
-            where: { CheckID: createRecieptDto.checkStockId },
-          });
+
           const receiptFinish = new Reciept();
 
           if (checkStock) {
@@ -318,21 +319,25 @@ export class RecieptService {
       const receiptFinish = await this.recieptRepository.save(newReciept);
 
       if (createRecieptDto.receiptType === 'ร้านจัดเลี้ยง') {
-        console.log('createRecieptDto.receiptType', createRecieptDto);
+        if (createRecieptDto.checkStockId) {
+          console.log('createRecieptDto.receiptType', createRecieptDto);
 
-        // Find the CheckIngredient entity based on checkStockId
-        const checkStock = await this.checkIngredientRepository.findOne({
-          where: { CheckID: createRecieptDto.checkStockId },
-        });
+          // Find the CheckIngredient entity based on checkStockId
+          const checkStock = await this.checkIngredientRepository.findOne({
+            where: { CheckID: createRecieptDto.checkStockId },
+          });
 
-        if (checkStock) {
-          // Set the checkIngredient relationship on the receipt
-          receiptFinish.checkIngredientId = checkStock.CheckID;
+          if (checkStock) {
+            // Set the checkIngredient relationship on the receipt
+            receiptFinish.checkIngredientId = checkStock.CheckID;
 
-          // Save the receipt again to persist the relationship
-          await this.recieptRepository.save(receiptFinish);
-          console.log('receiptFinish', receiptFinish);
+            // Save the receipt again to persist the relationship
+            console.log('receiptFinish', receiptFinish);
+          }
+        } else {
+          receiptFinish.checkIngredientId = null;
         }
+        await this.recieptRepository.save(receiptFinish);
       }
       // Update customer points if customer exists
       if (customer) {
