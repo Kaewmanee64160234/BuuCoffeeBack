@@ -46,6 +46,7 @@ import { SubInventoriesRice } from './sub-inventories-rice/entities/sub-inventor
 import { IngredientusagelogModule } from './ingredientusagelog/ingredientusagelog.module';
 import { IngredientUsageLog } from './ingredientusagelog/entities/ingredientusagelog.entity';
 import { SubIntventoriesCateringModule } from './sub-intventories-catering/sub-intventories-catering.module';
+import { SubIntventoriesCatering } from './sub-intventories-catering/entities/sub-intventories-catering.entity';
 
 @Module({
   imports: [
@@ -78,6 +79,7 @@ import { SubIntventoriesCateringModule } from './sub-intventories-catering/sub-i
         SubInventoriesCoffee,
         SubInventoriesRice,
         IngredientUsageLog,
+        SubIntventoriesCatering,
       ],
       synchronize: true,
     }),
