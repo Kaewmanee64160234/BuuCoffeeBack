@@ -8,5 +8,6 @@ import { SubInventoriesRice } from './entities/sub-inventories-rice.entity';
   imports: [TypeOrmModule.forFeature([SubInventoriesRice])],
   controllers: [SubInventoriesRiceController],
   providers: [SubInventoriesRiceService],
+  exports: [SubInventoriesRiceService],
 })
 export class SubInventoriesRiceModule {}
