@@ -23,6 +23,9 @@ export class SubIntventoriesCatering {
   @Column()
   quantity: number;
 
+  @Column()
+  type: string;
+
   @CreateDateColumn()
   createdDate: Date;
 
