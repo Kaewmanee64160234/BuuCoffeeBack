@@ -186,8 +186,21 @@ export class CheckingredientsService {
     // Process each item in the list
     for (const itemDto of createCheckingredientDto.checkingredientitems) {
       try {
+        const subInvenExited =
+          await this.cateringShopSubInventoryRepository.findOne({
+            where: {
+              ingredient: { ingredientId: itemDto.ingredientId },
+            },
+          });
+        if (
+          subInvenExited &&
+          createCheckingredientDto.actionType === 'withdrawal' &&
+          subInvenExited.quantity > 0
+        ) {
+          throw new Error('Sub-inventory already exists for this ingredient');
+        }
         if (itemDto.type === 'coffee') {
-          console.log('Checking coffee sub-inventory for catering');
+          console.log('Handling coffee sub-inventory for catering');
 
           const subInvenCoffee =
             await this.coffeeShopSubInventoryRepository.findOne({
@@ -195,15 +208,29 @@ export class CheckingredientsService {
               relations: ['ingredient'],
             });
 
-          if (
-            !subInvenCoffee ||
-            subInvenCoffee.quantity < itemDto.UsedQuantity
-          ) {
+          if (!subInvenCoffee) {
             throw new Error(
-              `Not enough stock for Ingredient ID ${itemDto.ingredientId}`,
+              `Ingredient ID ${itemDto.ingredientId} not found in coffee sub-inventory.`,
             );
           }
 
+          // Handle withdrawal and return actions
+          if (createCheckingredientDto.actionType === 'withdrawal') {
+            if (subInvenCoffee.quantity < itemDto.UsedQuantity) {
+              throw new Error(
+                `Not enough stock for Ingredient ID ${itemDto.ingredientId} in coffee sub-inventory.`,
+              );
+            }
+
+            subInvenCoffee.quantity -= itemDto.UsedQuantity; // Deduct stock
+          } else if (createCheckingredientDto.actionType === 'return') {
+            subInvenCoffee.quantity += itemDto.UsedQuantity; // Return stock
+          }
+
+          // Save the updated coffee sub-inventory
+          await this.coffeeShopSubInventoryRepository.save(subInvenCoffee);
+
+          // Log catering-specific sub-inventory
           const subInventoryCatering = new SubIntventoriesCatering();
           subInventoryCatering.ingredient = subInvenCoffee.ingredient;
           subInventoryCatering.quantity = itemDto.UsedQuantity;
@@ -212,18 +239,13 @@ export class CheckingredientsService {
           subInventoryCatering.updatedDate = new Date();
           subInventoryCatering.checkingredient = checkingredientSave;
 
-          // Save to catering sub-inventory
           await this.cateringShopSubInventoryRepository.save(
             subInventoryCatering,
           );
-
-          // Deduct from general coffee sub-inventory
-          subInvenCoffee.quantity -= itemDto.UsedQuantity;
-          await this.coffeeShopSubInventoryRepository.save(subInvenCoffee);
         }
 
         if (itemDto.type === 'rice') {
-          console.log('Checking rice sub-inventory for catering');
+          console.log('Handling rice sub-inventory for catering');
 
           const subInvenRice =
             await this.riceShopSubInventoryRepository.findOne({
@@ -231,12 +253,29 @@ export class CheckingredientsService {
               relations: ['ingredient'],
             });
 
-          if (!subInvenRice || subInvenRice.quantity < itemDto.UsedQuantity) {
+          if (!subInvenRice) {
             throw new Error(
-              `Not enough stock for Ingredient ID ${itemDto.ingredientId}`,
+              `Ingredient ID ${itemDto.ingredientId} not found in rice sub-inventory.`,
             );
           }
 
+          // Handle withdrawal and return actions
+          if (createCheckingredientDto.actionType === 'withdrawal') {
+            if (subInvenRice.quantity < itemDto.UsedQuantity) {
+              throw new Error(
+                `Not enough stock for Ingredient ID ${itemDto.ingredientId} in rice sub-inventory.`,
+              );
+            }
+
+            subInvenRice.quantity -= itemDto.UsedQuantity; // Deduct stock
+          } else if (createCheckingredientDto.actionType === 'return') {
+            subInvenRice.quantity += itemDto.UsedQuantity; // Return stock
+          }
+
+          // Save the updated rice sub-inventory
+          await this.riceShopSubInventoryRepository.save(subInvenRice);
+
+          // Log catering-specific sub-inventory
           const subInventoryCatering = new SubIntventoriesCatering();
           subInventoryCatering.ingredient = subInvenRice.ingredient;
           subInventoryCatering.quantity = itemDto.UsedQuantity;
@@ -245,14 +284,9 @@ export class CheckingredientsService {
           subInventoryCatering.updatedDate = new Date();
           subInventoryCatering.checkingredient = checkingredientSave;
 
-          // Save to catering sub-inventory
           await this.cateringShopSubInventoryRepository.save(
             subInventoryCatering,
           );
-
-          // Deduct from general rice sub-inventory
-          subInvenRice.quantity -= itemDto.UsedQuantity;
-          await this.riceShopSubInventoryRepository.save(subInvenRice);
         }
       } catch (error) {
         throw new Error('Failed to save SubInventory: ' + error.message);

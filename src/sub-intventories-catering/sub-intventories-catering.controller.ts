@@ -1,15 +1,29 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { SubIntventoriesCateringService } from './sub-intventories-catering.service';
 import { CreateSubIntventoriesCateringDto } from './dto/create-sub-intventories-catering.dto';
 import { UpdateSubIntventoriesCateringDto } from './dto/update-sub-intventories-catering.dto';
 
-@Controller('sub-intventories-catering')
+@Controller('sub-inventories-catering')
 export class SubIntventoriesCateringController {
-  constructor(private readonly subIntventoriesCateringService: SubIntventoriesCateringService) {}
+  constructor(
+    private readonly subIntventoriesCateringService: SubIntventoriesCateringService,
+  ) {}
 
   @Post()
-  create(@Body() createSubIntventoriesCateringDto: CreateSubIntventoriesCateringDto) {
-    return this.subIntventoriesCateringService.create(createSubIntventoriesCateringDto);
+  create(
+    @Body() createSubIntventoriesCateringDto: CreateSubIntventoriesCateringDto,
+  ) {
+    return this.subIntventoriesCateringService.create(
+      createSubIntventoriesCateringDto,
+    );
   }
 
   @Get()
@@ -23,8 +37,14 @@ export class SubIntventoriesCateringController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateSubIntventoriesCateringDto: UpdateSubIntventoriesCateringDto) {
-    return this.subIntventoriesCateringService.update(+id, updateSubIntventoriesCateringDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateSubIntventoriesCateringDto: UpdateSubIntventoriesCateringDto,
+  ) {
+    return this.subIntventoriesCateringService.update(
+      +id,
+      updateSubIntventoriesCateringDto,
+    );
   }
 
   @Delete(':id')
