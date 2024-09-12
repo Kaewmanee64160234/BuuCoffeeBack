@@ -193,7 +193,7 @@ export class CheckingredientsService {
             },
           });
 
-        // Handle withdrawal and return actions
+        // Handling coffee sub-inventory
         if (itemDto.type === 'coffee') {
           console.log('Handling coffee sub-inventory for catering');
 
@@ -209,7 +209,18 @@ export class CheckingredientsService {
             );
           }
 
-          // If withdrawal, deduct stock from the main inventory
+          // Check if withdrawal is allowed (subInventoryCatering.quantity must be 0 or not exist)
+          if (
+            createCheckingredientDto.actionType === 'withdrawal' &&
+            subInventoryCatering &&
+            subInventoryCatering.quantity > 0
+          ) {
+            throw new Error(
+              `Cannot withdraw from catering sub-inventory because quantity > 0 for Ingredient ID ${itemDto.ingredientId}.`,
+            );
+          }
+
+          // Withdrawal logic
           if (createCheckingredientDto.actionType === 'withdrawal') {
             if (subInvenCoffee.quantity < itemDto.UsedQuantity) {
               throw new Error(
@@ -218,7 +229,7 @@ export class CheckingredientsService {
             }
             subInvenCoffee.quantity -= itemDto.UsedQuantity; // Deduct stock
 
-            // If the sub-inventory already exists, update the quantity
+            // If sub-inventory already exists, update the quantity
             if (subInventoryCatering) {
               subInventoryCatering.quantity += itemDto.UsedQuantity;
             } else {
@@ -230,18 +241,11 @@ export class CheckingredientsService {
               subInventoryCatering.createdDate = new Date();
             }
           } else if (createCheckingredientDto.actionType === 'return') {
-            if (itemDto.UsedQuantity > subInventoryCatering.quantity) {
-              throw new Error(
-                `Not enough stock for Ingredient ID ${itemDto.ingredientId} in catering sub-inventory.`,
-              );
-            } else {
-              // For return, update the quantity without creating a new record
-              subInvenCoffee.quantity += itemDto.UsedQuantity;
+            // Return logic
+            subInvenCoffee.quantity += itemDto.UsedQuantity;
 
-              // If the sub-inventory exists, update the quantity to reflect the return
-              if (subInventoryCatering) {
-                subInventoryCatering.quantity = 0;
-              }
+            if (subInventoryCatering) {
+              subInventoryCatering.quantity = 0;
             }
           }
 
@@ -255,6 +259,7 @@ export class CheckingredientsService {
           );
         }
 
+        // Handling rice sub-inventory
         if (itemDto.type === 'rice') {
           console.log('Handling rice sub-inventory for catering');
 
@@ -270,7 +275,18 @@ export class CheckingredientsService {
             );
           }
 
-          // If withdrawal, deduct stock from the main inventory
+          // Check if withdrawal is allowed (subInventoryCatering.quantity must be 0 or not exist)
+          if (
+            createCheckingredientDto.actionType === 'withdrawal' &&
+            subInventoryCatering &&
+            subInventoryCatering.quantity > 0
+          ) {
+            throw new Error(
+              `Cannot withdraw from catering sub-inventory because quantity > 0 for Ingredient ID ${itemDto.ingredientId}.`,
+            );
+          }
+
+          // Withdrawal logic
           if (createCheckingredientDto.actionType === 'withdrawal') {
             if (subInvenRice.quantity < itemDto.UsedQuantity) {
               throw new Error(
@@ -279,7 +295,7 @@ export class CheckingredientsService {
             }
             subInvenRice.quantity -= itemDto.UsedQuantity; // Deduct stock
 
-            // If the sub-inventory already exists, update the quantity
+            // If sub-inventory already exists, update the quantity
             if (subInventoryCatering) {
               subInventoryCatering.quantity += itemDto.UsedQuantity;
             } else {
@@ -291,18 +307,11 @@ export class CheckingredientsService {
               subInventoryCatering.createdDate = new Date();
             }
           } else if (createCheckingredientDto.actionType === 'return') {
-            if (itemDto.UsedQuantity > subInventoryCatering.quantity) {
-              throw new Error(
-                `Not enough stock for Ingredient ID ${itemDto.ingredientId} in catering sub-inventory.`,
-              );
-            } else {
-              // For return, update the quantity without creating a new record
-              subInvenRice.quantity += itemDto.UsedQuantity;
+            // Return logic
+            subInvenRice.quantity += itemDto.UsedQuantity;
 
-              // If the sub-inventory exists, update the quantity to reflect the return
-              if (subInventoryCatering) {
-                subInventoryCatering.quantity = 0;
-              }
+            if (subInventoryCatering) {
+              subInventoryCatering.quantity = 0;
             }
           }
 
