@@ -27,6 +27,8 @@ export class Checkingredientitem {
   oldRemain: number;
   @ManyToOne(() => Ingredient, (ingredient) => ingredient.checkingredientitem)
   ingredient: Ingredient;
+  @Column({ nullable: true })
+  type: string;
   @CreateDateColumn()
   createdDate: Date;
   @UpdateDateColumn()
