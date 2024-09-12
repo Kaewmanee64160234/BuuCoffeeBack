@@ -20,7 +20,7 @@ export class ReceiptPromotion {
   @ManyToOne(() => Promotion, (promotion) => promotion.receiptPromotions)
   promotion: Promotion;
 
-  @Column('decimal')
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
   discount: number;
 
   @Column('date')

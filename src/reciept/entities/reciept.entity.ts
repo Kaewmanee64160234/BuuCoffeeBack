@@ -20,11 +20,11 @@ export class Reciept {
   receiptId: number;
   @Column({ nullable: true })
   receiptNumber: number;
-  @Column()
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
   receiptTotalPrice: number;
-  @Column()
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
   receiptTotalDiscount: number;
-  @Column()
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
   receiptNetPrice: number;
   @Column()
   receiptStatus: string;
@@ -41,9 +41,9 @@ export class Reciept {
   })
   receiptItems: ReceiptItem[];
 
-  @Column()
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
   receive: number;
-  @Column()
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
   change: number;
 
   // onr to one  to checkstovk==ck id can null'

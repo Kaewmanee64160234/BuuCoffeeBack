@@ -22,7 +22,7 @@ export class ReceiptItem {
   @Column({ type: 'numeric' })
   quantity: number;
 
-  @Column()
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
   receiptSubTotal: number;
 
   @ManyToOne(() => Reciept, (reciept) => reciept.receiptItems)
