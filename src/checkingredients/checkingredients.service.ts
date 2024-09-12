@@ -240,7 +240,7 @@ export class CheckingredientsService {
 
               // If the sub-inventory exists, update the quantity to reflect the return
               if (subInventoryCatering) {
-                subInventoryCatering.quantity -= itemDto.UsedQuantity;
+                subInventoryCatering.quantity = 0;
               }
             }
           }
@@ -301,7 +301,7 @@ export class CheckingredientsService {
 
               // If the sub-inventory exists, update the quantity to reflect the return
               if (subInventoryCatering) {
-                subInventoryCatering.quantity -= itemDto.UsedQuantity;
+                subInventoryCatering.quantity = 0;
               }
             }
           }
