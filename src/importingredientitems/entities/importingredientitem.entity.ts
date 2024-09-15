@@ -19,6 +19,8 @@ export class Importingredientitem {
   unitPrice: number;
   @Column()
   Quantity: number;
+  @Column()
+  importType: 'piece' | 'box';
   @Column({ nullable: true }) // สำหรับ"ร้านข้าว"
   name: string;
   @ManyToOne(

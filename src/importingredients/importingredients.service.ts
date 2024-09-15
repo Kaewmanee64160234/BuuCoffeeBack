@@ -23,6 +23,7 @@ export class ImportingredientsService {
     private readonly recieptRepository: Repository<Reciept>,
   ) {}
   async create(createImportingredientDto: CreateImportingredientDto) {
+    // Check if the user exists
     const user = await this.userRepository.findOneBy({
       userId: createImportingredientDto.userId,
     });
@@ -30,6 +31,7 @@ export class ImportingredientsService {
       throw new Error('User not found');
     }
 
+    // Create and save the Importingredient entity
     const importingredient = new Importingredient();
     importingredient.user = user;
     importingredient.date = createImportingredientDto.date;
@@ -45,12 +47,17 @@ export class ImportingredientsService {
       importingredient,
     );
 
+    // Process each import item
     for (const importItemDto of createImportingredientDto.importingredientitem) {
       const importingredientitem = new Importingredientitem();
       importingredientitem.importingredient = savedImportingredient;
+      importingredientitem.pricePerUnit = importItemDto.pricePerUnit;
+      importingredientitem.unitPrice = importItemDto.unitPrice;
+      importingredientitem.Quantity = importItemDto.Quantity;
+      importingredientitem.importType = importItemDto.importType; // Set importType for each item
 
       if (importingredient.importStoreType === 'ร้านกาแฟ') {
-        //ร้านกาแฟ
+        // Handle coffee shop items
         const ingredient = await this.ingredientRepository.findOneBy({
           ingredientId: importItemDto.ingredientId,
         });
@@ -61,21 +68,26 @@ export class ImportingredientsService {
         }
 
         importingredientitem.ingredient = ingredient;
-        importingredientitem.pricePerUnit = importItemDto.pricePerUnit;
-        importingredientitem.unitPrice = importItemDto.unitPrice;
-        importingredientitem.Quantity = importItemDto.Quantity;
 
-        // Update stock
-        ingredient.ingredientQuantityInStock += importItemDto.Quantity;
+        if (importItemDto.importType === 'piece') {
+          // If the import type is 'piece'
+          ingredient.ingredientQuantityInStock += importItemDto.Quantity;
+        } else if (importItemDto.importType === 'box') {
+          // If the import type is 'box'
+          ingredient.ingredientQuantityInStock +=
+            importItemDto.Quantity * ingredient.ingredientQuantityPerUnit;
+        }
+
         await this.ingredientRepository.save(ingredient);
       } else if (importingredient.importStoreType === 'ร้านข้าว') {
-        //ร้านข้าว
+        // Handle rice shop items
         importingredientitem.name = importItemDto.name;
       }
 
       await this.importingredientitemRepository.save(importingredientitem);
     }
 
+    // Return the saved Importingredient with related items
     return await this.importingredientRepository.findOne({
       where: { importID: savedImportingredient.importID },
       relations: ['importingredientitem'],

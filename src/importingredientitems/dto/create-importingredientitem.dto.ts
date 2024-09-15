@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsNumber } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsNumber } from 'class-validator';
+import { ImportType } from 'src/importingredients/dto/create-importingredient.dto';
 
 export class CreateImportingredientitemDto {
   @IsNotEmpty()
@@ -14,4 +15,7 @@ export class CreateImportingredientitemDto {
   @IsNotEmpty()
   @IsNumber()
   Quantity?: number;
+  @IsNotEmpty()
+  @IsEnum(ImportType)
+  importType: ImportType;
 }

@@ -30,7 +30,7 @@ export class Ingredient {
   ingredientUnit: string;
   @Column()
   ingredientQuantityInStock: number;
-  @Column({ type: 'decimal', precision: 5, scale: 2 })
+  @Column()
   ingredientQuantityPerUnit: number;
   @Column()
   ingredientQuantityPerSubUnit: string;
