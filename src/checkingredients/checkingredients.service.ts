@@ -447,14 +447,40 @@ export class CheckingredientsService {
   }
 
   async findOne(id: number): Promise<Checkingredient | undefined> {
-    return await this.checkingredientRepository.findOne({
+    const checkingredient = await this.checkingredientRepository.findOne({
       where: { CheckID: id },
       relations: [
         'checkingredientitem',
         'user',
         'checkingredientitem.ingredient',
+        'checkingredientitem.ingredient.importingredientitem',
       ],
     });
+
+    if (!checkingredient) {
+      throw new NotFoundException('Checkingredient not found');
+    }
+
+    // Assign the lastPrice for each ingredient item based on the latest import
+    checkingredient.checkingredientitem.forEach((item) => {
+      const importItems = item.ingredient.importingredientitem;
+      if (importItems && importItems.length > 0) {
+        // Get the latest import item by sorting by createdDate in descending order
+        const latestImportItem = importItems.sort(
+          (a, b) =>
+            new Date(b.createdDate).getTime() -
+            new Date(a.createdDate).getTime(),
+        )[0];
+        item.lastPrice = latestImportItem
+          ? latestImportItem.unitPrice / latestImportItem.Quantity
+          : 0;
+      } else {
+        item.lastPrice = 0; // If no import items, set lastPrice to null
+      }
+    });
+    console.log(checkingredient);
+
+    return checkingredient;
   }
 
   remove(id: number) {

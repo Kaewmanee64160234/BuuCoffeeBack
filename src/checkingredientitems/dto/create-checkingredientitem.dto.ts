@@ -8,6 +8,8 @@ export class CreateCheckingredientitemDto {
   oldRemain: number;
   type?: string;
 
+  unitPrice?: number;
+  subTotalPrice?: number;
   @IsNotEmpty()
   UsedQuantity: number;
 }
