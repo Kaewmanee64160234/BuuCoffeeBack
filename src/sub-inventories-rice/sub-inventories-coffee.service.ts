@@ -1,21 +1,22 @@
 import { Injectable } from '@nestjs/common';
-import { CreateSubInventoriesRiceDto } from './dto/create-sub-inventories-rice.dto';
-import { UpdateSubInventoriesRiceDto } from './dto/update-sub-inventories-rice.dto';
-import { SubInventoriesRice } from './entities/sub-inventories-rice.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { SubInventoriesCoffee } from 'src/sub-inventories-coffee/entities/sub-inventories-coffee.entity';
+import { CreateSubInventoriesCoffeeDto } from 'src/sub-inventories-coffee/dto/create-sub-inventories-coffee.dto';
+import { UpdateSubInventoriesCoffeeDto } from 'src/sub-inventories-coffee/dto/update-sub-inventories-coffee.dto';
+
 @Injectable()
-export class SubInventoriesRiceService {
+export class SubInventoriesCoffeeService {
   constructor(
-    @InjectRepository(SubInventoriesRice)
-    private riceShopSubInventoryRepository: Repository<SubInventoriesRice>,
+    @InjectRepository(SubInventoriesCoffee)
+    private coffeeShopSubInventoryRepository: Repository<SubInventoriesCoffee>,
   ) {}
-  create(createSubInventoriesRiceDto: CreateSubInventoriesRiceDto) {
-    return 'This action adds a new subInventoriesRice';
+  create(createSubInventoriesCoffeeDto: CreateSubInventoriesCoffeeDto) {
+    return 'This action adds a new subInventoriesCoffee';
   }
 
   async findAll(): Promise<any[]> {
-    const subInventories = await this.riceShopSubInventoryRepository.find({
+    const subInventories = await this.coffeeShopSubInventoryRepository.find({
       relations: ['ingredient', 'ingredient.importingredientitem'],
       order: { ingredient: { importingredientitem: { createdDate: 'DESC' } } },
     });
@@ -43,14 +44,17 @@ export class SubInventoriesRiceService {
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} subInventoriesRice`;
+    return `This action returns a #${id} subInventoriesCoffee`;
   }
 
-  update(id: number, updateSubInventoriesRiceDto: UpdateSubInventoriesRiceDto) {
-    return `This action updates a #${id} subInventoriesRice`;
+  update(
+    id: number,
+    updateSubInventoriesCoffeeDto: UpdateSubInventoriesCoffeeDto,
+  ) {
+    return `This action updates a #${id} subInventoriesCoffee`;
   }
 
   remove(id: number) {
-    return `This action removes a #${id} subInventoriesRice`;
+    return `This action removes a #${id} subInventoriesCoffee`;
   }
 }

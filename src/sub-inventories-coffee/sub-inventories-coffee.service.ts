@@ -15,9 +15,31 @@ export class SubInventoriesCoffeeService {
     return 'This action adds a new subInventoriesCoffee';
   }
 
-  async findAll(): Promise<SubInventoriesCoffee[]> {
-    return await this.coffeeShopSubInventoryRepository.find({
-      relations: ['ingredient'],
+  async findAll(): Promise<any[]> {
+    const subInventories = await this.coffeeShopSubInventoryRepository.find({
+      relations: ['ingredient', 'ingredient.importingredientitem'],
+      order: { ingredient: { importingredientitem: { createdDate: 'DESC' } } },
+    });
+
+    return subInventories.map((subInventory) => {
+      // Get the latest import ingredient item
+      const latestImportItem = subInventory.ingredient.importingredientitem[0];
+      let lastPrice = 0;
+      // Calculate lastPrice based on the latest import's price and quantity
+      if (latestImportItem.importType === 'box') {
+        lastPrice = latestImportItem
+          ? latestImportItem.unitPrice // Avoid division by zero
+          : 0;
+      } else {
+        lastPrice = latestImportItem
+          ? latestImportItem.unitPrice / latestImportItem.Quantity // Avoid division by zero
+          : 0;
+      }
+
+      return {
+        ...subInventory,
+        lastPrice, // Add the calculated lastPrice
+      };
     });
   }
 
