@@ -179,6 +179,9 @@ export class CheckingredientsService {
     checkingredient.checkDescription =
       createCheckingredientDto.checkDescription;
     checkingredient.actionType = createCheckingredientDto.actionType;
+    if (createCheckingredientDto.actionType === 'withdrawalHistory') {
+      checkingredient.totalPrice = createCheckingredientDto.totalPrice;
+    }
     const checkingredientSave = await this.checkingredientRepository.save(
       checkingredient,
     );
@@ -251,6 +254,37 @@ export class CheckingredientsService {
           if (subInventoryCatering) {
             subInventoryCatering.quantity = 0;
           }
+        } else if (
+          createCheckingredientDto.actionType === 'withdrawalHistory'
+        ) {
+          // Similar to withdrawal but without resetting to 0
+          if (subInventory.quantity < itemDto.UsedQuantity) {
+            throw new Error(
+              `Not enough stock for Ingredient ID ${itemDto.ingredientId} in ${subInventoryType} sub-inventory.`,
+            );
+          }
+
+          subInventory.quantity -= itemDto.UsedQuantity;
+
+          if (subInventoryCatering) {
+            subInventoryCatering.quantity -= itemDto.UsedQuantity;
+            if (subInventoryCatering.quantity < 0) {
+              throw new Error(
+                `Insufficient stock in catering inventory for Ingredient ID ${itemDto.ingredientId}.`,
+              );
+            }
+          } else {
+            subInventoryCatering = new SubIntventoriesCatering();
+            subInventoryCatering.ingredient = subInventory.ingredient;
+            subInventoryCatering.quantity = -itemDto.UsedQuantity;
+            if (subInventoryCatering.quantity < 0) {
+              throw new Error(
+                `Insufficient stock in catering inventory for Ingredient ID ${itemDto.ingredientId}.`,
+              );
+            }
+            subInventoryCatering.type = subInventoryType;
+            subInventoryCatering.createdDate = new Date();
+          }
         }
 
         subInventoryCatering.updatedDate = new Date();
@@ -271,6 +305,7 @@ export class CheckingredientsService {
           subInventory.ingredient.ingredientQuantityInStock;
         checkingredientitem.checkingredient = checkingredientSave;
         checkingredientitem.type = subInventoryType;
+
         console.log('checkingredientitem', checkingredientitem);
 
         await this.checkingredientitemRepository.save(checkingredientitem);

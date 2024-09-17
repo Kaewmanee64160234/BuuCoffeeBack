@@ -38,6 +38,9 @@ export class Checkingredient {
   subInventoriesCatering: SubIntventoriesCatering[];
   @Column()
   checkDescription: string;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  totalPrice: number;
   @OneToMany(
     () => Checkingredientitem,
     (checkingredientitem) => checkingredientitem.checkingredient,

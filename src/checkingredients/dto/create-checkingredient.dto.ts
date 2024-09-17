@@ -12,6 +12,7 @@ export class CreateCheckingredientDto {
   checkDescription: string;
   @IsNotEmpty()
   shopType: string;
+  totalPrice?: number;
 
   @IsNotEmpty()
   checkingredientitems: CreateCheckingredientitemDto[];
