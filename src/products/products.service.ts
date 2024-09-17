@@ -52,6 +52,7 @@ export class ProductsService {
     if (isNaN(parsedCategoryId)) {
       throw new HttpException('Invalid category ID', HttpStatus.BAD_REQUEST);
     }
+    console.log('parsedCategoryId', createProductDto);
 
     const category = await this.categoryRepository.findOne({
       where: { categoryId: parsedCategoryId },
