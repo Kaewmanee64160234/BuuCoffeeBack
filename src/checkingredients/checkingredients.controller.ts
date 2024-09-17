@@ -44,11 +44,15 @@ export class CheckingredientsController {
   async findAll(@Query('actionType') actionType?: string) {
     return this.checkingredientsService.findAll(actionType);
   }
+
   @Get('findByShopType')
   async findByShopType(
     @Query('actionType') actionType?: string,
     @Query('shopType') shopType?: string,
   ): Promise<Checkingredient[]> {
+    console.log('actionType', actionType);
+    console.log('shopType', shopType);
+
     return this.checkingredientsService.findByShop(actionType, shopType);
   }
 

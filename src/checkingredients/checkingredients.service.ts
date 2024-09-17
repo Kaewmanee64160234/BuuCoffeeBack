@@ -47,6 +47,7 @@ export class CheckingredientsService {
       createCheckingredientDto.checkDescription;
     checkingredient.actionType = createCheckingredientDto.actionType;
 
+    // Step 1: Pre-check all conditions
     for (const itemDto of createCheckingredientDto.checkingredientitems) {
       const ingredient = await this.ingredientRepository.findOneBy({
         ingredientId: itemDto.ingredientId,
@@ -67,29 +68,58 @@ export class CheckingredientsService {
         );
       }
 
+      let subInventory;
+
+      if (createCheckingredientDto.shopType === 'rice') {
+        subInventory = await this.riceShopSubInventoryRepository.findOne({
+          where: { ingredient: { ingredientId: ingredient.ingredientId } },
+        });
+
+        if (
+          subInventory &&
+          createCheckingredientDto.actionType === 'withdrawal' &&
+          subInventory.quantity > 0
+        ) {
+          throw new Error(
+            `Cannot withdraw from rice shop sub-inventory because quantity > 0 for ingredient ID: ${ingredient.ingredientId}`,
+          );
+        }
+      } else if (createCheckingredientDto.shopType === 'coffee') {
+        subInventory = await this.coffeeShopSubInventoryRepository.findOne({
+          where: { ingredient: { ingredientId: ingredient.ingredientId } },
+        });
+
+        if (
+          subInventory &&
+          createCheckingredientDto.actionType === 'withdrawal' &&
+          subInventory.quantity > 0
+        ) {
+          throw new Error(
+            `Cannot withdraw from coffee shop sub-inventory because quantity > 0 for ingredient ID: ${ingredient.ingredientId}`,
+          );
+        }
+      }
+    }
+
+    // Step 2: Proceed to create entities since all conditions passed
+    for (const itemDto of createCheckingredientDto.checkingredientitems) {
+      const ingredient = await this.ingredientRepository.findOneBy({
+        ingredientId: itemDto.ingredientId,
+      });
+
       const checkingredientitem = new Checkingredientitem();
       checkingredientitem.ingredient = ingredient;
       checkingredientitem.UsedQuantity = itemDto.UsedQuantity;
       checkingredientitem.oldRemain = ingredient.ingredientQuantityInStock;
 
+      let subInventory;
+
       // Update SubInventory
       try {
-        let subInventory;
-
         if (createCheckingredientDto.shopType === 'rice') {
           subInventory = await this.riceShopSubInventoryRepository.findOne({
             where: { ingredient: { ingredientId: ingredient.ingredientId } },
           });
-
-          if (
-            subInventory &&
-            createCheckingredientDto.actionType === 'withdrawal' &&
-            subInventory.quantity > 0
-          ) {
-            throw new Error(
-              `Cannot withdraw from rice shop sub-inventory because quantity > 0 for ingredient ID: ${ingredient.ingredientId}`,
-            );
-          }
 
           if (!subInventory) {
             subInventory = new SubInventoriesRice();
@@ -110,16 +140,6 @@ export class CheckingredientsService {
           subInventory = await this.coffeeShopSubInventoryRepository.findOne({
             where: { ingredient: { ingredientId: ingredient.ingredientId } },
           });
-
-          if (
-            subInventory &&
-            createCheckingredientDto.actionType === 'withdrawal' &&
-            subInventory.quantity > 0
-          ) {
-            throw new Error(
-              `Cannot withdraw from coffee shop sub-inventory because quantity > 0 for ingredient ID: ${ingredient.ingredientId}`,
-            );
-          }
 
           if (!subInventory) {
             subInventory = new SubInventoriesCoffee();
@@ -426,7 +446,9 @@ export class CheckingredientsService {
 
     if (
       actionType &&
-      (actionType === 'withdrawal' || actionType === 'return')
+      (actionType === 'withdrawal' ||
+        actionType === 'return' ||
+        actionType === 'withdrawalHistory')
     ) {
       query.andWhere('checkingredient.actionType = :actionType', {
         actionType,
