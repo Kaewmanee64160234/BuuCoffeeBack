@@ -47,6 +47,10 @@ import { IngredientusagelogModule } from './ingredientusagelog/ingredientusagelo
 import { IngredientUsageLog } from './ingredientusagelog/entities/ingredientusagelog.entity';
 import { SubIntventoriesCateringModule } from './sub-intventories-catering/sub-intventories-catering.module';
 import { SubIntventoriesCatering } from './sub-intventories-catering/entities/sub-intventories-catering.entity';
+import { RoleModule } from './role/role.module';
+import { PermissionModule } from './permission/permission.module';
+import { Role } from './role/entities/role.entity';
+import { Permission } from './permission/entities/permission.entity';
 
 @Module({
   imports: [
@@ -80,6 +84,8 @@ import { SubIntventoriesCatering } from './sub-intventories-catering/entities/su
         SubInventoriesRice,
         IngredientUsageLog,
         SubIntventoriesCatering,
+        Role,
+        Permission,
       ],
       synchronize: true,
     }),
@@ -106,6 +112,8 @@ import { SubIntventoriesCatering } from './sub-intventories-catering/entities/su
     SubInventoriesRiceModule,
     IngredientusagelogModule,
     SubIntventoriesCateringModule,
+    RoleModule,
+    PermissionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -3,6 +3,8 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
@@ -12,6 +14,7 @@ import { Reciept } from 'src/reciept/entities/reciept.entity';
 import { Importingredient } from 'src/importingredients/entities/importingredient.entity';
 import { Checkingredient } from 'src/checkingredients/entities/checkingredient.entity';
 import { Cashier } from 'src/cashiers/entities/cashier.entity';
+import { Role } from 'src/role/entities/role.entity';
 @Entity()
 export class User {
   @PrimaryGeneratedColumn()
@@ -39,6 +42,9 @@ export class User {
   checkingredients: Checkingredient[];
   @OneToMany(() => Cashier, (cashier) => cashier.user)
   cashiers: Cashier[];
+  @ManyToMany(() => Role, (role) => role.users)
+  @JoinTable({ name: 'user_roles' }) // Join table for users and roles
+  roles: Role[];
   @CreateDateColumn()
   createdDate: Date;
   @UpdateDateColumn()

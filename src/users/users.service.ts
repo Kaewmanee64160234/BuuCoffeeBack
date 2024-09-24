@@ -10,12 +10,14 @@ import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Like, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { HttpException, HttpStatus } from '@nestjs/common';
+import { Role } from 'src/role/entities/role.entity';
 
 let userId = 0;
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User) private usersRepository: Repository<User>,
+    @InjectRepository(Role) private rolesRepository: Repository<Role>,
   ) {}
 
   async create(createUserDto: CreateUserDto) {
@@ -90,6 +92,23 @@ export class UsersService {
       console.log(error);
       throw new HttpException('Failed to update user', HttpStatus.BAD_REQUEST);
     }
+  }
+  async assignRoleToUser(userId: number, roleId: number): Promise<User> {
+    const user = await this.usersRepository.findOne({
+      where: { userId: userId },
+      relations: ['roles'],
+    });
+    const role = await this.rolesRepository.findOne({ where: { id: roleId } });
+
+    user.roles = [...user.roles, role];
+    return this.usersRepository.save(user);
+  }
+
+  async getUserWithRoles(userId: number): Promise<User> {
+    return this.usersRepository.findOne({
+      where: { userId: userId },
+      relations: ['roles', 'roles.permissions'],
+    });
   }
 
   remove(id: number) {
