@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Role } from './entities/role.entity';
 import { Permission } from 'src/permission/entities/permission.entity';
+import { CreatePermissionDto } from 'src/permission/dto/create-permission.dto';
 
 @Injectable()
 export class RoleService {
@@ -51,22 +52,35 @@ export class RoleService {
   // Assign a set of permissions to an existing role
   async assignPermissionsToRole(
     roleId: number,
-    permissions: string[],
-  ): Promise<Role> {
+    permissions: CreatePermissionDto[],
+  ) {
+    console.log(roleId);
+
+    // Fetch the role along with its existing permissions
     const role = await this.roleRepository.findOne({
       where: { id: roleId },
-      relations: ['permissions'],
+      relations: ['permissions'], // Fetch current permissions
     });
 
     if (!role) {
       throw new Error('Role not found');
     }
 
+    // Remove all current permissions (optional step, if you want to clear first)
+    role.permissions = [];
+
+    // Extract permission names from CreatePermissionDto[] (assuming it has a 'name' property)
+    const permissionNames = permissions.map((permission) => permission.name);
+
+    // Find permission entities based on names
     const permissionEntities = await this.permissionRepository.findBy({
-      name: In(permissions),
+      name: In(permissionNames),
     });
 
-    role.permissions = [...role.permissions, ...permissionEntities];
+    // Assign the new permissions
+    role.permissions = permissionEntities;
+
+    // Save the updated role with the new permissions
     return this.roleRepository.save(role);
   }
 
@@ -88,4 +102,6 @@ export class RoleService {
   async getAllRoles(): Promise<Role[]> {
     return this.roleRepository.find({ relations: ['permissions'] });
   }
+
+  // update all roles
 }

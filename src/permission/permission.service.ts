@@ -11,13 +11,26 @@ export class PermissionService {
     @InjectRepository(Permission)
     private permissionRepository: Repository<Permission>,
   ) {}
-  create(createPermissionDto: CreatePermissionDto) {
-    const permission = createPermissionDto;
-    return this.permissionRepository.save(permission);
+  async create(createPermissionDto: CreatePermissionDto) {
+    const permission = await this.permissionRepository.findOne({
+      where: { name: createPermissionDto.name },
+    });
+    if (permission) {
+      throw new Error(
+        `Permission with name ${createPermissionDto.name} already exists`,
+      );
+    }
+    const newPermission = this.permissionRepository.create({
+      description: createPermissionDto.description,
+      group: createPermissionDto.group,
+      name: permission.name,
+    });
+
+    return this.permissionRepository.save(newPermission);
   }
 
   findAll() {
-    return `This action returns all permission`;
+    return this.permissionRepository.find();
   }
 
   findOne(id: number) {

@@ -1,6 +1,7 @@
 // role.controller.ts
-import { Controller, Post, Body, Param, Get } from '@nestjs/common';
+import { Controller, Post, Body, Param, Get, Patch } from '@nestjs/common';
 import { RoleService } from './role.service';
+import { CreatePermissionDto } from 'src/permission/dto/create-permission.dto';
 
 @Controller('roles')
 export class RoleController {
@@ -15,10 +16,10 @@ export class RoleController {
   }
 
   // Assign permissions to an existing role
-  @Post('/:roleId/permissions')
+  @Patch('/:roleId/permissions')
   async assignPermissions(
     @Param('roleId') roleId: number,
-    @Body() body: { permissions: string[] },
+    @Body() body: { permissions: CreatePermissionDto[] },
   ) {
     return this.roleService.assignPermissionsToRole(roleId, body.permissions);
   }
