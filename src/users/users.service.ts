@@ -99,8 +99,10 @@ export class UsersService {
       relations: ['roles'],
     });
     const role = await this.rolesRepository.findOne({ where: { id: roleId } });
-
-    user.roles = [...user.roles, role];
+    if (!role) {
+      throw new NotFoundException('Role not found');
+    }
+    user.role = role;
     return this.usersRepository.save(user);
   }
 

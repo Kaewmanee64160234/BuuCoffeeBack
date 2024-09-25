@@ -5,6 +5,7 @@ import {
   Column,
   ManyToMany,
   JoinTable,
+  OneToMany,
 } from 'typeorm';
 import { Permission } from 'src/permission/entities/permission.entity';
 import { User } from 'src/users/entities/user.entity';
@@ -21,6 +22,6 @@ export class Role {
   @JoinTable() // JoinTable must be present on one side of the ManyToMany relationship
   permissions: Permission[];
 
-  @ManyToMany(() => User, (user) => user.roles)
+  @OneToMany(() => User, (user) => user.role)
   users: User[];
 }

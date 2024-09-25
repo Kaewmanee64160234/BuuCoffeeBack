@@ -42,9 +42,10 @@ export class User {
   checkingredients: Checkingredient[];
   @OneToMany(() => Cashier, (cashier) => cashier.user)
   cashiers: Cashier[];
-  @ManyToMany(() => Role, (role) => role.users)
-  @JoinTable({ name: 'user_roles' }) // Join table for users and roles
-  roles: Role[];
+
+  @ManyToOne(() => Role, (role) => role.users)
+  role: Role;
+
   @CreateDateColumn()
   createdDate: Date;
   @UpdateDateColumn()
