@@ -16,7 +16,6 @@ import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 import { Multer } from 'multer';
 import { UpdateRecipeDto } from 'src/recipes/dto/update-recipe.dto';
 import { UpdateProductTypeDto } from 'src/product-types/dto/update-product-type.dto';
-import { parse } from 'path';
 
 @Injectable()
 export class ProductsService {

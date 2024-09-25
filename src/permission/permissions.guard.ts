@@ -1,8 +1,7 @@
-// permissions.guard.ts
 import {
+  Injectable,
   CanActivate,
   ExecutionContext,
-  Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
@@ -17,12 +16,19 @@ export class PermissionsGuard implements CanActivate {
       context.getHandler(),
     );
 
+    // If no specific permissions are required, allow access
     if (!requiredPermissions) {
-      return true; // Allow access if no permissions are required
+      return true;
     }
 
-    const { user } = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest();
+    console.log('Request:', request);
 
+    const user = request.user; // Extract the user from the request (JWT should be decoded)
+
+    console.log('User info from request:', user);
+
+    // Check if the user has the required permissions
     const hasPermission = requiredPermissions.every((permission) =>
       user.role.permissions.some((p) => p.name === permission),
     );

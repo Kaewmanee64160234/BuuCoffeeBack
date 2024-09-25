@@ -49,4 +49,13 @@ export class UsersController {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
+  // findOneWithPermissions
+  @Get(':id/permissions')
+  async findOneWithPermissions(@Param('id') id: string) {
+    try {
+      return await this.usersService.findOneWithPermissions(+id);
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+  }
 }

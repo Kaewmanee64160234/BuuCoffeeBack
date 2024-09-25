@@ -27,15 +27,17 @@ import { extname, join } from 'path';
 import { Response, Request } from 'express';
 import { rename, unlink } from 'fs';
 import { Product } from './entities/product.entity';
-import { RolesGuard } from 'src/guards/roles.guard';
 import { Permissions } from 'src/decorators/permissions.decorator';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { RolesGuard } from 'src/guards/roles.guard';
+// import { PermissionsGuard } from 'src/permission/permissions.guard';
 @Controller('products')
-@UseGuards(RolesGuard)
+// @UseGuards(PermissionsGuard)
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Post()
-  @Permissions('จัดการสินค้า')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @UseInterceptors(
     FileInterceptor('imageFile', {
       storage: diskStorage({
@@ -59,13 +61,14 @@ export class ProductsController {
 
   // getProductByStoreType
   @Get('store-type/:storeType')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Permissions('ดูรายการสินค้า')
   getProductByStoreType(@Param('storeType') storeType: string) {
     return this.productsService.getProductByStoreType(storeType);
   }
 
   @Post('update-image/:productId')
-  @Permissions('จัดการสินค้า')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
@@ -125,7 +128,7 @@ export class ProductsController {
     }
   }
   @Patch(':id')
-  @Permissions('จัดการสินค้า')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @UseInterceptors(
     FileInterceptor('imageFile', {
       storage: diskStorage({
@@ -151,7 +154,7 @@ export class ProductsController {
   }
   //uplode image product file
   @Post('upload/:productId')
-  @Permissions('จัดการสินค้า')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
@@ -177,6 +180,7 @@ export class ProductsController {
   }
 
   @Get('paginate')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Permissions('ดูรายการสินค้า')
   async getProducts(
     @Query('page') page = 1,
@@ -187,25 +191,28 @@ export class ProductsController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Permissions('ดูรายการสินค้า')
   findAll() {
     return this.productsService.findAll();
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Permissions('ดูรายการสินค้า')
   findOne(@Param('id') id: string) {
     return this.productsService.findOne(+id);
   }
 
   @Delete(':id')
-  @Permissions('จัดการสินค้า')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   remove(@Param('id') id: string) {
     return this.productsService.remove(+id);
   }
 
   // getProductByCategoryName
   @Get('category/:categoryName')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Permissions('ดูรายการสินค้า')
   getProductByCategoryName(@Param('categoryName') categoryName: string) {
     return this.productsService.getProductByCategoryName(categoryName);
@@ -213,6 +220,7 @@ export class ProductsController {
 
   //getImage
   @Get(':id/image')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Permissions('ดูรายการสินค้า')
   async getImage(@Param('id') id: string, @Res() res: Response) {
     const product = await this.productsService.findOne(+id);

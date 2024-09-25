@@ -62,11 +62,13 @@ export class UsersService {
       throw new HttpException('Failed to fetch user', HttpStatus.BAD_REQUEST);
     }
   }
-  async findOneByEmail(email: string): Promise<User | undefined> {
+  async findOneByEmail(email: string): Promise<User> {
     try {
       const user = await this.usersRepository.findOne({
         where: { userEmail: email },
+        relations: ['role', 'role.permissions'],
       });
+
       if (!user) {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
@@ -155,5 +157,12 @@ export class UsersService {
     } else {
       throw new NotFoundException('Your password is not matches');
     }
+  }
+  // user.service.ts
+  async findOneWithPermissions(userId: number): Promise<User> {
+    return this.usersRepository.findOne({
+      where: { userId: userId },
+      relations: ['roles', 'roles.permissions'],
+    });
   }
 }

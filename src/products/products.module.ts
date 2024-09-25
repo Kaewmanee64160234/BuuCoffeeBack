@@ -11,6 +11,8 @@ import { ProductTypeTopping } from 'src/product-type-toppings/entities/product-t
 import { Topping } from 'src/toppings/entities/topping.entity';
 import { Recipe } from 'src/recipes/entities/recipe.entity';
 import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
+import { RolesGuard } from 'src/guards/roles.guard';
+import { UsersModule } from 'src/users/users.module';
 
 @Module({
   imports: [
@@ -25,8 +27,9 @@ import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
       Recipe,
       Ingredient,
     ]),
+    UsersModule,
   ],
   controllers: [ProductsController],
-  providers: [ProductsService],
+  providers: [ProductsService, RolesGuard],
 })
 export class ProductsModule {}

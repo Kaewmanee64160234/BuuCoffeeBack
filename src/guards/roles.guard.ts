@@ -1,49 +1,67 @@
-// guards/roles.guard.ts
 import {
+  Injectable,
   CanActivate,
   ExecutionContext,
-  Injectable,
-  UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Observable } from 'rxjs';
+import { UsersService } from 'src/users/users.service';
+import { User } from 'src/users/entities/user.entity';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(
+    private reflector: Reflector,
+    private usersService: UsersService, // Inject UsersService here
+  ) {}
 
-  canActivate(
-    context: ExecutionContext,
-  ): boolean | Promise<boolean> | Observable<boolean> {
-    const requiredPermissions = this.reflector.getAllAndOverride<string[]>(
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    // Get required permissions from the route
+    const requiredPermissions = this.reflector.get<string[]>(
       'permissions',
-      [context.getHandler(), context.getClass()],
+      context.getHandler(),
     );
 
     if (!requiredPermissions) {
-      return true; // If no permissions are specified, access is granted
+      return true; // No specific permissions required for this route
     }
 
     const request = context.switchToHttp().getRequest();
-    const user = request.user;
+    console.log('Request:', request);
 
-    if (!user) {
-      throw new UnauthorizedException('User not authenticated');
-    }
+    const user_ = request.user; // Extract user from the request (populated by JwtAuthGuard)
 
-    // Check if the user's role has the required permissions
-    const hasPermission = requiredPermissions.every((permission) =>
-      user.role.permissions.some(
-        (userPermission) => userPermission.name === permission,
-      ),
-    );
+    // Fetch user from database to ensure fresh data
+    const user = await this.usersService.findOneByEmail(user_.username);
+    console.log('User info from request:', user.role.permissions);
 
-    if (!hasPermission) {
-      throw new UnauthorizedException(
-        'You do not have the required permissions to access this resource',
+    // Check if the user’s role has permissions
+    if (
+      !user.role ||
+      !user.role.permissions ||
+      user.role.permissions.length === 0
+    ) {
+      throw new ForbiddenException(
+        'Your role does not have any permissions assigned',
       );
     }
 
-    return hasPermission;
+    // Check if the user's role has at least one of the required permissions
+    const hasPermission = user.role.permissions.some(
+      (permission) => requiredPermissions.includes(permission.name), // Make sure to use the correct field name here
+    );
+    console.log('User permissions:', user);
+
+    console.log('Required permissions:', requiredPermissions);
+
+    console.log('Has permission:', hasPermission);
+
+    if (!hasPermission) {
+      throw new ForbiddenException(
+        'You do not have the required permissions to access this route',
+      );
+    }
+
+    return true; // User has the required permissions
   }
 }
