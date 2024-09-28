@@ -32,12 +32,12 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/guards/roles.guard';
 // import { PermissionsGuard } from 'src/permission/permissions.guard';
 @Controller('products')
-// @UseGuards(PermissionsGuard)
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('จัดการสินค้า')
   @UseInterceptors(
     FileInterceptor('imageFile', {
       storage: diskStorage({
@@ -69,6 +69,7 @@ export class ProductsController {
 
   @Post('update-image/:productId')
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('จัดการสินค้า')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
@@ -129,6 +130,7 @@ export class ProductsController {
   }
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('จัดการสินค้า')
   @UseInterceptors(
     FileInterceptor('imageFile', {
       storage: diskStorage({
@@ -155,6 +157,7 @@ export class ProductsController {
   //uplode image product file
   @Post('upload/:productId')
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('จัดการสินค้า')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
@@ -206,6 +209,7 @@ export class ProductsController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('จัดการสินค้า')
   remove(@Param('id') id: string) {
     return this.productsService.remove(+id);
   }
