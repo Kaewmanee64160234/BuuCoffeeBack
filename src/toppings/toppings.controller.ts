@@ -24,13 +24,13 @@ export class ToppingsController {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Permissions('จัดการวัตถุดิบ')
+  @Permissions('จัดการท้อปปิ้ง')
   create(@Body() createToppingDto: CreateToppingDto) {
     return this.toppingsService.create(createToppingDto);
   }
   @Get('paginate')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Permissions('ดูวัตถุดิบ')
+  @Permissions('ดูท้อปปิ้ง')
   async getToppings(
     @Query('page') page: string,
     @Query('limit') limit: string,
@@ -47,28 +47,28 @@ export class ToppingsController {
   }
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Permissions('ดูวัตถุดิบ')
+  @Permissions('ดูท้อปปิ้ง')
   findAll() {
     return this.toppingsService.findAll();
   }
 
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Permissions('ดูวัตถุดิบ')
+  @Permissions('ดูท้อปปิ้ง')
   findOne(@Param('id') id: string) {
     return this.toppingsService.findOne(+id);
   }
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Permissions('จัดการวัตถุดิบ')
+  @Permissions('จัดการท้อปปิ้ง')
   update(@Param('id') id: string, @Body() updateToppingDto: UpdateToppingDto) {
     return this.toppingsService.update(+id, updateToppingDto);
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Permissions('จัดการวัตถุดิบ')
+  @Permissions('จัดการท้อปปิ้ง')
   remove(@Param('id') id: string) {
     return this.toppingsService.remove(+id);
   }
