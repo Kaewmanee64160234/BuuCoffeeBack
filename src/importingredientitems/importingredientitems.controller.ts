@@ -6,10 +6,14 @@ import {
   Patch,
   Param,
   Delete,
+  UseGuards,
 } from '@nestjs/common';
 import { ImportingredientitemsService } from './importingredientitems.service';
 import { CreateImportingredientitemDto } from './dto/create-importingredientitem.dto';
 import { UpdateImportingredientitemDto } from './dto/update-importingredientitem.dto';
+import { RolesGuard } from 'src/guards/roles.guard';
+import { Permissions } from 'src/decorators/permissions.decorator';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @Controller('importingredientitems')
 export class ImportingredientitemsController {
@@ -18,6 +22,8 @@ export class ImportingredientitemsController {
   ) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('จัดการการนำเข้าวัตถุดิบ')
   create(@Body() createImportingredientitemDto: CreateImportingredientitemDto) {
     return this.importingredientitemsService.create(
       createImportingredientitemDto,
@@ -25,16 +31,22 @@ export class ImportingredientitemsController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูการนำเข้าวัตถุดิบ')
   findAll() {
     return this.importingredientitemsService.findAll();
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูการนำเข้าวัตถุดิบ')
   findOne(@Param('id') id: string) {
     return this.importingredientitemsService.findOne(+id);
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('จัดการการนำเข้าวัตถุดิบ')
   update(
     @Param('id') id: string,
     @Body() updateImportingredientitemDto: UpdateImportingredientitemDto,
@@ -46,6 +58,8 @@ export class ImportingredientitemsController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('จัดการการนำเข้าวัตถุดิบ')
   remove(@Param('id') id: string) {
     return this.importingredientitemsService.remove(+id);
   }

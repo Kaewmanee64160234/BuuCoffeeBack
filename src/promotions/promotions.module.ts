@@ -4,9 +4,13 @@ import { PromotionsController } from './promotions.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Promotion } from './entities/promotion.entity';
 import { ReceiptPromotion } from 'src/receipt-promotions/entities/receipt-promotion.entity';
+import { UsersModule } from 'src/users/users.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Promotion, ReceiptPromotion])],
+  imports: [
+    TypeOrmModule.forFeature([Promotion, ReceiptPromotion]),
+    UsersModule,
+  ],
   controllers: [PromotionsController],
   providers: [PromotionsService],
 })

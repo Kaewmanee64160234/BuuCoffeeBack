@@ -6,10 +6,14 @@ import {
   Query,
   Param,
   Delete,
+  UseGuards,
 } from '@nestjs/common';
 import { ImportingredientsService } from './importingredients.service';
 import { CreateImportingredientDto } from './dto/create-importingredient.dto';
 import { UpdateImportingredientDto } from './dto/update-importingredient.dto';
+import { Permissions } from 'src/decorators/permissions.decorator';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { RolesGuard } from 'src/guards/roles.guard';
 
 @Controller('importingredients')
 export class ImportingredientsController {
@@ -17,6 +21,8 @@ export class ImportingredientsController {
     private readonly importingredientsService: ImportingredientsService,
   ) {}
   @Get('find-date')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูการนำเข้าวัตถุดิบ')
   async findDate(
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
@@ -32,6 +38,8 @@ export class ImportingredientsController {
     }
   }
   @Get('revenue')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูการนำเข้าวัตถุดิบ')
   async getRevenue(): Promise<{
     receipts: { date: Date; receiptNetPrice: number }[];
     totalRevenue: number;
@@ -47,6 +55,8 @@ export class ImportingredientsController {
   }
 
   @Get('expenditure')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูการนำเข้าวัตถุดิบ')
   async getExpenditure(): Promise<{
     startDate: Date;
     endDate: Date;
@@ -62,21 +72,29 @@ export class ImportingredientsController {
   }
 
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('จัดการการนำเข้าวัตถุดิบ')
   create(@Body() createImportingredientDto: CreateImportingredientDto) {
     return this.importingredientsService.create(createImportingredientDto);
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูการนำเข้าวัตถุดิบ')
   findAll() {
     return this.importingredientsService.findAll();
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูการนำเข้าวัตถุดิบ')
   findOne(@Param('id') id: string) {
     return this.importingredientsService.findOne(+id);
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('จัดการการนำเข้าวัตถุดิบ')
   remove(@Param('id') id: string) {
     return this.importingredientsService.remove(+id);
   }

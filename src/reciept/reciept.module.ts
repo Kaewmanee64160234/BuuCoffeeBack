@@ -17,6 +17,7 @@ import { Importingredient } from 'src/importingredients/entities/importingredien
 import { Recipe } from 'src/recipes/entities/recipe.entity';
 import { Checkingredient } from 'src/checkingredients/entities/checkingredient.entity';
 import { IngredientUsageLog } from 'src/ingredientusagelog/entities/ingredientusagelog.entity';
+import { UsersModule } from 'src/users/users.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { IngredientUsageLog } from 'src/ingredientusagelog/entities/ingredientus
       Checkingredient,
       IngredientUsageLog,
     ]),
+    UsersModule,
   ],
   controllers: [RecieptController],
   providers: [RecieptService],

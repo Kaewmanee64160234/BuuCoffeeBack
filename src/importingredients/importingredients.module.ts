@@ -7,6 +7,7 @@ import { Ingredient } from '../ingredients/entities/ingredient.entity';
 import { User } from '../users/entities/user.entity';
 import { ImportingredientsController } from './importingredients.controller';
 import { Reciept } from 'src/reciept/entities/reciept.entity';
+import { UsersModule } from 'src/users/users.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { Reciept } from 'src/reciept/entities/reciept.entity';
       User,
       Reciept,
     ]),
+    UsersModule,
   ],
   controllers: [ImportingredientsController],
   providers: [ImportingredientsService],

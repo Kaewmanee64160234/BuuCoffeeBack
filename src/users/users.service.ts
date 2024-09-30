@@ -23,11 +23,19 @@ export class UsersService {
   async create(createUserDto: CreateUserDto) {
     try {
       const newUser = new User();
+      const role = await this.rolesRepository.findOne({
+        where: { id: createUserDto.role.id },
+      });
+      if (!role) {
+        throw new NotFoundException('Role not found');
+      }
+
       newUser.userId = userId++;
       newUser.userName = createUserDto.userName;
       newUser.userRole = createUserDto.userRole;
       newUser.userEmail = createUserDto.userEmail;
       newUser.userStatus = createUserDto.userStatus;
+      newUser.role = role;
       // Hash the password before saving the user
       const salt = await bcrypt.genSalt();
       newUser.userPassword = await bcrypt.hash(

@@ -9,20 +9,28 @@ import {
   HttpException,
   Query,
   Patch,
+  UseGuards,
 } from '@nestjs/common';
 import { RecieptService } from './reciept.service';
 import { CreateRecieptDto } from './dto/create-reciept.dto';
 import { UpdateRecieptDto } from './dto/update-reciept.dto';
-import { Product } from 'src/products/entities/product.entity';
+import { Permissions } from 'src/decorators/permissions.decorator';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { RolesGuard } from 'src/guards/roles.guard';
+
 @Controller('receipts')
 export class RecieptController {
   constructor(private readonly recieptService: RecieptService) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('จัดการสินค้า')
   create(@Body() createRecieptDto: CreateRecieptDto) {
     return this.recieptService.create(createRecieptDto);
   }
   @Get('query-date')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูรายการสินค้า')
   async findAllQueryDate(
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
@@ -54,10 +62,14 @@ export class RecieptController {
   }
   // update
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('จัดการสินค้า')
   update(@Param('id') id: string, @Body() updateRecieptDto: UpdateRecieptDto) {
     return this.recieptService.update(+id, updateRecieptDto);
   }
   @Get('ingredient-usage-report')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูรายการสินค้า')
   async getIngredientUsageReport(
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
@@ -74,6 +86,8 @@ export class RecieptController {
   }
 
   @Get('daily-report')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูรายการสินค้า')
   async getDailyReport(@Query('receiptType') receiptType: string) {
     try {
       if (!receiptType) {
@@ -89,6 +103,8 @@ export class RecieptController {
     }
   }
   @Get('products-usage')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูรายการสินค้า')
   async getProductsUsageByDateRangeAndReceiptType(
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
@@ -142,6 +158,8 @@ export class RecieptController {
   }
 
   @Get('/grouped')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูรายการสินค้า')
   async getGroupedReceipts(
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
@@ -166,6 +184,8 @@ export class RecieptController {
     }
   }
   @Get('/coffee-summary')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูรายการสินค้า')
   async getCoffeeReceiptsWithCostAndDiscounts(
     @Query('start') start: string,
     @Query('end') end: string,
@@ -186,21 +206,29 @@ export class RecieptController {
   // getRecieptIn1Day
   // param typeOfProduct
   @Get('/receipt-in-1-day')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูรายการสินค้า')
   async getRecieptIn1Day(@Query('typeOfProduct') typeOfProduct: string) {
     return this.recieptService.getRecieptIn1Day(typeOfProduct);
   }
 
   // getRecieptCateringIn24Hours
   @Get('/receipt-catering-in-24-hours')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูรายการสินค้า')
   async getRecieptCateringIn24Hours() {
     return this.recieptService.getRecieptCateringIn24Hours();
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูรายการสินค้า')
   findAll() {
     return this.recieptService.findAll();
   }
   @Get('/sum')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูรายการสินค้า')
   async getSumTodayByPaymentMethod(): Promise<{
     cash: number;
     qrcode: number;
@@ -211,10 +239,14 @@ export class RecieptController {
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูรายการสินค้า')
   findOne(@Param('id') id: string) {
     return this.recieptService.findOne(+id);
   }
   @Get('/sum/:paymentMethod')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูรายการสินค้า')
   async getSumByPaymentMethod(
     @Param('paymentMethod') paymentMethod: string,
   ): Promise<number> {
@@ -222,10 +254,14 @@ export class RecieptController {
   }
   // cancelReceipt from param
   @Delete('cancel/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('จัดการสินค้า')
   async cancelReceipt(@Param('id') id: string) {
     return this.recieptService.cancelReceipt(+id);
   }
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('จัดการสินค้า')
   remove(@Param('id') id: string) {
     return this.recieptService.remove(+id);
   }

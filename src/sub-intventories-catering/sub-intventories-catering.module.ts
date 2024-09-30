@@ -6,6 +6,7 @@ import { SubIntventoriesCatering } from './entities/sub-intventories-catering.en
 import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 import { SubInventoriesCoffee } from 'src/sub-inventories-coffee/entities/sub-inventories-coffee.entity';
 import { SubInventoriesRice } from 'src/sub-inventories-rice/entities/sub-inventories-rice.entity';
+import { UsersModule } from 'src/users/users.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { SubInventoriesRice } from 'src/sub-inventories-rice/entities/sub-invent
       SubInventoriesCoffee,
       SubInventoriesRice,
     ]),
+    UsersModule,
   ],
   controllers: [SubIntventoriesCateringController],
   providers: [SubIntventoriesCateringService],

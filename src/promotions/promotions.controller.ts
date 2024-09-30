@@ -9,6 +9,7 @@ import {
   Query,
   HttpException,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { PromotionsService } from './promotions.service';
 import {
@@ -16,16 +17,22 @@ import {
   QueryPromotionDto,
 } from './dto/create-promotion.dto';
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
-
+import { Permissions } from 'src/decorators/permissions.decorator';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { RolesGuard } from 'src/guards/roles.guard';
 @Controller('promotions')
 export class PromotionsController {
   constructor(private readonly promotionsService: PromotionsService) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('จัดการโปรโมชั่น')
   create(@Body() createPromotionDto: CreatePromotionDto) {
     return this.promotionsService.create(createPromotionDto);
   }
   @Get('usage')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูโปรโมชั่น')
   async getPromotionsUsageByDateRange(
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
@@ -48,17 +55,23 @@ export class PromotionsController {
     }
   }
   @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูโปรโมชั่น')
   findAll() {
     return this.promotionsService.findAll();
   }
 
   @Get('search')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูโปรโมชั่น')
   findByCriteria(@Query() query: QueryPromotionDto) {
     return this.promotionsService.findByCriteria(query);
   }
 
   // /promotions/paginate
   @Get('paginate')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูโปรโมชั่น')
   paginate(
     @Query('search') search: string,
     @Query('page') page = 1,
@@ -68,11 +81,15 @@ export class PromotionsController {
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูโปรโมชั่น')
   findOne(@Param('id') id: string) {
     return this.promotionsService.findOne(+id);
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('จัดการโปรโมชั่น')
   update(
     @Param('id') id: string,
     @Body() updatePromotionDto: UpdatePromotionDto,
@@ -81,12 +98,16 @@ export class PromotionsController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('จัดการโปรโมชั่น')
   remove(@Param('id') id: string) {
     return this.promotionsService.remove(+id);
   }
 
   // getPromotionByType
   @Get('type/:type')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูโปรโมชั่น')
   getPromotionByType(@Param('type') type: string) {
     return this.promotionsService.getPromotionByType(type);
   }

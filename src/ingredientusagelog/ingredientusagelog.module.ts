@@ -6,6 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Checkingredientitem } from 'src/checkingredientitems/entities/checkingredientitem.entity';
 import { Checkingredient } from 'src/checkingredients/entities/checkingredient.entity';
 import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
+import { UsersModule } from 'src/users/users.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -14,6 +15,7 @@ import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
       Checkingredient,
       Ingredient,
     ]),
+    UsersModule,
   ],
   controllers: [IngredientusagelogController],
   providers: [IngredientusagelogService],

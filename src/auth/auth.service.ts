@@ -40,6 +40,8 @@ export class AuthService {
         access_token: token,
       };
     } catch (error) {
+      console.log('Error:', error); // Log the error
+
       throw new InternalServerErrorException('Internal server error');
     }
   }

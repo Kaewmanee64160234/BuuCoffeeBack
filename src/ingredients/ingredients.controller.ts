@@ -11,6 +11,7 @@ import {
   Res,
   Query,
   InternalServerErrorException,
+  UseGuards,
 } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -24,11 +25,16 @@ import { v4 as uuidv4 } from 'uuid';
 import { extname } from 'path';
 import { Response, Request } from 'express';
 import { Ingredient } from './entities/ingredient.entity';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { RolesGuard } from 'src/guards/roles.guard';
+import { Permissions } from 'src/decorators/permissions.decorator';
 
 @Controller('ingredients')
 export class IngredientsController {
   constructor(private readonly ingredientsService: IngredientsService) {}
   @Get('search')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูวัตถุดิบ')
   async search(@Query('name') name: string): Promise<Ingredient[]> {
     try {
       return await this.ingredientsService.searchByName(name);
@@ -39,6 +45,8 @@ export class IngredientsController {
   }
 
   @Get('low-stock')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูวัตถุดิบ')
   async findLowStockIngredients(): Promise<Ingredient[]> {
     try {
       return await this.ingredientsService.findLowStockIngredients();
@@ -51,6 +59,8 @@ export class IngredientsController {
   }
 
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('จัดการวัตถุดิบ')
   @UseInterceptors(
     FileInterceptor('imageFile', {
       storage: diskStorage({
@@ -70,6 +80,8 @@ export class IngredientsController {
   }
 
   @Post('upload/:ingredientId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('จัดการวัตถุดิบ')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
@@ -89,21 +101,29 @@ export class IngredientsController {
   }
 
   @Get(':all')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูวัตถุดิบ')
   findAllQuery(@Query() query) {
     return this.ingredientsService.findAllQuery(query);
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูวัตถุดิบ')
   findAll() {
     return this.ingredientsService.findAll();
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูวัตถุดิบ')
   findOne(@Param('id') id: string) {
     return this.ingredientsService.findOne(+id);
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('จัดการวัตถุดิบ')
   @UseInterceptors(
     FileInterceptor('imageFile', {
       storage: diskStorage({
@@ -125,11 +145,15 @@ export class IngredientsController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('จัดการวัตถุดิบ')
   remove(@Param('id') id: string) {
     return this.ingredientsService.remove(+id);
   }
 
   @Get(':id/image')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูวัตถุดิบ')
   async getImage(@Param('id') id: string, @Res() res: Response) {
     const ingredient = await this.ingredientsService.findOne(+id);
     res.sendFile(ingredient.ingredientImage, { root: './ingredient_images' });

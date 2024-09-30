@@ -6,31 +6,43 @@ import {
   Patch,
   Param,
   Delete,
+  UseGuards,
 } from '@nestjs/common';
 import { ProductTypesService } from './product-types.service';
 import { CreateProductTypeDto } from './dto/create-product-type.dto';
 import { UpdateProductTypeDto } from './dto/update-product-type.dto';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { RolesGuard } from 'src/guards/roles.guard';
+import { Permissions } from 'src/decorators/permissions.decorator';
 
 @Controller('product-types')
 export class ProductTypesController {
   constructor(private readonly productTypesService: ProductTypesService) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('จัดการสินค้า')
   create(@Body() createProductTypeDto: CreateProductTypeDto) {
     return this.productTypesService.create(createProductTypeDto);
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูรายการสินค้า')
   findAll() {
     return this.productTypesService.findAll();
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูรายการสินค้า')
   findOne(@Param('id') id: string) {
     return this.productTypesService.findOne(+id);
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('จัดการสินค้า')
   update(
     @Param('id') id: string,
     @Body() updateProductTypeDto: UpdateProductTypeDto,
@@ -39,6 +51,8 @@ export class ProductTypesController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('จัดการสินค้า')
   remove(@Param('id') id: string) {
     return this.productTypesService.remove(+id);
   }

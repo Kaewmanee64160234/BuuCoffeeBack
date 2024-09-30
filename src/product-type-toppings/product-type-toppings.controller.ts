@@ -6,10 +6,14 @@ import {
   Patch,
   Param,
   Delete,
+  UseGuards,
 } from '@nestjs/common';
 import { ProductTypeToppingsService } from './product-type-toppings.service';
 import { CreateProductTypeToppingDto } from './dto/create-product-type-topping.dto';
 import { UpdateProductTypeToppingDto } from './dto/update-product-type-topping.dto';
+import { Permissions } from 'src/decorators/permissions.decorator';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { RolesGuard } from 'src/guards/roles.guard';
 
 @Controller('product-type-toppings')
 export class ProductTypeToppingsController {
@@ -18,21 +22,29 @@ export class ProductTypeToppingsController {
   ) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('จัดการสินค้า')
   create(@Body() createProductTypeToppingDto: CreateProductTypeToppingDto) {
     return this.productTypeToppingsService.create(createProductTypeToppingDto);
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูรายการสินค้า')
   findAll() {
     return this.productTypeToppingsService.findAll();
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูรายการสินค้า')
   findOne(@Param('id') id: string) {
     return this.productTypeToppingsService.findOne(+id);
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('จัดการสินค้า')
   update(
     @Param('id') id: string,
     @Body() updateProductTypeToppingDto: UpdateProductTypeToppingDto,
@@ -44,6 +56,8 @@ export class ProductTypeToppingsController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('จัดการสินค้า')
   remove(@Param('id') id: string) {
     return this.productTypeToppingsService.remove(+id);
   }
