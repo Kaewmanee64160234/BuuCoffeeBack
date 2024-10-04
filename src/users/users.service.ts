@@ -51,7 +51,9 @@ export class UsersService {
 
   findAll() {
     try {
-      return this.usersRepository.find();
+      return this.usersRepository.find({
+        relations: ['role', 'role.permissions'],
+      });
     } catch (error) {
       throw new HttpException('Failed to fetch users', HttpStatus.BAD_REQUEST);
     }
