@@ -8,9 +8,11 @@ import { User } from 'src/users/entities/user.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SubInventoriesCoffee } from 'src/sub-inventories-coffee/entities/sub-inventories-coffee.entity';
 import { SubInventoriesRice } from 'src/sub-inventories-rice/entities/sub-inventories-rice.entity';
-import { SubIntventoriesCatering } from 'src/sub-intventories-catering/entities/sub-intventories-catering.entity';
 import { UsersModule } from 'src/users/users.module';
 import { RolesGuard } from 'src/guards/roles.guard';
+import { Meal } from 'src/meal/entities/meal.entity';
+import { CateringEvent } from 'src/catering-event/entities/catering-event.entity';
+import { MealIngredients } from 'src/meal-ingredients/entities/meal-ingredient.entity';
 
 @Module({
   imports: [
@@ -21,7 +23,9 @@ import { RolesGuard } from 'src/guards/roles.guard';
       User,
       SubInventoriesCoffee,
       SubInventoriesRice,
-      SubIntventoriesCatering,
+      Meal,
+      CateringEvent,
+      MealIngredients,
     ]),
     UsersModule,
   ],

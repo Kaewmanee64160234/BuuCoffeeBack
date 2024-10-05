@@ -18,7 +18,6 @@ import * as moment from 'moment-timezone';
 import { Recipe } from 'src/recipes/entities/recipe.entity';
 import { Checkingredientitem } from 'src/checkingredientitems/entities/checkingredientitem.entity';
 import { Checkingredient } from 'src/checkingredients/entities/checkingredient.entity';
-import { IngredientUsageLog } from 'src/ingredientusagelog/entities/ingredientusagelog.entity';
 @Injectable()
 export class RecieptService {
   private readonly logger = new Logger(RecieptService.name);
@@ -53,8 +52,6 @@ export class RecieptService {
     // recipe
     @InjectRepository(Recipe)
     private recipeRepository: Repository<Recipe>,
-    @InjectRepository(IngredientUsageLog)
-    private ingredientUsageLogRepository: Repository<IngredientUsageLog>,
   ) {}
 
   async create(createRecieptDto: CreateRecieptDto) {

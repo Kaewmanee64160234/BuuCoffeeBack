@@ -1,6 +1,5 @@
 import { Checkingredientitem } from 'src/checkingredientitems/entities/checkingredientitem.entity';
 import { Reciept } from 'src/reciept/entities/reciept.entity';
-import { SubIntventoriesCatering } from 'src/sub-intventories-catering/entities/sub-intventories-catering.entity';
 import { User } from 'src/users/entities/user.entity';
 import {
   Column,
@@ -30,12 +29,6 @@ export class Checkingredient {
   @Column()
   shopType: string; // coffee  หรือ rice
 
-  // subInventories
-  @OneToMany(
-    () => SubIntventoriesCatering,
-    (subInventoriesCatering) => subInventoriesCatering.checkingredient,
-  )
-  subInventoriesCatering: SubIntventoriesCatering[];
   @Column()
   checkDescription: string;
 

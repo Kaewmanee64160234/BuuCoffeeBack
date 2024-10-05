@@ -43,15 +43,17 @@ import { SubInventoriesCoffeeModule } from './sub-inventories-coffee/sub-invento
 import { SubInventoriesRiceModule } from './sub-inventories-rice/sub-inventories-rice.module';
 import { SubInventoriesCoffee } from './sub-inventories-coffee/entities/sub-inventories-coffee.entity';
 import { SubInventoriesRice } from './sub-inventories-rice/entities/sub-inventories-rice.entity';
-import { IngredientusagelogModule } from './ingredientusagelog/ingredientusagelog.module';
-import { IngredientUsageLog } from './ingredientusagelog/entities/ingredientusagelog.entity';
-import { SubIntventoriesCateringModule } from './sub-intventories-catering/sub-intventories-catering.module';
-import { SubIntventoriesCatering } from './sub-intventories-catering/entities/sub-intventories-catering.entity';
 import { RoleModule } from './role/role.module';
 import { PermissionModule } from './permission/permission.module';
 import { Role } from './role/entities/role.entity';
 import { Permission } from './permission/entities/permission.entity';
 import { ConfigModule } from '@nestjs/config';
+import { CateringEventModule } from './catering-event/catering-event.module';
+import { CateringEvent } from './catering-event/entities/catering-event.entity';
+import { MealModule } from './meal/meal.module';
+import { MealIngredientsModule } from './meal-ingredients/meal-ingredients.module';
+import { Meal } from './meal/entities/meal.entity';
+import { MealIngredients } from './meal-ingredients/entities/meal-ingredient.entity';
 
 @Module({
   imports: [
@@ -87,10 +89,11 @@ import { ConfigModule } from '@nestjs/config';
         Cashier,
         SubInventoriesCoffee,
         SubInventoriesRice,
-        IngredientUsageLog,
-        SubIntventoriesCatering,
         Role,
         Permission,
+        CateringEvent,
+        Meal,
+        MealIngredients,
       ],
       synchronize: true,
     }),
@@ -115,10 +118,11 @@ import { ConfigModule } from '@nestjs/config';
     AuthModule,
     SubInventoriesCoffeeModule,
     SubInventoriesRiceModule,
-    IngredientusagelogModule,
-    SubIntventoriesCateringModule,
     RoleModule,
     PermissionModule,
+    CateringEventModule,
+    MealModule,
+    MealIngredientsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

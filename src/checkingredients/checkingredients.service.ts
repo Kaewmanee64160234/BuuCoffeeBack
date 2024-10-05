@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Checkingredient } from 'src/checkingredients/entities/checkingredient.entity';
@@ -8,8 +12,11 @@ import { User } from 'src/users/entities/user.entity';
 import { CreateCheckingredientDto } from './dto/create-checkingredient.dto';
 import { SubInventoriesCoffee } from 'src/sub-inventories-coffee/entities/sub-inventories-coffee.entity';
 import { SubInventoriesRice } from 'src/sub-inventories-rice/entities/sub-inventories-rice.entity';
-import { SubIntventoriesCatering } from 'src/sub-intventories-catering/entities/sub-intventories-catering.entity';
 import { log } from 'console';
+import { Meal } from 'src/meal/entities/meal.entity';
+import { MealIngredients } from 'src/meal-ingredients/entities/meal-ingredient.entity';
+import { CateringEvent } from 'src/catering-event/entities/catering-event.entity';
+import { CreateCateringEventDto } from 'src/catering-event/dto/create-catering-event.dto';
 
 @Injectable()
 export class CheckingredientsService {
@@ -26,8 +33,12 @@ export class CheckingredientsService {
     private coffeeShopSubInventoryRepository: Repository<SubInventoriesCoffee>,
     @InjectRepository(SubInventoriesRice)
     private riceShopSubInventoryRepository: Repository<SubInventoriesRice>,
-    @InjectRepository(SubIntventoriesCatering)
-    private cateringShopSubInventoryRepository: Repository<SubIntventoriesCatering>,
+    @InjectRepository(CateringEvent)
+    private cateringEventRepository: Repository<CateringEvent>,
+    @InjectRepository(Meal)
+    private mealRepository: Repository<Meal>,
+    @InjectRepository(MealIngredients)
+    private mealIngredientsRepository: Repository<MealIngredients>,
   ) {}
 
   async create(createCheckingredientDto: CreateCheckingredientDto) {
@@ -163,163 +174,6 @@ export class CheckingredientsService {
     });
   }
 
-  async createForCatering(createCheckingredientDto: CreateCheckingredientDto) {
-    const user = await this.userRepository.findOneBy({
-      userId: createCheckingredientDto.userId,
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    const checkingredient = new Checkingredient();
-    checkingredient.user = user;
-    checkingredient.date = createCheckingredientDto.date;
-    checkingredient.shopType = createCheckingredientDto.shopType;
-    checkingredient.checkDescription =
-      createCheckingredientDto.checkDescription;
-    checkingredient.actionType = createCheckingredientDto.actionType;
-    if (createCheckingredientDto.actionType === 'withdrawalHistory') {
-      checkingredient.totalPrice = createCheckingredientDto.totalPrice;
-    }
-    const checkingredientSave = await this.checkingredientRepository.save(
-      checkingredient,
-    );
-
-    // Process each item in the list
-    for (const itemDto of createCheckingredientDto.checkingredientitems) {
-      try {
-        let subInventoryCatering =
-          await this.cateringShopSubInventoryRepository.findOne({
-            where: {
-              ingredient: { ingredientId: itemDto.ingredientId },
-            },
-          });
-
-        let subInventory, subInventoryType: string;
-
-        if (itemDto.type === 'coffee') {
-          console.log('Handling coffee sub-inventory for catering');
-          subInventoryType = 'coffee';
-
-          subInventory = await this.coffeeShopSubInventoryRepository.findOne({
-            where: { ingredient: { ingredientId: itemDto.ingredientId } },
-            relations: ['ingredient'],
-          });
-
-          if (!subInventory) {
-            throw new Error(
-              `Ingredient ID ${itemDto.ingredientId} not found in coffee sub-inventory.`,
-            );
-          }
-        } else if (itemDto.type === 'rice') {
-          console.log('Handling rice sub-inventory for catering');
-          subInventoryType = 'rice';
-
-          subInventory = await this.riceShopSubInventoryRepository.findOne({
-            where: { ingredient: { ingredientId: itemDto.ingredientId } },
-            relations: ['ingredient'],
-          });
-
-          if (!subInventory) {
-            throw new Error(
-              `Ingredient ID ${itemDto.ingredientId} not found in rice sub-inventory.`,
-            );
-          }
-        } else {
-          throw new Error(`Unknown item type: ${itemDto.type}`);
-        }
-
-        if (createCheckingredientDto.actionType === 'withdrawal') {
-          if (subInventory.quantity < itemDto.UsedQuantity) {
-            throw new Error(
-              `Not enough stock for Ingredient ID ${itemDto.ingredientId} in ${subInventoryType} sub-inventory.`,
-            );
-          }
-
-          subInventory.quantity -= itemDto.UsedQuantity;
-
-          if (subInventoryCatering) {
-            subInventoryCatering.quantity += itemDto.UsedQuantity;
-          } else {
-            subInventoryCatering = new SubIntventoriesCatering();
-            subInventoryCatering.ingredient = subInventory.ingredient;
-            subInventoryCatering.quantity = itemDto.UsedQuantity;
-            subInventoryCatering.type = subInventoryType;
-            subInventoryCatering.createdDate = new Date();
-          }
-        } else if (createCheckingredientDto.actionType === 'return') {
-          subInventory.quantity += itemDto.UsedQuantity;
-
-          if (subInventoryCatering) {
-            subInventoryCatering.quantity = 0;
-          }
-        } else if (
-          createCheckingredientDto.actionType === 'withdrawalHistory'
-        ) {
-          // Similar to withdrawal but without resetting to 0
-          if (subInventory.quantity < itemDto.UsedQuantity) {
-            throw new Error(
-              `Not enough stock for Ingredient ID ${itemDto.ingredientId} in ${subInventoryType} sub-inventory.`,
-            );
-          }
-
-          subInventory.quantity -= itemDto.UsedQuantity;
-
-          if (subInventoryCatering) {
-            subInventoryCatering.quantity -= itemDto.UsedQuantity;
-            if (subInventoryCatering.quantity < 0) {
-              throw new Error(
-                `Insufficient stock in catering inventory for Ingredient ID ${itemDto.ingredientId}.`,
-              );
-            }
-          } else {
-            subInventoryCatering = new SubIntventoriesCatering();
-            subInventoryCatering.ingredient = subInventory.ingredient;
-            subInventoryCatering.quantity = -itemDto.UsedQuantity;
-            if (subInventoryCatering.quantity < 0) {
-              throw new Error(
-                `Insufficient stock in catering inventory for Ingredient ID ${itemDto.ingredientId}.`,
-              );
-            }
-            subInventoryCatering.type = subInventoryType;
-            subInventoryCatering.createdDate = new Date();
-          }
-        }
-
-        subInventoryCatering.updatedDate = new Date();
-        subInventoryCatering.checkingredient = checkingredientSave;
-
-        await this[subInventoryType + 'ShopSubInventoryRepository'].save(
-          subInventory,
-        );
-        await this.cateringShopSubInventoryRepository.save(
-          subInventoryCatering,
-        );
-
-        // Create and save checkingredientitem
-        const checkingredientitem = new Checkingredientitem();
-        checkingredientitem.ingredient = subInventory.ingredient;
-        checkingredientitem.UsedQuantity = itemDto.UsedQuantity;
-        checkingredientitem.oldRemain =
-          subInventory.ingredient.ingredientQuantityInStock;
-        checkingredientitem.checkingredient = checkingredientSave;
-        checkingredientitem.type = subInventoryType;
-
-        console.log('checkingredientitem', checkingredientitem);
-
-        await this.checkingredientitemRepository.save(checkingredientitem);
-      } catch (error) {
-        throw new Error('Failed to save SubInventory: ' + error.message);
-      }
-    }
-
-    return await this.checkingredientRepository.findOne({
-      where: { CheckID: checkingredient.CheckID },
-      relations: ['checkingredientitem'],
-    });
-  }
-
   async createWithoutInventory(
     createCheckingredientDto: CreateCheckingredientDto,
   ) {
@@ -390,6 +244,89 @@ export class CheckingredientsService {
     return await this.checkingredientRepository.findOne({
       where: { CheckID: checkingredient.CheckID },
       relations: ['checkingredientitem'],
+    });
+  }
+  async createForCatering(createCateringEventDto: CreateCateringEventDto) {
+    const user = await this.userRepository.findOneBy({
+      userId: createCateringEventDto.userId,
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const cateringEvent = new CateringEvent();
+    cateringEvent.user = user;
+    cateringEvent.eventName = createCateringEventDto.eventName;
+    cateringEvent.eventDate = createCateringEventDto.eventDate;
+    cateringEvent.eventLocation = createCateringEventDto.eventLocation;
+    cateringEvent.attendeeCount = createCateringEventDto.attendeeCount;
+    cateringEvent.totalBudget = createCateringEventDto.totalBudget;
+    cateringEvent.status = 'pending';
+
+    const savedCateringEvent = await this.cateringEventRepository.save(
+      cateringEvent,
+    );
+
+    // Process each meal in the catering event
+    for (const mealDto of createCateringEventDto.mealDto) {
+      const meal = new Meal();
+      meal.cateringEvent = savedCateringEvent;
+      meal.mealName = mealDto.mealName;
+      meal.totalPrice = mealDto.totalPrice;
+      meal.mealTime = mealDto.mealTime;
+
+      const savedMeal = await this.mealRepository.save(meal);
+
+      // Process each ingredient in the meal
+      for (const ingredientDto of mealDto.mealIngredientDto) {
+        const ingredient = await this.ingredientRepository.findOne({
+          where: { ingredientId: ingredientDto.ingredientId },
+        });
+
+        if (!ingredient) {
+          throw new Error(
+            `Ingredient ID ${ingredientDto.ingredientId} not found.`,
+          );
+        }
+
+        // Handling warehouse type with inventory check
+        // if (ingredientDto.type === 'warehouse') {
+        //   const checkingredientDto = new CreateCheckingredientDto();
+        //   checkingredientDto.userId = user;
+        //   checkingredientDto.date = ingredientDto.createdDate;
+        //   checkingredientDto.shopType = ingredientDto.;
+        //   checkingredientDto.checkDescription = ingredientDto.checkDescription;
+        //   checkingredientDto.actionType = ingredientDto.actionType;
+
+        //   // Update inventory based on actionType
+        //   if (ingredientDto.type === 'withdrawalHistory') {
+        //     checkingredient.totalPrice = ingredientDto.totalPrice;
+        //     ingredient.stock -= ingredientDto.quantity; // Deduct stock
+        //     if (ingredient.stock < 0) {
+        //       throw new BadRequestException('Not enough stock');
+        //     }
+        //   }
+
+        //   await this.checkingredientRepository.save(checkingredient);
+        //   await this.ingredientRepository.save(ingredient); // Save updated stock
+        // }
+
+        // Save MealIngredients entity
+        const mealIngredient = new MealIngredients();
+        mealIngredient.meal = savedMeal;
+        mealIngredient.ingredient = ingredient;
+        mealIngredient.quantity = ingredientDto.quantity;
+        mealIngredient.totalPrice = ingredientDto.totalPrice;
+        mealIngredient.type = ingredientDto.type;
+
+        await this.mealIngredientsRepository.save(mealIngredient);
+      }
+    }
+
+    return await this.cateringEventRepository.findOne({
+      where: { eventId: savedCateringEvent.eventId },
+      relations: ['meals', 'meals.mealIngredients'],
     });
   }
 

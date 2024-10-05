@@ -16,7 +16,6 @@ import { ReceiptPromotion } from 'src/receipt-promotions/entities/receipt-promot
 import { Importingredient } from 'src/importingredients/entities/importingredient.entity';
 import { Recipe } from 'src/recipes/entities/recipe.entity';
 import { Checkingredient } from 'src/checkingredients/entities/checkingredient.entity';
-import { IngredientUsageLog } from 'src/ingredientusagelog/entities/ingredientusagelog.entity';
 import { UsersModule } from 'src/users/users.module';
 
 @Module({
@@ -36,7 +35,6 @@ import { UsersModule } from 'src/users/users.module';
       ReceiptPromotion,
       Importingredient,
       Checkingredient,
-      IngredientUsageLog,
     ]),
     UsersModule,
   ],

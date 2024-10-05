@@ -15,6 +15,7 @@ import { Importingredient } from 'src/importingredients/entities/importingredien
 import { Checkingredient } from 'src/checkingredients/entities/checkingredient.entity';
 import { Cashier } from 'src/cashiers/entities/cashier.entity';
 import { Role } from 'src/role/entities/role.entity';
+import { CateringEvent } from 'src/catering-event/entities/catering-event.entity';
 @Entity()
 export class User {
   @PrimaryGeneratedColumn()
@@ -40,6 +41,8 @@ export class User {
   importingredients: Importingredient[];
   @OneToMany(() => Checkingredient, (checkingredient) => checkingredient.user)
   checkingredients: Checkingredient[];
+  @OneToMany(() => CateringEvent, (cateringevent) => cateringevent.user)
+  organizer: CateringEvent[];
   @OneToMany(() => Cashier, (cashier) => cashier.user)
   cashiers: Cashier[];
 
