@@ -375,6 +375,27 @@ export class CheckingredientsService {
       relations: ['meals', 'meals.mealIngredients'],
     });
   }
+  async cancelCateringEvent(eventId: number): Promise<void> {
+    const cateringEvent = await this.cateringEventRepository.findOne({
+      where: { eventId },
+      relations: ['meals', 'meals.mealIngredients'],
+    });
+
+    if (!cateringEvent) {
+      throw new NotFoundException(`ไม่พบการจัดเลี้ยงที่มี ID ${eventId}`);
+    }
+
+    for (const meal of cateringEvent.meals) {
+      await this.mealIngredientsRepository.delete({
+        meal: { mealId: meal.mealId },
+      });
+
+      await this.mealRepository.delete({ mealId: meal.mealId });
+    }
+
+    cateringEvent.status = 'canceled';
+    await this.cateringEventRepository.save(cateringEvent);
+  }
 
   async findAll(actionType?: string): Promise<Checkingredient[]> {
     const query = this.checkingredientRepository

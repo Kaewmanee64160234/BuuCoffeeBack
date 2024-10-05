@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   BadRequestException,
+  Patch,
 } from '@nestjs/common';
 import { CheckingredientsService } from './checkingredients.service';
 import { CreateCheckingredientDto } from './dto/create-checkingredient.dto';
@@ -46,7 +47,10 @@ export class CheckingredientsController {
   async create(@Body() createCheckingredientDto: CreateCheckingredientDto) {
     return await this.checkingredientsService.create(createCheckingredientDto);
   }
-
+  @Patch(':id/cancel')
+  async cancelCateringEvent(@Param('id') id: number): Promise<void> {
+    return this.checkingredientsService.cancelCateringEvent(id);
+  }
   @Post('without-inventory')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Permissions('จัดการการเช็ควัตถุดิบ')

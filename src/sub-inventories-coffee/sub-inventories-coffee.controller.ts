@@ -31,8 +31,8 @@ export class SubInventoriesCoffeeController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Permissions('ดูวัตถุดิบ')
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Permissions('ดูวัตถุดิบ')
   findAll() {
     return this.subInventoriesCoffeeService.findAll();
   }

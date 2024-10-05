@@ -100,6 +100,38 @@ export class IngredientsService {
       );
     }
   }
+  async findAllIngredientPrice() {
+    try {
+      const ingredients = await this.ingredientRepository.find({
+        relations: ['importingredientitem'],
+        order: { importingredientitem: { createdDate: 'DESC' } },
+      });
+
+      return ingredients.map((ingredient) => {
+        const latestImportItem = ingredient.importingredientitem[0];
+        let lastPrice = 0;
+
+        if (latestImportItem) {
+          if (latestImportItem.importType === 'box') {
+            lastPrice = latestImportItem.unitPrice;
+          } else {
+            lastPrice = latestImportItem.unitPrice / latestImportItem.Quantity;
+          }
+        }
+
+        return {
+          ...ingredient,
+          lastPrice,
+        };
+      });
+    } catch (error) {
+      throw new HttpException(
+        'Failed to fetch ingredients',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
   async uploadImage(
     ingredientId: number,
     fileName: string,

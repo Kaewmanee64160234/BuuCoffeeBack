@@ -29,8 +29,8 @@ export class SubInventoriesRiceController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Permissions('ดูวัตถุดิบ')
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Permissions('ดูวัตถุดิบ')
   findAll() {
     return this.subInventoriesRiceService.findAll();
   }

@@ -6,6 +6,7 @@ import {
   Param,
   Put,
   Delete,
+  Patch,
 } from '@nestjs/common';
 import { CateringEventService } from './catering-event.service';
 import { CateringEvent } from './entities/catering-event.entity';
@@ -39,8 +40,7 @@ export class CateringEventController {
     return this.cateringEventService.update(+id, updateCateringEventDto);
   }
 
-  // เพิ่ม endpoint สำหรับการอัปเดตสถานะการชำระเงิน
-  @Put(':id/status')
+  @Patch(':id/status')
   async updateStatus(
     @Param('id') id: string,
     @Body() updateStatusDto: { status: string },

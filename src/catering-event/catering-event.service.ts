@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CateringEvent } from './entities/catering-event.entity';
@@ -11,14 +11,20 @@ export class CateringEventService {
   ) {}
 
   async findAll(): Promise<CateringEvent[]> {
-    return this.cateringEventRepository.find({ relations: ['organizer'] });
+    return this.cateringEventRepository.find({
+      relations: ['meals', 'meals.mealIngredients', 'user'],
+    });
   }
 
   async findOne(id: number): Promise<CateringEvent> {
-    return this.cateringEventRepository.findOne({
+    const event = await this.cateringEventRepository.findOne({
       where: { eventId: id },
-      relations: ['organizer'],
+      relations: ['meals', 'meals.mealIngredients', 'user'],
     });
+    if (!event) {
+      throw new NotFoundException(`Catering event with id ${id} not found`);
+    }
+    return event;
   }
 
   async create(
@@ -32,13 +38,22 @@ export class CateringEventService {
     id: number,
     updateData: Partial<CateringEvent>,
   ): Promise<CateringEvent> {
-    await this.cateringEventRepository.update(id, updateData);
-    return this.cateringEventRepository.findOne({ where: { eventId: id } });
+    const event = await this.findOne(id);
+    if (!event) {
+      throw new NotFoundException(`Catering event with id ${id} not found`);
+    }
+
+    Object.assign(event, updateData);
+    return this.cateringEventRepository.save(event);
   }
 
   async updateStatus(id: number, status: string): Promise<CateringEvent> {
-    await this.cateringEventRepository.update(id, { status });
-    return this.cateringEventRepository.findOne({ where: { eventId: id } });
+    const event = await this.findOne(id);
+    if (!event) {
+      throw new NotFoundException(`Catering event with id ${id} not found`);
+    }
+    event.status = status;
+    return this.cateringEventRepository.save(event);
   }
 
   async delete(id: number): Promise<void> {

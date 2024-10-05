@@ -12,6 +12,8 @@ import {
   Query,
   InternalServerErrorException,
   UseGuards,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -32,6 +34,18 @@ import { Permissions } from 'src/decorators/permissions.decorator';
 @Controller('ingredients')
 export class IngredientsController {
   constructor(private readonly ingredientsService: IngredientsService) {}
+  @Get('prices')
+  async findAllIngredientPrice() {
+    try {
+      return await this.ingredientsService.findAllIngredientPrice();
+    } catch (error) {
+      throw new HttpException(
+        'Failed to fetch ingredient prices',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
   @Get('search')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Permissions('ดูวัตถุดิบ')
