@@ -268,7 +268,6 @@ export class CheckingredientsService {
       cateringEvent,
     );
 
-    // Process each meal in the catering event
     for (const mealDto of createCateringEventDto.mealDto) {
       const meal = new Meal();
       meal.cateringEvent = savedCateringEvent;
@@ -278,7 +277,6 @@ export class CheckingredientsService {
 
       const savedMeal = await this.mealRepository.save(meal);
 
-      // Process each ingredient in the meal
       for (const ingredientDto of mealDto.mealIngredientDto) {
         const ingredient = await this.ingredientRepository.findOne({
           where: { ingredientId: ingredientDto.ingredientId },
@@ -289,36 +287,84 @@ export class CheckingredientsService {
             `Ingredient ID ${ingredientDto.ingredientId} not found.`,
           );
         }
-
-        // Handling warehouse type with inventory check
-        // if (ingredientDto.type === 'warehouse') {
-        //   const checkingredientDto = new CreateCheckingredientDto();
-        //   checkingredientDto.userId = user;
-        //   checkingredientDto.date = ingredientDto.createdDate;
-        //   checkingredientDto.shopType = ingredientDto.;
-        //   checkingredientDto.checkDescription = ingredientDto.checkDescription;
-        //   checkingredientDto.actionType = ingredientDto.actionType;
-
-        //   // Update inventory based on actionType
-        //   if (ingredientDto.type === 'withdrawalHistory') {
-        //     checkingredient.totalPrice = ingredientDto.totalPrice;
-        //     ingredient.stock -= ingredientDto.quantity; // Deduct stock
-        //     if (ingredient.stock < 0) {
-        //       throw new BadRequestException('Not enough stock');
-        //     }
-        //   }
-
-        //   await this.checkingredientRepository.save(checkingredient);
-        //   await this.ingredientRepository.save(ingredient); // Save updated stock
-        // }
-
-        // Save MealIngredients entity
         const mealIngredient = new MealIngredients();
         mealIngredient.meal = savedMeal;
         mealIngredient.ingredient = ingredient;
         mealIngredient.quantity = ingredientDto.quantity;
         mealIngredient.totalPrice = ingredientDto.totalPrice;
         mealIngredient.type = ingredientDto.type;
+        if (mealIngredient.type === 'warehouse') {
+          const createCheckingredientDto: CreateCheckingredientDto = {
+            userId: createCateringEventDto.userId,
+            date: new Date(),
+            shopType: 'catering',
+            checkDescription: `Catering event for ${cateringEvent.eventName}`,
+            actionType: 'withdrawal',
+            checkingredientitems: [
+              {
+                userId: createCateringEventDto.userId,
+                ingredientId: ingredient.ingredientId,
+                UsedQuantity: ingredientDto.quantity,
+                oldRemain: ingredient.ingredientQuantityInStock,
+              },
+            ],
+          };
+          await this.create(createCheckingredientDto);
+        }
+        if (
+          mealIngredient.type === 'rice' ||
+          mealIngredient.type === 'coffee'
+        ) {
+          let subInventory;
+
+          if (mealIngredient.type === 'rice') {
+            subInventory = await this.riceShopSubInventoryRepository.findOne({
+              where: {
+                ingredient: { ingredientId: ingredientDto.ingredientId },
+              },
+              relations: ['ingredient'],
+            });
+
+            if (!subInventory) {
+              throw new NotFoundException(
+                `SubInventory for rice with ingredient ID ${ingredientDto.ingredientId} not found.`,
+              );
+            }
+
+            if (subInventory.quantity < ingredientDto.quantity) {
+              throw new Error(
+                `Not enough stock in rice sub-inventory for Ingredient ID ${ingredientDto.ingredientId}`,
+              );
+            }
+
+            subInventory.quantity -= ingredientDto.quantity;
+
+            await this.riceShopSubInventoryRepository.save(subInventory);
+          } else if (mealIngredient.type === 'coffee') {
+            subInventory = await this.coffeeShopSubInventoryRepository.findOne({
+              where: {
+                ingredient: { ingredientId: ingredientDto.ingredientId },
+              },
+              relations: ['ingredient'],
+            });
+
+            if (!subInventory) {
+              throw new NotFoundException(
+                `SubInventory for coffee with ingredient ID ${ingredientDto.ingredientId} not found.`,
+              );
+            }
+
+            if (subInventory.quantity < ingredientDto.quantity) {
+              throw new Error(
+                `Not enough stock in coffee sub-inventory for Ingredient ID ${ingredientDto.ingredientId}`,
+              );
+            }
+
+            subInventory.quantity -= ingredientDto.quantity;
+
+            await this.coffeeShopSubInventoryRepository.save(subInventory);
+          }
+        }
 
         await this.mealIngredientsRepository.save(mealIngredient);
       }
