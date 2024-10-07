@@ -23,40 +23,40 @@ export class CashiersController {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Permissions('แคชเชียร์')
+  @Permissions('ดูรายงาน')
   create(@Body() createCashierDto: CreateCashierDto) {
     return this.cashiersService.create(createCashierDto);
   }
 
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Permissions('แคชเชียร์')
+  @Permissions('ดูรายงาน')
   findAll() {
     return this.cashiersService.findAll();
   }
   @Get('today')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Permissions('แคชเชียร์')
+  @Permissions('ดูรายงาน')
   findToday() {
     return this.cashiersService.findToday();
   }
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Permissions('แคชเชียร์')
+  @Permissions('ดูรายงาน')
   findOne(@Param('id') id: string) {
     return this.cashiersService.findOne(+id);
   }
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Permissions('แคชเชียร์')
+  @Permissions('ดูรายงาน')
   update(@Param('id') id: string, @Body() updateCashierDto: UpdateCashierDto) {
     return this.cashiersService.update(+id, updateCashierDto);
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Permissions('แคชเชียร์')
+  @Permissions('ดูรายงาน')
   remove(@Param('id') id: string) {
     return this.cashiersService.softDelete(+id);
   }

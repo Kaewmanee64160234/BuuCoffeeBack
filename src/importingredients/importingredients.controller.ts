@@ -39,7 +39,7 @@ export class ImportingredientsController {
   }
   @Get('revenue')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Permissions('ดูการนำเข้าวัตถุดิบ')
+  @Permissions('ดูรายงาน')
   async getRevenue(): Promise<{
     receipts: { date: Date; receiptNetPrice: number }[];
     totalRevenue: number;
@@ -56,7 +56,7 @@ export class ImportingredientsController {
 
   @Get('expenditure')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Permissions('ดูการนำเข้าวัตถุดิบ')
+  @Permissions('ดูรายงาน')
   async getExpenditure(): Promise<{
     startDate: Date;
     endDate: Date;
