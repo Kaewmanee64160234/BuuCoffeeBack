@@ -224,8 +224,8 @@ export class ProductsController {
 
   //getImage
   @Get(':id/image')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Permissions('ดูรายการสินค้า')
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Permissions('ดูรายการสินค้า')
   async getImage(@Param('id') id: string, @Res() res: Response) {
     const product = await this.productsService.findOne(+id);
     res.sendFile(product.productImage, { root: './product_images' });
