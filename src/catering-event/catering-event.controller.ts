@@ -7,6 +7,7 @@ import {
   Put,
   Delete,
   Patch,
+  Query,
 } from '@nestjs/common';
 import { CateringEventService } from './catering-event.service';
 import { CateringEvent } from './entities/catering-event.entity';
@@ -18,6 +19,10 @@ export class CateringEventController {
   @Get()
   async findAll(): Promise<CateringEvent[]> {
     return this.cateringEventService.findAll();
+  }
+  @Get('paginate')
+  async paginate(@Query('page') page, @Query('limit') limit = 10) {
+    return this.cateringEventService.paginate(+page, +limit);
   }
 
   @Get(':id')

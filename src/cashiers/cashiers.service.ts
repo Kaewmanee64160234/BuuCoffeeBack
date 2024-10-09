@@ -100,4 +100,20 @@ export class CashiersService {
       throw new HttpException('Cashier not found', HttpStatus.NOT_FOUND);
     }
   }
+
+  // get event catering paginate
+  async paginate(page = 1, limit = 10): Promise<any> {
+    const cashiers = await this.cashierRepository.findAndCount({
+      take: limit,
+      skip: limit * (page - 1),
+    });
+    return {
+      data: cashiers[0],
+      meta: {
+        total: cashiers[1],
+        page: page,
+        last_page: Math.ceil(cashiers[1] / limit),
+      },
+    };
+  }
 }

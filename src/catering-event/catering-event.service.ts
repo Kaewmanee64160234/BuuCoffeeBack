@@ -59,4 +59,19 @@ export class CateringEventService {
   async delete(id: number): Promise<void> {
     await this.cateringEventRepository.delete(id);
   }
+
+  async paginate(page = 1, limit = 10) {
+    const event = await this.cateringEventRepository.findAndCount({
+      take: limit,
+      skip: limit * (page - 1),
+    });
+    return {
+      data: event[0],
+      meta: {
+        total: event[1],
+        page: page,
+        last_page: Math.ceil(event[1] / limit),
+      },
+    };
+  }
 }
