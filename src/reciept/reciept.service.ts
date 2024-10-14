@@ -799,7 +799,7 @@ export class RecieptService {
       );
     }
   }
-  ///////////////Thongpoon///////////
+
   async getReceipts(
     page: number,
     limit: number,
@@ -843,7 +843,6 @@ export class RecieptService {
 
   //   return { data, total };
   // }
-  /////////////Thongpoon////////////////
 
   async findAll() {
     try {
