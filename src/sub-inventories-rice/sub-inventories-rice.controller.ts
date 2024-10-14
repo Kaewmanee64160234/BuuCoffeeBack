@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { SubInventoriesRiceService } from './sub-inventories-rice.service';
 import { CreateSubInventoriesRiceDto } from './dto/create-sub-inventories-rice.dto';
@@ -14,6 +15,7 @@ import { UpdateSubInventoriesRiceDto } from './dto/update-sub-inventories-rice.d
 import { Permissions } from 'src/decorators/permissions.decorator';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/guards/roles.guard';
+import { SubInventoriesRice } from './entities/sub-inventories-rice.entity';
 
 @Controller('sub-inventories-rice')
 export class SubInventoriesRiceController {
@@ -26,6 +28,21 @@ export class SubInventoriesRiceController {
   @Permissions('จัดการวัตถุดิบ')
   create(@Body() createSubInventoriesRiceDto: CreateSubInventoriesRiceDto) {
     return this.subInventoriesRiceService.create(createSubInventoriesRiceDto);
+  }
+
+  @Get('paginate')
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Permissions('ดูรายการใบเสร็จ')
+  async getReceipts(
+    @Query('page') page = 1,
+    @Query('limit') limit = 5,
+    @Query('search') search = '',
+  ): Promise<{ data: SubInventoriesRice[]; total: number }> {
+    return this.subInventoriesRiceService.getSubInventoryRices(
+      page,
+      limit,
+      search,
+    );
   }
 
   @Get()
