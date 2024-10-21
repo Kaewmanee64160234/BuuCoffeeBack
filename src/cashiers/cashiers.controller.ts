@@ -9,6 +9,7 @@ import {
   HttpException,
   HttpStatus,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { CashiersService } from './cashiers.service';
 import { CreateCashierDto } from './dto/create-cashier.dto';
@@ -26,6 +27,14 @@ export class CashiersController {
   @Permissions('ดูรายงาน')
   create(@Body() createCashierDto: CreateCashierDto) {
     return this.cashiersService.create(createCashierDto);
+  }
+
+  // paginate
+  @Get('paginate')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูรายงาน')
+  paginate(@Query('page') page = 1, @Query('limit') limit = 10) {
+    return this.cashiersService.paginate(+page, +limit);
   }
 
   @Get()
