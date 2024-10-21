@@ -1177,30 +1177,113 @@ export class RecieptService {
     }
   }
 
-  async getSumByPaymentMethod(paymentMethod: string): Promise<number> {
-    const sum = await this.recieptRepository
+  async getSumByPaymentMethod(
+    startDate?: string,
+    endDate?: string,
+  ): Promise<any> {
+    const today = new Date();
+
+    if (!startDate) {
+      startDate = today.toISOString().split('T')[0];
+    }
+
+    if (!endDate) {
+      today.setDate(today.getDate() + 1);
+      endDate = today.toISOString().split('T')[0];
+    } else {
+      const adjustedEndDate = new Date(endDate);
+      adjustedEndDate.setDate(adjustedEndDate.getDate() + 1);
+      endDate = adjustedEndDate.toISOString().split('T')[0];
+    }
+
+    const coffeeSum = await this.recieptRepository
       .createQueryBuilder('receipt')
       .select('SUM(receipt.receiptTotalPrice)', 'totalPrice')
-      .where('receipt.paymentMethod = :paymentMethod', { paymentMethod })
-      .andWhere('receipt.receiptType = :receiptType', {
-        receiptType: 'ร้านกาแฟ',
-      })
-      .andWhere('DATE(receipt.createdDate) = CURDATE()')
+      .where('receipt.receiptType = :coffeeType', { coffeeType: 'ร้านกาแฟ' })
       .andWhere('receipt.receiptStatus != :cancelStatus', {
         cancelStatus: 'cancel',
       })
+      .andWhere(
+        'receipt.createdDate >= :startDate AND receipt.createdDate < :endDate',
+        {
+          startDate: startDate,
+          endDate: endDate,
+        },
+      )
+      .andWhere('receipt.paymentMethod = :paymentMethod', {
+        paymentMethod: 'cash',
+      })
       .getRawOne();
 
-    return sum.totalPrice || 0;
-  }
+    const coffeeQRCodeSum = await this.recieptRepository
+      .createQueryBuilder('receipt')
+      .select('SUM(receipt.receiptTotalPrice)', 'totalPrice')
+      .where('receipt.receiptType = :coffeeType', { coffeeType: 'ร้านกาแฟ' })
+      .andWhere('receipt.receiptStatus != :cancelStatus', {
+        cancelStatus: 'cancel',
+      })
+      .andWhere(
+        'receipt.createdDate >= :startDate AND receipt.createdDate < :endDate',
+        {
+          startDate: startDate,
+          endDate: endDate,
+        },
+      )
+      .andWhere('receipt.paymentMethod = :paymentMethod', {
+        paymentMethod: 'qrcode',
+      })
+      .getRawOne();
 
-  async getSumTodayByPaymentMethod(): Promise<{
-    cash: number;
-    qrcode: number;
-  }> {
-    const cashSum = await this.getSumByPaymentMethod('cash');
-    const qrcodeSum = await this.getSumByPaymentMethod('qrcode');
-    return { cash: cashSum, qrcode: qrcodeSum };
+    const foodSum = await this.recieptRepository
+      .createQueryBuilder('receipt')
+      .select('SUM(receipt.receiptTotalPrice)', 'totalPrice')
+      .where('receipt.receiptType = :foodType', { foodType: 'ร้านข้าว' })
+      .andWhere('receipt.receiptStatus != :cancelStatus', {
+        cancelStatus: 'cancel',
+      })
+      .andWhere(
+        'receipt.createdDate >= :startDate AND receipt.createdDate < :endDate',
+        {
+          startDate: startDate,
+          endDate: endDate,
+        },
+      )
+      .andWhere('receipt.paymentMethod = :paymentMethod', {
+        paymentMethod: 'cash',
+      })
+      .getRawOne();
+
+    const foodQRCodeSum = await this.recieptRepository
+      .createQueryBuilder('receipt')
+      .select('SUM(receipt.receiptTotalPrice)', 'totalPrice')
+      .where('receipt.receiptType = :foodType', { foodType: 'ร้านข้าว' })
+      .andWhere('receipt.receiptStatus != :cancelStatus', {
+        cancelStatus: 'cancel',
+      })
+      .andWhere(
+        'receipt.createdDate >= :startDate AND receipt.createdDate < :endDate',
+        {
+          startDate: startDate,
+          endDate: endDate,
+        },
+      )
+      .andWhere('receipt.paymentMethod = :paymentMethod', {
+        paymentMethod: 'qrcode',
+      })
+      .getRawOne();
+
+    return {
+      startDate,
+      endDate,
+      coffee: {
+        cash: coffeeSum.totalPrice || 0,
+        qrcode: coffeeQRCodeSum.totalPrice || 0,
+      },
+      food: {
+        cash: foodSum.totalPrice || 0,
+        qrcode: foodQRCodeSum.totalPrice || 0,
+      },
+    };
   }
 
   async getDailyReport(receiptType: string): Promise<{

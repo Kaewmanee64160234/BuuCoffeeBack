@@ -240,15 +240,43 @@ export class RecieptController {
   }
 
   @Get('/sum')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Permissions('ดูรายการสินค้า')
-  async getSumTodayByPaymentMethod(): Promise<{
-    cash: number;
-    qrcode: number;
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Permissions('ดูรายการสินค้า')
+  async getSumTodayByPaymentMethod(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+  ): Promise<{
+    startDate: string;
+    endDate: string;
+    coffee: {
+      cash: number;
+      qrcode: number;
+    };
+    food: {
+      cash: number;
+      qrcode: number;
+    };
   }> {
-    const cashSum = await this.recieptService.getSumByPaymentMethod('cash');
-    const qrcodeSum = await this.recieptService.getSumByPaymentMethod('qrcode');
-    return { cash: cashSum, qrcode: qrcodeSum };
+    console.log('Start Date:', startDate);
+    console.log('End Date:', endDate);
+
+    const sumData = await this.recieptService.getSumByPaymentMethod(
+      startDate,
+      endDate,
+    );
+
+    return {
+      startDate,
+      endDate,
+      coffee: {
+        cash: sumData.coffee.cash,
+        qrcode: sumData.coffee.qrcode,
+      },
+      food: {
+        cash: sumData.food.cash,
+        qrcode: sumData.food.qrcode,
+      },
+    };
   }
 
   @Get(':id')
@@ -257,14 +285,7 @@ export class RecieptController {
   findOne(@Param('id') id: string) {
     return this.recieptService.findOne(+id);
   }
-  @Get('/sum/:paymentMethod')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Permissions('ดูรายการสินค้า')
-  async getSumByPaymentMethod(
-    @Param('paymentMethod') paymentMethod: string,
-  ): Promise<number> {
-    return this.recieptService.getSumByPaymentMethod(paymentMethod);
-  }
+
   // cancelReceipt from param
   @Delete('cancel/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
