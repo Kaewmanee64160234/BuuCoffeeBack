@@ -9,6 +9,7 @@ import {
   HttpException,
   HttpStatus,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -16,6 +17,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { Permissions } from 'src/decorators/permissions.decorator';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/guards/roles.guard';
+import { User } from './entities/user.entity';
 
 @Controller('users')
 export class UsersController {
@@ -38,6 +40,17 @@ export class UsersController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(+id);
+  }
+
+  @Get('paginate')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('ดูรายการผ้ใช้งาน')
+  async getProducts(
+    @Query('page') page = 1,
+    @Query('limit') limit = 5,
+    @Query('search') search = '',
+  ): Promise<{ data: User[]; total: number }> {
+    return this.usersService.getUsers(page, limit, search);
   }
 
   @Patch(':id')

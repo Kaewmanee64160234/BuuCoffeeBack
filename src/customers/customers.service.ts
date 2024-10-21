@@ -110,4 +110,20 @@ export class CustomersService {
       console.log(e);
     }
   }
+
+  async getCustomers(
+    page: number,
+    limit: number,
+    search: string,
+  ): Promise<{ data: Customer[]; total: number }> {
+    const whereCondition = search ? { customerName: Like(`%${search}%`) } : {};
+
+    const [data, total] = await this.customersRepository.findAndCount({
+      skip: (page - 1) * limit,
+      take: limit,
+      where: whereCondition,
+    });
+
+    return { data, total };
+  }
 }

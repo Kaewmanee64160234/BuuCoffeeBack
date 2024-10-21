@@ -74,6 +74,8 @@ export class UsersService {
   }
   async findOneByEmail(email: string): Promise<User> {
     try {
+      console.log(email);
+
       const user = await this.usersRepository.findOne({
         where: { userEmail: email },
         relations: ['role', 'role.permissions'],
@@ -174,5 +176,22 @@ export class UsersService {
       where: { userId: userId },
       relations: ['roles', 'roles.permissions'],
     });
+  }
+
+  async getUsers(
+    page: number,
+    limit: number,
+    search: string,
+  ): Promise<{ data: User[]; total: number }> {
+    const whereCondition = search ? { userName: Like(`%${search}%`) } : {};
+
+    const [data, total] = await this.usersRepository.findAndCount({
+      skip: (page - 1) * limit,
+      take: limit,
+      where: whereCondition,
+      relations: ['users'],
+    });
+
+    return { data, total };
   }
 }

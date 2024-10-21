@@ -17,6 +17,7 @@ import { UpdateRecieptDto } from './dto/update-reciept.dto';
 import { Permissions } from 'src/decorators/permissions.decorator';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/guards/roles.guard';
+import { Reciept } from './entities/reciept.entity';
 
 @Controller('receipts')
 export class RecieptController {
@@ -220,12 +221,24 @@ export class RecieptController {
     return this.recieptService.getRecieptCateringIn24Hours();
   }
 
+  @Get('paginate')
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Permissions('ดูรายการใบเสร็จ')
+  async getReceipts(
+    @Query('page') page = 1,
+    @Query('limit') limit = 5,
+    @Query('search') search = '',
+  ): Promise<{ data: Reciept[]; total: number }> {
+    return this.recieptService.getReceipts(page, limit, search);
+  }
+
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Permissions('ดูรายการสินค้า')
   findAll() {
     return this.recieptService.findAll();
   }
+
   @Get('/sum')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Permissions('ดูรายการสินค้า')
@@ -280,5 +293,16 @@ export class RecieptController {
   //     console.error('Error fetching top ingredients:', error);
   //     throw error;
   //   }
+  // }
+
+  // @Get('paginate')
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Permissions('ดูรายการใบเสร็จ')
+  // async getReceipts(
+  //   @Query('page') page = 1,
+  //   @Query('limit') limit = 5,
+  //   @Query('search') search = '',
+  // ): Promise<{ data: Reciept[]; total: number }> {
+  //   return this.recieptService.getReceipts(page, limit, search);
   // }
 }

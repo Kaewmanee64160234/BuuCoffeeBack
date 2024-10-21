@@ -53,4 +53,25 @@ export class SubInventoriesRiceService {
   remove(id: number) {
     return `This action removes a #${id} subInventoriesRice`;
   }
+
+  async getSubInventoryRices(
+    page: number,
+    limit: number,
+    search: string,
+  ): Promise<{ data: SubInventoriesRice[]; total: number }> {
+    // Ensure the search term is valid for a numeric ID
+    // const whereCondition: FindOptionsWhere<SubInventoriesCoffee> | undefined =
+    //   search && !isNaN(Number(search)) // Check if search is a valid number
+    //     ? { subInventoryId: Equal(Number(search)) } // Use Equal operator for number match
+    //     : undefined;
+
+    const [data, total] =
+      await this.riceShopSubInventoryRepository.findAndCount({
+        skip: (page - 1) * limit,
+        take: limit,
+        // where: whereCondition,
+      });
+
+    return { data, total };
+  }
 }

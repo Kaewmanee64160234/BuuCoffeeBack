@@ -3,7 +3,8 @@ import { CreateSubInventoriesCoffeeDto } from './dto/create-sub-inventories-coff
 import { UpdateSubInventoriesCoffeeDto } from './dto/update-sub-inventories-coffee.dto';
 import { SubInventoriesCoffee } from './entities/sub-inventories-coffee.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, Like, Repository } from 'typeorm';
+import { Equal } from 'typeorm';
 
 @Injectable()
 export class SubInventoriesCoffeeService {
@@ -56,5 +57,26 @@ export class SubInventoriesCoffeeService {
 
   remove(id: number) {
     return `This action removes a #${id} subInventoriesCoffee`;
+  }
+
+  async getSubInventoryCoffees(
+    page: number,
+    limit: number,
+    search: string,
+  ): Promise<{ data: SubInventoriesCoffee[]; total: number }> {
+    // Ensure the search term is valid for a numeric ID
+    // const whereCondition: FindOptionsWhere<SubInventoriesCoffee> | undefined =
+    //   search && !isNaN(Number(search)) // Check if search is a valid number
+    //     ? { subInventoryId: Equal(Number(search)) } // Use Equal operator for number match
+    //     : undefined;
+
+    const [data, total] =
+      await this.coffeeShopSubInventoryRepository.findAndCount({
+        skip: (page - 1) * limit,
+        take: limit,
+        // where: whereCondition,
+      });
+
+    return { data, total };
   }
 }

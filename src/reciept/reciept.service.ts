@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Reciept } from './entities/reciept.entity';
 import { User } from 'src/users/entities/user.entity';
 import { Customer } from 'src/customers/entities/customer.entity';
-import { Repository, Between, Not } from 'typeorm';
+import { Repository, Between, Not, Like } from 'typeorm';
 import { ProductType } from 'src/product-types/entities/product-type.entity';
 import { Product } from 'src/products/entities/product.entity';
 import { ProductTypeTopping } from 'src/product-type-toppings/entities/product-type-topping.entity';
@@ -799,6 +799,50 @@ export class RecieptService {
       );
     }
   }
+
+  async getReceipts(
+    page: number,
+    limit: number,
+    search: string,
+  ): Promise<{ data: Reciept[]; total: number }> {
+    // const whereCondition = search ? { receiptNumber: Like(`%${search}%`) } : {};
+
+    const [data, total] = await this.recieptRepository.findAndCount({
+      skip: (page - 1) * limit,
+      take: limit,
+      // where: whereCondition,
+      relations: [
+        'customer',
+        'user',
+        'receiptPromotions',
+        'receiptPromotions.promotion',
+      ],
+    });
+
+    return { data, total };
+  }
+
+  // async getReceiptsBackup(
+  //   page: number,
+  //   limit: number,
+  //   search: string,
+  // ): Promise<{ data: Reciept[]; total: number }> {
+  //   // const whereCondition = search ? { receiptNumber: Like(`%${search}%`) } : {};
+
+  //   const [data, total] = await this.recieptRepository.findAndCount({
+  //     skip: (page - 1) * limit,
+  //     take: limit,
+  //     // where: whereCondition,
+  //     relations: [
+  //       'customer',
+  //       'user',
+  //       'receiptPromotions',
+  //       'receiptPromotions.promotion',
+  //     ],
+  //   });
+
+  //   return { data, total };
+  // }
 
   async findAll() {
     try {
@@ -1659,4 +1703,36 @@ export class RecieptService {
 
     return formattedResult;
   }
+
+  // async getReceipts(
+  //   page: number,
+  //   limit: number,
+  //   search: string,
+  // ): Promise<{ data: Reciept[]; total: number }> {
+  //   const whereCondition = search
+  //     ? { receiptItem: { receiptItemId: Like(`%${search}%`) } }
+  //     : {};
+  //   const [data, total] = await this.recieptRepository.findAndCount({
+  //     skip: (page - 1) * limit,
+  //     take: limit,
+  //     // where: whereCondition,
+  //     relations: [
+  //       'user',
+  //       'customer',
+  //       'productTypes',
+  //       'product',
+  //       'productTypeTopping',
+  //       'topping',
+  //       'receiptItem ',
+  //       'ingredient',
+  //       'receiptPromotion',
+  //       'importingredient',
+  //       'recipe',
+  //       'checkingredient',
+  //       'Checkingredientitem',
+  //     ],
+  //   });
+
+  //   return { data, total };
+  // }
 }
