@@ -51,9 +51,9 @@ import { ConfigModule } from '@nestjs/config';
 import { CateringEventModule } from './catering-event/catering-event.module';
 import { CateringEvent } from './catering-event/entities/catering-event.entity';
 import { MealModule } from './meal/meal.module';
-import { MealIngredientsModule } from './meal-ingredients/meal-ingredients.module';
 import { Meal } from './meal/entities/meal.entity';
-import { MealIngredients } from './meal-ingredients/entities/meal-ingredient.entity';
+import { MealProductsModule } from './meal-products/meal-products.module';
+import { MealProduct } from './meal-products/entities/meal-product.entity';
 
 @Module({
   imports: [
@@ -93,7 +93,7 @@ import { MealIngredients } from './meal-ingredients/entities/meal-ingredient.ent
         Permission,
         CateringEvent,
         Meal,
-        MealIngredients,
+        MealProduct,
       ],
       synchronize: true,
     }),
@@ -122,7 +122,7 @@ import { MealIngredients } from './meal-ingredients/entities/meal-ingredient.ent
     PermissionModule,
     CateringEventModule,
     MealModule,
-    MealIngredientsModule,
+    MealProductsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

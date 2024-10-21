@@ -8,7 +8,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { CateringEvent } from 'src/catering-event/entities/catering-event.entity';
-import { MealIngredients } from 'src/meal-ingredients/entities/meal-ingredient.entity';
+import { MealProduct } from 'src/meal-products/entities/meal-product.entity';
 
 @Entity()
 export class Meal {
@@ -26,8 +26,8 @@ export class Meal {
 
   @Column({ type: 'time' })
   mealTime: Date;
-  @OneToMany(() => MealIngredients, (mealIngredient) => mealIngredient.meal)
-  mealIngredients: MealIngredients[];
+  @OneToMany(() => MealProduct, (mealProduct) => mealProduct.meal)
+  mealProducts: MealProduct[];
 
   @CreateDateColumn()
   createdDate: Date;

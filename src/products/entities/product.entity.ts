@@ -1,4 +1,5 @@
 import { Category } from 'src/categories/entities/category.entity';
+import { MealProduct } from 'src/meal-products/entities/meal-product.entity';
 import { ProductType } from 'src/product-types/entities/product-type.entity';
 import { ReceiptItem } from 'src/receipt-item/entities/receipt-item.entity';
 import {
@@ -46,6 +47,8 @@ export class Product {
 
   @Column({ default: false })
   haveTopping: boolean;
+  @OneToMany(() => MealProduct, (mealProduct) => mealProduct.product)
+  mealProducts: MealProduct[];
 
   @CreateDateColumn()
   createdDate: Date;

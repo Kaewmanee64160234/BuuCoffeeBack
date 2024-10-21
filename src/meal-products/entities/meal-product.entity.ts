@@ -1,5 +1,5 @@
 import { Meal } from 'src/meal/entities/meal.entity';
-import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
+import { Product } from 'src/products/entities/product.entity';
 import {
   Column,
   CreateDateColumn,
@@ -10,17 +10,17 @@ import {
 } from 'typeorm';
 
 @Entity()
-export class MealIngredients {
+export class MealProduct {
   @PrimaryGeneratedColumn()
-  mealIngredientId: number;
+  mealProductId: number;
 
-  @ManyToOne(() => Meal, (meal) => meal.mealIngredients, { eager: true })
+  @ManyToOne(() => Meal, (meal) => meal.mealProducts, { eager: true })
   meal: Meal;
 
-  @ManyToOne(() => Ingredient, (ingredient) => ingredient.mealIngredients, {
+  @ManyToOne(() => Product, (product) => product.mealProducts, {
     eager: true,
   })
-  ingredient: Ingredient;
+  product: Product;
 
   @Column()
   quantity: number;

@@ -1,18 +1,16 @@
 import {
+  IsDecimal,
   IsNotEmpty,
   IsNumber,
-  IsString,
   IsOptional,
-  IsDecimal,
+  IsString,
 } from 'class-validator';
 
-export class CreateMealIngredientDto {
+export class CreateMealProductDto {
   @IsNotEmpty()
   mealId: number;
-
   @IsNotEmpty()
-  ingredientId: number;
-
+  productId: number;
   @IsNotEmpty()
   @IsNumber()
   quantity: number;
@@ -20,14 +18,11 @@ export class CreateMealIngredientDto {
   @IsNotEmpty()
   @IsDecimal({ decimal_digits: '0,2' })
   totalPrice: number;
-
   @IsNotEmpty()
   @IsString()
   type: string; // (warehouse, riceShop, coffeeShop)
-
   @IsOptional()
   createdDate?: Date;
-
   @IsOptional()
   updatedDate?: Date;
 }
