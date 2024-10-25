@@ -13,6 +13,9 @@ export class CreateIngredientDto {
   ingredientImage: string;
 
   ingredientId: number;
+  @IsString()
+  @IsNotEmpty()
+  ingredientVolumeUnit: string;
 
   @IsString()
   @IsNotEmpty()

@@ -112,7 +112,7 @@ export class CheckingredientsService {
             if (createCheckingredientDto.actionType === 'withdrawal') {
               subInventory.quantity += itemDto.UsedQuantity;
             } else if (createCheckingredientDto.actionType === 'return') {
-              subInventory.quantity = 0;
+              subInventory.quantity = itemDto.UsedQuantity;
             }
           }
 
@@ -142,7 +142,7 @@ export class CheckingredientsService {
             if (createCheckingredientDto.actionType === 'withdrawal') {
               subInventory.quantity += itemDto.UsedQuantity;
             } else if (createCheckingredientDto.actionType === 'return') {
-              subInventory.quantity = 0;
+              subInventory.quantity = itemDto.UsedQuantity;
             }
           }
 
@@ -151,8 +151,6 @@ export class CheckingredientsService {
 
         if (createCheckingredientDto.actionType === 'withdrawal') {
           ingredient.ingredientQuantityInStock -= itemDto.UsedQuantity;
-        } else if (createCheckingredientDto.actionType === 'return') {
-          ingredient.ingredientQuantityInStock += itemDto.UsedQuantity;
         }
 
         await this.ingredientRepository.save(ingredient);
