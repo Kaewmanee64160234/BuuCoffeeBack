@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsString, IsDecimal, IsNotEmpty, IsDate } from 'class-validator';
-import { CreateMealIngredientDto } from 'src/meal-ingredients/dto/create-meal-ingredient.dto';
+import { CreateMealProductDto } from 'src/meal-products/dto/create-meal-product.dto';
 
 export class CreateMealDto {
   @IsNotEmpty()
@@ -18,5 +18,5 @@ export class CreateMealDto {
   @IsNotEmpty()
   cateringEventId: number;
   @IsNotEmpty()
-  mealIngredientDto: CreateMealIngredientDto[];
+  mealProductDto: CreateMealProductDto[];
 }

@@ -19,8 +19,15 @@ export class MealProduct {
 
   @ManyToOne(() => Product, (product) => product.mealProducts, {
     eager: true,
+    nullable: true,
   })
   product: Product;
+
+  @Column({ type: 'varchar', length: 50 })
+  productName: string;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  price: number;
 
   @Column()
   quantity: number;

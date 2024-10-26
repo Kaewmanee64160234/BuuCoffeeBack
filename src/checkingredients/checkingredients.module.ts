@@ -12,7 +12,6 @@ import { UsersModule } from 'src/users/users.module';
 import { RolesGuard } from 'src/guards/roles.guard';
 import { Meal } from 'src/meal/entities/meal.entity';
 import { CateringEvent } from 'src/catering-event/entities/catering-event.entity';
-import { MealIngredients } from 'src/meal-ingredients/entities/meal-ingredient.entity';
 
 @Module({
   imports: [
@@ -25,7 +24,6 @@ import { MealIngredients } from 'src/meal-ingredients/entities/meal-ingredient.e
       SubInventoriesRice,
       Meal,
       CateringEvent,
-      MealIngredients,
     ]),
     UsersModule,
   ],

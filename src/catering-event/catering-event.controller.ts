@@ -11,8 +11,9 @@ import {
 } from '@nestjs/common';
 import { CateringEventService } from './catering-event.service';
 import { CateringEvent } from './entities/catering-event.entity';
+import { CreateCateringEventDto } from './dto/create-catering-event.dto';
 
-@Controller('catering-event')
+@Controller('catering-events')
 export class CateringEventController {
   constructor(private readonly cateringEventService: CateringEventService) {}
 
@@ -31,9 +32,7 @@ export class CateringEventController {
   }
 
   @Post()
-  async create(
-    @Body() createCateringEventDto: Partial<CateringEvent>,
-  ): Promise<CateringEvent> {
+  async create(@Body() createCateringEventDto: CreateCateringEventDto) {
     return this.cateringEventService.create(createCateringEventDto);
   }
 

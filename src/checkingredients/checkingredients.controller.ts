@@ -24,33 +24,33 @@ export class CheckingredientsController {
   constructor(
     private readonly checkingredientsService: CheckingredientsService,
   ) {}
-  @Post('create-catering')
-  async createForCatering(
-    @Body() createCateringEventDto: CreateCateringEventDto,
-  ) {
-    try {
-      const cateringEvent =
-        await this.checkingredientsService.createForCatering(
-          createCateringEventDto,
-        );
-      return {
-        message: 'Catering event created successfully.',
-        data: cateringEvent,
-      };
-    } catch (error) {
-      throw new BadRequestException(error.message);
-    }
-  }
+  // @Post('create-catering')
+  // async createForCatering(
+  //   @Body() createCateringEventDto: CreateCateringEventDto,
+  // ) {
+  //   try {
+  //     const cateringEvent =
+  //       await this.checkingredientsService.createForCatering(
+  //         createCateringEventDto,
+  //       );
+  //     return {
+  //       message: 'Catering event created successfully.',
+  //       data: cateringEvent,
+  //     };
+  //   } catch (error) {
+  //     throw new BadRequestException(error.message);
+  //   }
+  // }
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Permissions('จัดการการเช็ควัตถุดิบ')
   async create(@Body() createCheckingredientDto: CreateCheckingredientDto) {
     return await this.checkingredientsService.create(createCheckingredientDto);
   }
-  @Patch(':id/cancel')
-  async cancelCateringEvent(@Param('id') id: number): Promise<void> {
-    return this.checkingredientsService.cancelCateringEvent(id);
-  }
+  // @Patch(':id/cancel')
+  // async cancelCateringEvent(@Param('id') id: number): Promise<void> {
+  //   return this.checkingredientsService.cancelCateringEvent(id);
+  // }
   @Post('without-inventory')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Permissions('จัดการการเช็ควัตถุดิบ')

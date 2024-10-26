@@ -7,6 +7,7 @@ import {
   UpdateDateColumn,
   OneToMany,
   JoinColumn,
+  OneToOne,
 } from 'typeorm';
 import { User } from 'src/users/entities/user.entity';
 import { Meal } from 'src/meal/entities/meal.entity';
@@ -34,6 +35,10 @@ export class CateringEvent {
   status: string; //  'pending', 'paid', 'canceled'
   @OneToMany(() => Meal, (meal) => meal.cateringEvent)
   meals: Meal[];
+  @Column({ nullable: true })
+  riceReceiptId: number;
+  @Column({ nullable: true })
+  coffeeReceiptId: number;
 
   @CreateDateColumn()
   createdDate: Date;

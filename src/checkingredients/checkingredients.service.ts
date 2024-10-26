@@ -14,9 +14,9 @@ import { SubInventoriesCoffee } from 'src/sub-inventories-coffee/entities/sub-in
 import { SubInventoriesRice } from 'src/sub-inventories-rice/entities/sub-inventories-rice.entity';
 import { log } from 'console';
 import { Meal } from 'src/meal/entities/meal.entity';
-import { MealIngredients } from 'src/meal-ingredients/entities/meal-ingredient.entity';
 import { CateringEvent } from 'src/catering-event/entities/catering-event.entity';
 import { CreateCateringEventDto } from 'src/catering-event/dto/create-catering-event.dto';
+import { MealProduct } from 'src/meal-products/entities/meal-product.entity';
 
 @Injectable()
 export class CheckingredientsService {
@@ -37,8 +37,6 @@ export class CheckingredientsService {
     private cateringEventRepository: Repository<CateringEvent>,
     @InjectRepository(Meal)
     private mealRepository: Repository<Meal>,
-    @InjectRepository(MealIngredients)
-    private mealIngredientsRepository: Repository<MealIngredients>,
   ) {}
 
   async create(createCheckingredientDto: CreateCheckingredientDto) {
@@ -246,156 +244,156 @@ export class CheckingredientsService {
       relations: ['checkingredientitem'],
     });
   }
-  async createForCatering(createCateringEventDto: CreateCateringEventDto) {
-    const user = await this.userRepository.findOneBy({
-      userId: createCateringEventDto.userId,
-    });
+  // async createForCatering(createCateringEventDto: CreateCateringEventDto) {
+  //   const user = await this.userRepository.findOneBy({
+  //     userId: createCateringEventDto.userId,
+  //   });
 
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
+  //   if (!user) {
+  //     throw new NotFoundException('User not found');
+  //   }
 
-    const cateringEvent = new CateringEvent();
-    cateringEvent.user = user;
-    cateringEvent.eventName = createCateringEventDto.eventName;
-    cateringEvent.eventDate = createCateringEventDto.eventDate;
-    cateringEvent.eventLocation = createCateringEventDto.eventLocation;
-    cateringEvent.attendeeCount = createCateringEventDto.attendeeCount;
-    cateringEvent.totalBudget = createCateringEventDto.totalBudget;
-    cateringEvent.status = 'pending';
+  //   const cateringEvent = new CateringEvent();
+  //   cateringEvent.user = user;
+  //   cateringEvent.eventName = createCateringEventDto.eventName;
+  //   cateringEvent.eventDate = createCateringEventDto.eventDate;
+  //   cateringEvent.eventLocation = createCateringEventDto.eventLocation;
+  //   cateringEvent.attendeeCount = createCateringEventDto.attendeeCount;
+  //   cateringEvent.totalBudget = createCateringEventDto.totalBudget;
+  //   cateringEvent.status = 'pending';
 
-    const savedCateringEvent = await this.cateringEventRepository.save(
-      cateringEvent,
-    );
+  //   const savedCateringEvent = await this.cateringEventRepository.save(
+  //     cateringEvent,
+  //   );
 
-    for (const mealDto of createCateringEventDto.mealDto) {
-      const meal = new Meal();
-      meal.cateringEvent = savedCateringEvent;
-      meal.mealName = mealDto.mealName;
-      meal.totalPrice = mealDto.totalPrice;
-      meal.mealTime = mealDto.mealTime;
+  //   for (const mealDto of createCateringEventDto.mealDto) {
+  //     const meal = new Meal();
+  //     meal.cateringEvent = savedCateringEvent;
+  //     meal.mealName = mealDto.mealName;
+  //     meal.totalPrice = mealDto.totalPrice;
+  //     meal.mealTime = mealDto.mealTime;
 
-      const savedMeal = await this.mealRepository.save(meal);
+  //     const savedMeal = await this.mealRepository.save(meal);
 
-      for (const ingredientDto of mealDto.mealIngredientDto) {
-        const ingredient = await this.ingredientRepository.findOne({
-          where: { ingredientId: ingredientDto.ingredientId },
-        });
+  //     for (const ingredientDto of mealDto.mealProductDto) {
+  //       const ingredient = await this.ingredientRepository.findOne({
+  //         where: { ingredientId: ingredientDto.productId },
+  //       });
 
-        if (!ingredient) {
-          throw new Error(
-            `Ingredient ID ${ingredientDto.ingredientId} not found.`,
-          );
-        }
-        const mealIngredient = new MealIngredients();
-        mealIngredient.meal = savedMeal;
-        mealIngredient.ingredient = ingredient;
-        mealIngredient.quantity = ingredientDto.quantity;
-        mealIngredient.totalPrice = ingredientDto.totalPrice;
-        mealIngredient.type = ingredientDto.type;
-        if (mealIngredient.type === 'warehouse') {
-          const createCheckingredientDto: CreateCheckingredientDto = {
-            userId: createCateringEventDto.userId,
-            date: new Date(),
-            shopType: 'catering',
-            checkDescription: `Catering event for ${cateringEvent.eventName}`,
-            actionType: 'withdrawal',
-            checkingredientitems: [
-              {
-                userId: createCateringEventDto.userId,
-                ingredientId: ingredient.ingredientId,
-                UsedQuantity: ingredientDto.quantity,
-                oldRemain: ingredient.ingredientQuantityInStock,
-              },
-            ],
-          };
-          await this.create(createCheckingredientDto);
-        }
-        if (
-          mealIngredient.type === 'rice' ||
-          mealIngredient.type === 'coffee'
-        ) {
-          let subInventory;
+  //       if (!ingredient) {
+  //         throw new Error(
+  //           `Ingredient ID ${ingredientDto.productId} not found.`,
+  //         );
+  //       }
+  //       const mealIngredient = new MealProduct();
+  //       mealIngredient.meal = savedMeal;
+  //       mealIngredient.product = ingredient;
+  //       mealIngredient.quantity = ingredientDto.quantity;
+  //       mealIngredient.totalPrice = ingredientDto.totalPrice;
+  //       mealIngredient.type = ingredientDto.type;
+  //       if (mealIngredient.type === 'warehouse') {
+  //         const createCheckingredientDto: CreateCheckingredientDto = {
+  //           userId: createCateringEventDto.userId,
+  //           date: new Date(),
+  //           shopType: 'catering',
+  //           checkDescription: `Catering event for ${cateringEvent.eventName}`,
+  //           actionType: 'withdrawal',
+  //           checkingredientitems: [
+  //             {
+  //               userId: createCateringEventDto.userId,
+  //               ingredientId: ingredient.ingredientId,
+  //               UsedQuantity: ingredientDto.quantity,
+  //               oldRemain: ingredient.ingredientQuantityInStock,
+  //             },
+  //           ],
+  //         };
+  //         await this.create(createCheckingredientDto);
+  //       }
+  //       if (
+  //         mealIngredient.type === 'rice' ||
+  //         mealIngredient.type === 'coffee'
+  //       ) {
+  //         let subInventory;
 
-          if (mealIngredient.type === 'rice') {
-            subInventory = await this.riceShopSubInventoryRepository.findOne({
-              where: {
-                ingredient: { ingredientId: ingredientDto.ingredientId },
-              },
-              relations: ['ingredient'],
-            });
+  //         if (mealIngredient.type === 'rice') {
+  //           subInventory = await this.riceShopSubInventoryRepository.findOne({
+  //             where: {
+  //               ingredient: { ingredientId: ingredientDto.productId },
+  //             },
+  //             relations: ['ingredient'],
+  //           });
 
-            if (!subInventory) {
-              throw new NotFoundException(
-                `SubInventory for rice with ingredient ID ${ingredientDto.ingredientId} not found.`,
-              );
-            }
+  //           if (!subInventory) {
+  //             throw new NotFoundException(
+  //               `SubInventory for rice with ingredient ID ${ingredientDto.productId} not found.`,
+  //             );
+  //           }
 
-            if (subInventory.quantity < ingredientDto.quantity) {
-              throw new Error(
-                `Not enough stock in rice sub-inventory for Ingredient ID ${ingredientDto.ingredientId}`,
-              );
-            }
+  //           if (subInventory.quantity < ingredientDto.quantity) {
+  //             throw new Error(
+  //               `Not enough stock in rice sub-inventory for Ingredient ID ${ingredientDto.productId}`,
+  //             );
+  //           }
 
-            subInventory.quantity -= ingredientDto.quantity;
+  //           subInventory.quantity -= ingredientDto.quantity;
 
-            await this.riceShopSubInventoryRepository.save(subInventory);
-          } else if (mealIngredient.type === 'coffee') {
-            subInventory = await this.coffeeShopSubInventoryRepository.findOne({
-              where: {
-                ingredient: { ingredientId: ingredientDto.ingredientId },
-              },
-              relations: ['ingredient'],
-            });
+  //           await this.riceShopSubInventoryRepository.save(subInventory);
+  //         } else if (mealIngredient.type === 'coffee') {
+  //           subInventory = await this.coffeeShopSubInventoryRepository.findOne({
+  //             where: {
+  //               ingredient: { ingredientId: ingredientDto.productId },
+  //             },
+  //             relations: ['ingredient'],
+  //           });
 
-            if (!subInventory) {
-              throw new NotFoundException(
-                `SubInventory for coffee with ingredient ID ${ingredientDto.ingredientId} not found.`,
-              );
-            }
+  //           if (!subInventory) {
+  //             throw new NotFoundException(
+  //               `SubInventory for coffee with ingredient ID ${ingredientDto.productId} not found.`,
+  //             );
+  //           }
 
-            if (subInventory.quantity < ingredientDto.quantity) {
-              throw new Error(
-                `Not enough stock in coffee sub-inventory for Ingredient ID ${ingredientDto.ingredientId}`,
-              );
-            }
+  //           if (subInventory.quantity < ingredientDto.quantity) {
+  //             throw new Error(
+  //               `Not enough stock in coffee sub-inventory for Ingredient ID ${ingredientDto.productId}`,
+  //             );
+  //           }
 
-            subInventory.quantity -= ingredientDto.quantity;
+  //           subInventory.quantity -= ingredientDto.quantity;
 
-            await this.coffeeShopSubInventoryRepository.save(subInventory);
-          }
-        }
+  //           await this.coffeeShopSubInventoryRepository.save(subInventory);
+  //         }
+  //       }
 
-        await this.mealIngredientsRepository.save(mealIngredient);
-      }
-    }
+  //       await this.mealIngredientsRepository.save(mealIngredient);
+  //     }
+  //   }
 
-    return await this.cateringEventRepository.findOne({
-      where: { eventId: savedCateringEvent.eventId },
-      relations: ['meals', 'meals.mealIngredients'],
-    });
-  }
-  async cancelCateringEvent(eventId: number): Promise<void> {
-    const cateringEvent = await this.cateringEventRepository.findOne({
-      where: { eventId },
-      relations: ['meals', 'meals.mealIngredients'],
-    });
+  //   return await this.cateringEventRepository.findOne({
+  //     where: { eventId: savedCateringEvent.eventId },
+  //     relations: ['meals', 'meals.mealIngredients'],
+  //   });
+  // }
+  // async cancelCateringEvent(eventId: number): Promise<void> {
+  //   const cateringEvent = await this.cateringEventRepository.findOne({
+  //     where: { eventId },
+  //     relations: ['meals', 'meals.mealIngredients'],
+  //   });
 
-    if (!cateringEvent) {
-      throw new NotFoundException(`ไม่พบการจัดเลี้ยงที่มี ID ${eventId}`);
-    }
+  //   if (!cateringEvent) {
+  //     throw new NotFoundException(`ไม่พบการจัดเลี้ยงที่มี ID ${eventId}`);
+  //   }
 
-    for (const meal of cateringEvent.meals) {
-      await this.mealIngredientsRepository.delete({
-        meal: { mealId: meal.mealId },
-      });
+  //   for (const meal of cateringEvent.meals) {
+  //     await this.mealIngredientsRepository.delete({
+  //       meal: { mealId: meal.mealId },
+  //     });
 
-      await this.mealRepository.delete({ mealId: meal.mealId });
-    }
+  //     await this.mealRepository.delete({ mealId: meal.mealId });
+  //   }
 
-    cateringEvent.status = 'canceled';
-    await this.cateringEventRepository.save(cateringEvent);
-  }
+  //   cateringEvent.status = 'canceled';
+  //   await this.cateringEventRepository.save(cateringEvent);
+  // }
 
   async findAll(actionType?: string): Promise<Checkingredient[]> {
     const query = this.checkingredientRepository

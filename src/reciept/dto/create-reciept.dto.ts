@@ -43,4 +43,5 @@ export class CreateRecieptDto {
   receive: number;
   change: number;
   checkStockId?: number;
+  createdDate?: Date;
 }

@@ -334,6 +334,9 @@ export class RecieptService {
         } else {
           receiptFinish.checkIngredientId = null;
         }
+        if (createRecieptDto.createdDate) {
+          receiptFinish.createdDate = createRecieptDto.createdDate;
+        }
         await this.recieptRepository.save(receiptFinish);
       }
       // Update customer points if customer exists
