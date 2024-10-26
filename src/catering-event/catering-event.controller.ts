@@ -52,6 +52,12 @@ export class CateringEventController {
     return this.cateringEventService.updateStatus(+id, updateStatusDto.status);
   }
 
+  // cancel
+  @Patch(':id/cancel')
+  async cancel(@Param('id') id: string): Promise<CateringEvent> {
+    return this.cateringEventService.cancel(+id);
+  }
+
   @Delete(':id')
   async delete(@Param('id') id: string): Promise<void> {
     return this.cateringEventService.delete(+id);
