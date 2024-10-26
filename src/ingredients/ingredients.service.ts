@@ -25,6 +25,8 @@ export class IngredientsService {
       newIngredient.ingredientSupplier = createIngredientDto.ingredientSupplier;
       newIngredient.ingredientMinimun = createIngredientDto.ingredientMinimun;
       newIngredient.ingredientUnit = createIngredientDto.ingredientUnit;
+      newIngredient.ingredientVolumeUnit =
+        createIngredientDto.ingredientVolumeUnit;
       newIngredient.ingredientQuantityInStock = 0;
       newIngredient.ingredientQuantityPerUnit =
         createIngredientDto.ingredientQuantityPerUnit;
