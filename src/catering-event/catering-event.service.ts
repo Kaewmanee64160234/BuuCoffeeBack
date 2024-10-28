@@ -169,7 +169,13 @@ export class CateringEventService {
     const event = await this.cateringEventRepository.findAndCount({
       take: limit,
       skip: limit * (page - 1),
-      relations: ['user', 'meals', 'meals.mealProducts'],
+      relations: [
+        'user',
+        'meals',
+        'meals.mealProducts',
+        'meals.mealProducts.product',
+      ],
+      order: { createdDate: 'DESC' },
     });
     return {
       data: event[0],
