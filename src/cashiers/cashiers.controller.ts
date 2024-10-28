@@ -29,9 +29,8 @@ export class CashiersController {
   // @UseGuards(JwtAuthGuard, RolesGuard)
   // @Permissions('ดูรายงาน')
   async create(@Body() createCashierDto: CreateCashierDto): Promise<Cashier> {
-    const openedByUserId = createCashierDto.userId; // ดึง userId จาก DTO
     try {
-      return await this.cashiersService.create(openedByUserId); // ส่ง userId ไปยัง service
+      return await this.cashiersService.create(createCashierDto); // ส่ง userId ไปยัง service
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }

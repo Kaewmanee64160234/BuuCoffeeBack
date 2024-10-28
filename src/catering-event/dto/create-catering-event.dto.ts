@@ -1,5 +1,7 @@
 import { IsNotEmpty, IsOptional } from 'class-validator';
 import { CreateMealDto } from 'src/meal/dto/create-meal.dto';
+import { Meal } from 'src/meal/entities/meal.entity';
+import { User } from 'src/users/entities/user.entity';
 export class CreateCateringEventDto {
   @IsNotEmpty()
   userId: number;
@@ -21,4 +23,11 @@ export class CreateCateringEventDto {
   riceReceiptId: number;
   @IsOptional()
   coffeeReceiptId: number;
+  cashierAmount: number;
+  @IsNotEmpty()
+  user: User;
+  @IsNotEmpty()
+  meals: Meal[];
+  @IsNotEmpty()
+  status: string;
 }

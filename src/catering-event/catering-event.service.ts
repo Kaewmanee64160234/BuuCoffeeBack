@@ -7,6 +7,7 @@ import { Meal } from 'src/meal/entities/meal.entity';
 import { MealProduct } from 'src/meal-products/entities/meal-product.entity';
 import { Product } from 'src/products/entities/product.entity';
 import { Reciept } from 'src/reciept/entities/reciept.entity';
+import { CreateCateringEventDto } from './dto/create-catering-event.dto';
 
 @Injectable()
 export class CateringEventService {
@@ -46,11 +47,12 @@ export class CateringEventService {
     return event;
   }
 
-  async create(cateringEventData: Partial<CateringEvent>) {
+  async create(cateringEventData: CreateCateringEventDto) {
     const cateringEvent = new CateringEvent();
     cateringEvent.eventName = cateringEventData.eventName;
     cateringEvent.eventDate = new Date(cateringEventData.eventDate);
     cateringEvent.status = 'pending'; // pending, approved, rejected
+    cateringEvent.totalBudget = cateringEventData.totalBudget;
 
     // Find user
     const user = await this.userRepository.findOne({
@@ -79,7 +81,7 @@ export class CateringEventService {
         cateringEventData.meals.map(async (mealData: Meal) => {
           const newMeal = new Meal();
           newMeal.mealName = mealData.mealName;
-          newMeal.mealTime = new Date(mealData.mealTime);
+          newMeal.mealTime = mealData.mealTime;
           newMeal.totalPrice = mealData.totalPrice;
 
           // Map and create meal products
@@ -169,6 +171,13 @@ export class CateringEventService {
     const event = await this.cateringEventRepository.findAndCount({
       take: limit,
       skip: limit * (page - 1),
+      relations: [
+        'user',
+        'meals',
+        'meals.mealProducts',
+        'meals.mealProducts.product',
+      ],
+      order: { createdDate: 'DESC' },
     });
     return {
       data: event[0],

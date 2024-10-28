@@ -10,21 +10,27 @@ import { CreateCashierDto } from './dto/create-cashier.dto';
 import { UpdateCashierDto } from './dto/update-cashier.dto';
 import { Cashier } from './entities/cashier.entity';
 import { User } from 'src/users/entities/user.entity';
+import { CashierItem } from './entities/cashierItem.entity';
 @Injectable()
 export class CashiersService {
   constructor(
     @InjectRepository(Cashier)
     private cashierRepository: Repository<Cashier>,
-    @InjectRepository(User) private usersRepository: Repository<User>,
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
+    @InjectRepository(CashierItem)
+    private cashierItemRepository: Repository<CashierItem>,
   ) {}
 
-  async create(openedByUserId: number): Promise<Cashier> {
+  async create(createCashierDto: CreateCashierDto): Promise<Cashier> {
     const user = await this.usersRepository.findOne({
-      where: { userId: openedByUserId },
+      where: { userId: createCashierDto.userId },
     });
+
     if (!user) {
       throw new NotFoundException('User not found.');
     }
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -38,13 +44,36 @@ export class CashiersService {
       throw new Error('Cashier can only be created once per day.');
     }
 
+    let cashierAmount = 0;
+    const cashierItems = await Promise.all(
+      createCashierDto.items.map(async (item) => {
+        const amount = parseFloat(item.denomination) * item.quantity;
+        cashierAmount += amount;
+        return this.cashierItemRepository.create({
+          denomination: item.denomination,
+          quantity: item.quantity,
+          timestamp: item.timestamp || new Date(),
+        });
+      }),
+    );
+
     const cashier = this.cashierRepository.create({
-      cashierAmount: 0,
+      cashierAmount,
+      createdDate: new Date(),
       openedBy: user,
+      cashierItems: [],
     });
 
-    return this.cashierRepository.save(cashier);
+    cashierItems.forEach((item) => {
+      item.cashier = cashier;
+    });
+
+    await this.cashierRepository.save(cashier);
+    await this.cashierItemRepository.save(cashierItems);
+
+    return cashier;
   }
+
   async findToday(): Promise<Cashier> {
     const currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0); // กำหนดเวลาให้เป็น 00:00:00
