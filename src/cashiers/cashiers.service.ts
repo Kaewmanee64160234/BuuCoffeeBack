@@ -1,6 +1,11 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  Injectable,
+  HttpException,
+  HttpStatus,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MoreThanOrEqual, Repository } from 'typeorm';
 import { CreateCashierDto } from './dto/create-cashier.dto';
 import { UpdateCashierDto } from './dto/update-cashier.dto';
 import { Cashier } from './entities/cashier.entity';
@@ -13,42 +18,32 @@ export class CashiersService {
     @InjectRepository(User) private usersRepository: Repository<User>,
   ) {}
 
-  async create(createCashierDto: CreateCashierDto) {
-    try {
-      const user = await this.usersRepository.findOne({
-        where: { userId: createCashierDto.userId },
-      });
-      if (!user) {
-        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-      }
-
-      // ตรวจสอบว่ามีข้อมูลของวันที่ปัจจุบันในระบบหรือไม่
-      const currentDate = new Date();
-      currentDate.setHours(0, 0, 0, 0); // กำหนดเวลาให้เป็น 00:00:00
-
-      const existingCashier = await this.cashierRepository.findOne({
-        where: { createdDate: currentDate },
-      });
-
-      // ถ้ามีข้อมูลของวันที่ปัจจุบันในระบบแล้ว ให้สร้างข้อผิดพลาด
-      if (existingCashier) {
-        throw new HttpException(
-          'Cashier for this date already exists',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-      const cashier = new Cashier();
-      cashier.cashierAmount = createCashierDto.cashierAmount;
-      cashier.createdDate = currentDate;
-      cashier.user = user;
-
-      return this.cashierRepository.save(cashier);
-    } catch (error) {
-      throw new HttpException(
-        'Failed to create cashier',
-        HttpStatus.BAD_REQUEST,
-      );
+  async create(openedByUserId: number): Promise<Cashier> {
+    const user = await this.usersRepository.findOne({
+      where: { userId: openedByUserId },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found.');
     }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const existingCashier = await this.cashierRepository.findOne({
+      where: {
+        createdDate: MoreThanOrEqual(today),
+      },
+    });
+
+    if (existingCashier) {
+      throw new Error('Cashier can only be created once per day.');
+    }
+
+    const cashier = this.cashierRepository.create({
+      cashierAmount: 0,
+      openedBy: user,
+    });
+
+    return this.cashierRepository.save(cashier);
   }
   async findToday(): Promise<Cashier> {
     const currentDate = new Date();
