@@ -43,8 +43,11 @@ export class User {
   checkingredients: Checkingredient[];
   @OneToMany(() => CateringEvent, (cateringevent) => cateringevent.user)
   organizer: CateringEvent[];
-  @OneToMany(() => Cashier, (cashier) => cashier.user)
-  cashiers: Cashier[];
+  @OneToMany(() => Cashier, (cashier) => cashier.openedBy)
+  openedCashiers: Cashier[];
+
+  @OneToMany(() => Cashier, (cashier) => cashier.closedBy)
+  closedCashiers: Cashier[];
 
   @ManyToOne(() => Role, (role) => role.users, { eager: true })
   role: Role;

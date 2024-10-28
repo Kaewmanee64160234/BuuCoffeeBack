@@ -54,6 +54,7 @@ import { MealModule } from './meal/meal.module';
 import { Meal } from './meal/entities/meal.entity';
 import { MealProductsModule } from './meal-products/meal-products.module';
 import { MealProduct } from './meal-products/entities/meal-product.entity';
+import { CashierItem } from './cashiers/entities/cashierItem.entity';
 
 @Module({
   imports: [
@@ -94,6 +95,7 @@ import { MealProduct } from './meal-products/entities/meal-product.entity';
         CateringEvent,
         Meal,
         MealProduct,
+        CashierItem,
       ],
       synchronize: true,
     }),
