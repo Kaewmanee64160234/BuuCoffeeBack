@@ -7,7 +7,6 @@ export class CreateCheckingredientitemDto {
   @IsNotEmpty()
   oldRemain: number;
   type?: string;
-
   unitPrice?: number;
   subTotalPrice?: number;
   @IsNotEmpty()

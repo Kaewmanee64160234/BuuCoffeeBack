@@ -6,9 +6,13 @@ import { User } from 'src/users/entities/user.entity';
 import { Cashier } from './entities/cashier.entity';
 import { RolesGuard } from 'src/guards/roles.guard';
 import { UsersModule } from 'src/users/users.module';
+import { CashierItem } from './entities/cashierItem.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Cashier, User]), UsersModule],
+  imports: [
+    TypeOrmModule.forFeature([Cashier, User, CashierItem]),
+    UsersModule,
+  ],
   controllers: [CashiersController],
   providers: [CashiersService, RolesGuard],
 })

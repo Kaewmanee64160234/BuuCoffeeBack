@@ -73,8 +73,8 @@ export class IngredientsController {
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Permissions('จัดการวัตถุดิบ')
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Permissions('จัดการวัตถุดิบ')
   @UseInterceptors(
     FileInterceptor('imageFile', {
       storage: diskStorage({

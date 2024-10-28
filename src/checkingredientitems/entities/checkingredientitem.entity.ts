@@ -31,6 +31,7 @@ export class Checkingredientitem {
   type: string;
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   lastPrice: number;
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   subTotalPrice: number;
   @CreateDateColumn()
   createdDate: Date;

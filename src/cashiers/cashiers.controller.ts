@@ -10,6 +10,7 @@ import {
   HttpStatus,
   UseGuards,
   Query,
+  Req,
 } from '@nestjs/common';
 import { CashiersService } from './cashiers.service';
 import { CreateCashierDto } from './dto/create-cashier.dto';
@@ -17,16 +18,23 @@ import { UpdateCashierDto } from './dto/update-cashier.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/guards/roles.guard';
 import { Permissions } from 'src/decorators/permissions.decorator';
+import { Cashier } from './entities/cashier.entity';
+import { User } from 'src/users/entities/user.entity';
 
 @Controller('cashiers')
 export class CashiersController {
   constructor(private readonly cashiersService: CashiersService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Permissions('ดูรายงาน')
-  create(@Body() createCashierDto: CreateCashierDto) {
-    return this.cashiersService.create(createCashierDto);
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Permissions('ดูรายงาน')
+  async create(@Body() createCashierDto: CreateCashierDto): Promise<Cashier> {
+    const openedByUserId = createCashierDto.userId; // ดึง userId จาก DTO
+    try {
+      return await this.cashiersService.create(openedByUserId); // ส่ง userId ไปยัง service
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
   }
 
   // paginate
