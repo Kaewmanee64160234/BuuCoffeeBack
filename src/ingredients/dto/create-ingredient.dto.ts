@@ -20,6 +20,9 @@ export class CreateIngredientDto {
   @IsString()
   @IsNotEmpty()
   ingredientSupplier: string;
+  @IsString()
+  @IsNotEmpty()
+  ingredientBarcode: string;
 
   @IsNumber()
   @IsNotEmpty()

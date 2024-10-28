@@ -28,6 +28,8 @@ export class Ingredient {
   @Column()
   ingredientUnit: string;
   @Column()
+  ingredientBarcode: string;
+  @Column()
   ingredientVolumeUnit: string;
   @Column()
   ingredientQuantityInStock: number;

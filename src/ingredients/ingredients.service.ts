@@ -20,6 +20,8 @@ export class IngredientsService {
     imageFile?: Express.Multer.File,
   ): Promise<Ingredient> {
     try {
+      console.log('Creating a new ingredient with data:', createIngredientDto);
+
       const newIngredient = new Ingredient();
       newIngredient.ingredientName = createIngredientDto.ingredientName;
       newIngredient.ingredientSupplier = createIngredientDto.ingredientSupplier;
@@ -33,20 +35,69 @@ export class IngredientsService {
       newIngredient.ingredientQuantityPerSubUnit =
         createIngredientDto.ingredientQuantityPerSubUnit;
 
-      if (imageFile && imageFile.filename) {
-        newIngredient.ingredientImage = imageFile.filename;
+      if (createIngredientDto.ingredientBarcode) {
+        newIngredient.ingredientBarcode = createIngredientDto.ingredientBarcode;
+        console.log('Using provided barcode:', newIngredient.ingredientBarcode);
       } else {
-        newIngredient.ingredientImage = 'no-image.png';
+        newIngredient.ingredientBarcode = await this.generateBarcode();
+        console.log('Generated barcode:', newIngredient.ingredientBarcode);
       }
 
-      return await this.ingredientRepository.save(newIngredient);
+      if (imageFile && imageFile.filename) {
+        newIngredient.ingredientImage = imageFile.filename;
+        console.log(
+          'Using provided image file:',
+          newIngredient.ingredientImage,
+        );
+      } else {
+        newIngredient.ingredientImage = 'no-image.png';
+        console.log(
+          'No image file provided, using default:',
+          newIngredient.ingredientImage,
+        );
+      }
+
+      const savedIngredient = await this.ingredientRepository.save(
+        newIngredient,
+      );
+      console.log('Ingredient created successfully:', savedIngredient);
+
+      return savedIngredient;
     } catch (error) {
-      console.log(error);
+      console.error('Error creating ingredient:', error);
       throw new HttpException(
         'Failed to create Ingredient',
         HttpStatus.BAD_REQUEST,
       );
     }
+  }
+
+  private async generateBarcode(): Promise<string> {
+    let barcode: string;
+    let isUnique = false;
+
+    while (!isUnique) {
+      barcode = this.createRandomBarcode();
+
+      const existingIngredient = await this.ingredientRepository.findOne({
+        where: { ingredientBarcode: barcode },
+      });
+      isUnique = !existingIngredient;
+    }
+
+    return barcode;
+  }
+
+  private createRandomBarcode(): string {
+    const length = 13;
+    const chars = '0123456789';
+    let barcode = '';
+
+    for (let i = 0; i < length; i++) {
+      barcode += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
+    return barcode;
   }
 
   async findAllQuery(query): Promise<Paginate> {

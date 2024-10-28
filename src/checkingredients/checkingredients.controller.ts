@@ -42,8 +42,8 @@ export class CheckingredientsController {
   //   }
   // }
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Permissions('จัดการการเช็ควัตถุดิบ')
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Permissions('จัดการการเช็ควัตถุดิบ')
   async create(@Body() createCheckingredientDto: CreateCheckingredientDto) {
     return await this.checkingredientsService.create(createCheckingredientDto);
   }

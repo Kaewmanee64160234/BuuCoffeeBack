@@ -395,7 +395,6 @@ export class RecieptService {
       console.log('lastReceiptOnSeptember9', lastReceiptOnSeptember9);
 
       if (lastReceiptOnSeptember9) {
-        // Increment from the last receipt number on 9th September
         return lastReceiptOnSeptember9.receiptNumber + 1;
       } else {
         // Reset to 1 for the first receipt on 9th September
