@@ -14,7 +14,8 @@ export class CashierItem {
 
   @Column({ type: 'int' })
   quantity: number; // จำนวน
-
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  timestamp: Date;
   @ManyToOne(() => Cashier, (cashier) => cashier.cashierItems, {
     nullable: false,
   })
