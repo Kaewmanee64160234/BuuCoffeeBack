@@ -16,10 +16,10 @@ export class Role {
   id: number;
 
   @Column()
-  name: string;
+  name: string; // Role name, e.g., "Cashier", "Barista", "Manager"
 
-  @ManyToMany(() => Permission)
-  @JoinTable() // JoinTable must be present on one side of the ManyToMany relationship
+  @ManyToMany(() => Permission, (permission) => permission.roles)
+  @JoinTable()
   permissions: Permission[];
 
   @OneToMany(() => User, (user) => user.role)

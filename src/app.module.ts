@@ -55,6 +55,10 @@ import { Meal } from './meal/entities/meal.entity';
 import { MealProductsModule } from './meal-products/meal-products.module';
 import { MealProduct } from './meal-products/entities/meal-product.entity';
 import { CashierItem } from './cashiers/entities/cashierItem.entity';
+import { GroupsModule } from './groups/groups.module';
+import { GroupMembersModule } from './group-members/group-members.module';
+import { GroupPermission } from './groups/entities/group.entity';
+import { GroupMember } from './group-members/entities/group-member.entity';
 
 @Module({
   imports: [
@@ -96,6 +100,9 @@ import { CashierItem } from './cashiers/entities/cashierItem.entity';
         Meal,
         MealProduct,
         CashierItem,
+
+        GroupMember,
+        GroupPermission,
       ],
       synchronize: true,
     }),
@@ -125,6 +132,8 @@ import { CashierItem } from './cashiers/entities/cashierItem.entity';
     CateringEventModule,
     MealModule,
     MealProductsModule,
+    GroupsModule,
+    GroupMembersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

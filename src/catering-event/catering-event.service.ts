@@ -62,6 +62,7 @@ export class CateringEventService {
     if (!user) {
       throw new NotFoundException('User not found');
     }
+
     cateringEvent.user = user;
     cateringEvent.status = cateringEventData.status;
     cateringEvent.eventLocation = cateringEventData.eventLocation;

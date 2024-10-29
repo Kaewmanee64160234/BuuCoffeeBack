@@ -12,21 +12,22 @@ export class PermissionService {
     private permissionRepository: Repository<Permission>,
   ) {}
   async create(createPermissionDto: CreatePermissionDto) {
-    const permission = await this.permissionRepository.findOne({
-      where: { name: createPermissionDto.name },
-    });
-    if (permission) {
-      throw new Error(
-        `Permission with name ${createPermissionDto.name} already exists`,
-      );
-    }
-    const newPermission = this.permissionRepository.create({
-      description: createPermissionDto.description,
-      group: createPermissionDto.group,
-      name: permission.name,
-    });
+    // const permission = await this.permissionRepository.findOne({
+    //   where: { name: createPermissionDto.name },
+    // });
+    // if (permission) {
+    //   throw new Error(
+    //     `Permission with name ${createPermissionDto.name} already exists`,
+    //   );
+    // }
+    // const newPermission = this.permissionRepository.create({
+    //   description: createPermissionDto.description,
+    //   group: createPermissionDto.group,
+    //   name: permission.name,
+    // });
 
-    return this.permissionRepository.save(newPermission);
+    // return this.permissionRepository.save(createPermissionDto);
+    return 'This action adds a new permission';
   }
 
   findAll() {
