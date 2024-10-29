@@ -74,6 +74,19 @@ export class CashiersService {
     return cashier;
   }
 
+  async isCashierCreatedToday(): Promise<boolean> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const existingCashier = await this.cashierRepository.findOne({
+      where: {
+        createdDate: MoreThanOrEqual(today),
+      },
+    });
+
+    return !!existingCashier;
+  }
+
   async findToday(): Promise<Cashier> {
     const currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0); // กำหนดเวลาให้เป็น 00:00:00

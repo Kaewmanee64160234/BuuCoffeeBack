@@ -35,6 +35,18 @@ export class CashiersController {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
+  @Get('is-created-today')
+  async isCashierCreatedToday(): Promise<{ isCreatedToday: boolean }> {
+    try {
+      const isCreatedToday = await this.cashiersService.isCashierCreatedToday();
+      return { isCreatedToday };
+    } catch (error) {
+      throw new HttpException(
+        'Could not check if cashier is created today',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 
   // paginate
   @Get('paginate')
