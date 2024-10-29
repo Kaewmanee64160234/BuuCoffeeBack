@@ -14,7 +14,7 @@ import { CheckingredientsService } from './checkingredients.service';
 import { CreateCheckingredientDto } from './dto/create-checkingredient.dto';
 import { UpdateCheckingredientDto } from './dto/update-checkingredient.dto';
 import { Checkingredient } from './entities/checkingredient.entity';
-import { RolesGuard } from 'src/guards/roles.guard';
+import { PermissionsGuard } from 'src/guards/roles.guard';
 import { Permissions } from 'src/decorators/permissions.decorator';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { CreateCateringEventDto } from 'src/catering-event/dto/create-catering-event.dto';
@@ -42,7 +42,7 @@ export class CheckingredientsController {
   //   }
   // }
   @Post()
-  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @UseGuards(JwtAuthGuard, PermissionsGuard)
   // @Permissions('จัดการการเช็ควัตถุดิบ')
   async create(@Body() createCheckingredientDto: CreateCheckingredientDto) {
     return await this.checkingredientsService.create(createCheckingredientDto);
@@ -52,7 +52,7 @@ export class CheckingredientsController {
   //   return this.checkingredientsService.cancelCateringEvent(id);
   // }
   @Post('without-inventory')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการการเช็ควัตถุดิบ')
   async createWithoutSubInventory(
     @Body() createCheckingredientDto: CreateCheckingredientDto,
@@ -63,14 +63,14 @@ export class CheckingredientsController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูการการเช็ควัตถุดิบ')
   async findAll(@Query('actionType') actionType?: string) {
     return this.checkingredientsService.findAll(actionType);
   }
 
   @Get('findByShopType')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูการการเช็ควัตถุดิบ')
   async findByShopType(
     @Query('actionType') actionType?: string,
@@ -83,14 +83,14 @@ export class CheckingredientsController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูการการเช็ควัตถุดิบ')
   findOne(@Param('id') id: string) {
     return this.checkingredientsService.findOne(+id);
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการการเช็ควัตถุดิบ')
   remove(@Param('id') id: string) {
     return this.checkingredientsService.remove(+id);

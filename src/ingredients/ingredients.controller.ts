@@ -28,7 +28,7 @@ import { extname } from 'path';
 import { Response, Request } from 'express';
 import { Ingredient } from './entities/ingredient.entity';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { RolesGuard } from 'src/guards/roles.guard';
+import { PermissionsGuard } from 'src/guards/roles.guard';
 import { Permissions } from 'src/decorators/permissions.decorator';
 
 @Controller('ingredients')
@@ -47,7 +47,7 @@ export class IngredientsController {
   }
 
   @Get('search')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูวัตถุดิบ')
   async search(@Query('name') name: string): Promise<Ingredient[]> {
     try {
@@ -59,7 +59,7 @@ export class IngredientsController {
   }
 
   @Get('low-stock')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูวัตถุดิบ')
   async findLowStockIngredients(): Promise<Ingredient[]> {
     try {
@@ -73,7 +73,7 @@ export class IngredientsController {
   }
 
   @Post()
-  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @UseGuards(JwtAuthGuard, PermissionsGuard)
   // @Permissions('จัดการวัตถุดิบ')
   @UseInterceptors(
     FileInterceptor('imageFile', {
@@ -94,7 +94,7 @@ export class IngredientsController {
   }
 
   @Post('upload/:ingredientId')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการวัตถุดิบ')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -115,28 +115,28 @@ export class IngredientsController {
   }
 
   @Get(':all')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูวัตถุดิบ')
   findAllQuery(@Query() query) {
     return this.ingredientsService.findAllQuery(query);
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูวัตถุดิบ')
   findAll() {
     return this.ingredientsService.findAll();
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูวัตถุดิบ')
   findOne(@Param('id') id: string) {
     return this.ingredientsService.findOne(+id);
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการวัตถุดิบ')
   @UseInterceptors(
     FileInterceptor('imageFile', {
@@ -159,14 +159,14 @@ export class IngredientsController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการวัตถุดิบ')
   remove(@Param('id') id: string) {
     return this.ingredientsService.remove(+id);
   }
 
   @Get(':id/image')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูวัตถุดิบ')
   async getImage(@Param('id') id: string, @Res() res: Response) {
     const ingredient = await this.ingredientsService.findOne(+id);

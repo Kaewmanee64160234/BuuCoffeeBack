@@ -16,7 +16,7 @@ import { CashiersService } from './cashiers.service';
 import { CreateCashierDto } from './dto/create-cashier.dto';
 import { UpdateCashierDto } from './dto/update-cashier.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { RolesGuard } from 'src/guards/roles.guard';
+import { PermissionsGuard } from 'src/guards/roles.guard';
 import { Permissions } from 'src/decorators/permissions.decorator';
 import { Cashier } from './entities/cashier.entity';
 import { User } from 'src/users/entities/user.entity';
@@ -26,7 +26,7 @@ export class CashiersController {
   constructor(private readonly cashiersService: CashiersService) {}
 
   @Post()
-  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @UseGuards(JwtAuthGuard, PermissionsGuard)
   // @Permissions('ดูรายงาน')
   async create(@Body() createCashierDto: CreateCashierDto): Promise<Cashier> {
     try {
@@ -38,40 +38,40 @@ export class CashiersController {
 
   // paginate
   @Get('paginate')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูรายงาน')
   paginate(@Query('page') page = 1, @Query('limit') limit = 10) {
     return this.cashiersService.paginate(+page, +limit);
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูรายงาน')
   findAll() {
     return this.cashiersService.findAll();
   }
   @Get('today')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูรายงาน')
   findToday() {
     return this.cashiersService.findToday();
   }
   @Get(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูรายงาน')
   findOne(@Param('id') id: string) {
     return this.cashiersService.findOne(+id);
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูรายงาน')
   update(@Param('id') id: string, @Body() updateCashierDto: UpdateCashierDto) {
     return this.cashiersService.update(+id, updateCashierDto);
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูรายงาน')
   remove(@Param('id') id: string) {
     return this.cashiersService.softDelete(+id);

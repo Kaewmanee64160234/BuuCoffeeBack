@@ -14,7 +14,7 @@ import { CreateSubInventoriesRiceDto } from './dto/create-sub-inventories-rice.d
 import { UpdateSubInventoriesRiceDto } from './dto/update-sub-inventories-rice.dto';
 import { Permissions } from 'src/decorators/permissions.decorator';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { RolesGuard } from 'src/guards/roles.guard';
+import { PermissionsGuard } from 'src/guards/roles.guard';
 import { SubInventoriesRice } from './entities/sub-inventories-rice.entity';
 
 @Controller('sub-inventories-rice')
@@ -24,14 +24,14 @@ export class SubInventoriesRiceController {
   ) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการวัตถุดิบ')
   create(@Body() createSubInventoriesRiceDto: CreateSubInventoriesRiceDto) {
     return this.subInventoriesRiceService.create(createSubInventoriesRiceDto);
   }
 
   @Get('paginate')
-  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @UseGuards(JwtAuthGuard, PermissionsGuard)
   // @Permissions('ดูรายการใบเสร็จ')
   async getReceipts(
     @Query('page') page = 1,
@@ -46,21 +46,21 @@ export class SubInventoriesRiceController {
   }
 
   @Get()
-  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @UseGuards(JwtAuthGuard, PermissionsGuard)
   // @Permissions('ดูวัตถุดิบ')
   findAll() {
     return this.subInventoriesRiceService.findAll();
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูวัตถุดิบ')
   findOne(@Param('id') id: string) {
     return this.subInventoriesRiceService.findOne(+id);
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการวัตถุดิบ')
   update(
     @Param('id') id: string,
@@ -73,7 +73,7 @@ export class SubInventoriesRiceController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการวัตถุดิบ')
   remove(@Param('id') id: string) {
     return this.subInventoriesRiceService.remove(+id);

@@ -9,7 +9,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { SubInventoriesCoffee } from 'src/sub-inventories-coffee/entities/sub-inventories-coffee.entity';
 import { SubInventoriesRice } from 'src/sub-inventories-rice/entities/sub-inventories-rice.entity';
 import { UsersModule } from 'src/users/users.module';
-import { RolesGuard } from 'src/guards/roles.guard';
+import { PermissionsGuard } from 'src/guards/roles.guard';
 import { Meal } from 'src/meal/entities/meal.entity';
 import { CateringEvent } from 'src/catering-event/entities/catering-event.entity';
 
@@ -28,6 +28,6 @@ import { CateringEvent } from 'src/catering-event/entities/catering-event.entity
     UsersModule,
   ],
   controllers: [CheckingredientsController],
-  providers: [CheckingredientsService, RolesGuard],
+  providers: [CheckingredientsService, PermissionsGuard],
 })
 export class CheckingredientsModule {}

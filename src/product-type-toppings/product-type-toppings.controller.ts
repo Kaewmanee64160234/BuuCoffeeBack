@@ -13,7 +13,7 @@ import { CreateProductTypeToppingDto } from './dto/create-product-type-topping.d
 import { UpdateProductTypeToppingDto } from './dto/update-product-type-topping.dto';
 import { Permissions } from 'src/decorators/permissions.decorator';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { RolesGuard } from 'src/guards/roles.guard';
+import { PermissionsGuard } from 'src/guards/roles.guard';
 
 @Controller('product-type-toppings')
 export class ProductTypeToppingsController {
@@ -22,28 +22,28 @@ export class ProductTypeToppingsController {
   ) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการสินค้า')
   create(@Body() createProductTypeToppingDto: CreateProductTypeToppingDto) {
     return this.productTypeToppingsService.create(createProductTypeToppingDto);
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูรายการสินค้า')
   findAll() {
     return this.productTypeToppingsService.findAll();
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูรายการสินค้า')
   findOne(@Param('id') id: string) {
     return this.productTypeToppingsService.findOne(+id);
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการสินค้า')
   update(
     @Param('id') id: string,
@@ -56,7 +56,7 @@ export class ProductTypeToppingsController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการสินค้า')
   remove(@Param('id') id: string) {
     return this.productTypeToppingsService.remove(+id);

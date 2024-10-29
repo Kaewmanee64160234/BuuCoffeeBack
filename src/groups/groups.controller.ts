@@ -1,42 +1,32 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-} from '@nestjs/common';
-import { GroupsService } from './groups.service';
-import { CreateGroupDto } from './dto/create-group.dto';
-import { UpdateGroupDto } from './dto/update-group.dto';
+// group.controller.ts
+import { Controller, Post, Body, Param, Put } from '@nestjs/common';
+import { GroupService } from './groups.service';
 
 @Controller('groups')
 export class GroupsController {
-  constructor(private readonly groupsService: GroupsService) {}
+  constructor(private readonly groupService: GroupService) {}
 
   @Post()
-  create(@Body() createGroupDto: CreateGroupDto) {
-    return this.groupsService.create(createGroupDto);
+  async createGroup(@Body('name') name: string) {
+    return await this.groupService.createGroup(name);
   }
 
-  @Get()
-  findAll() {
-    return this.groupsService.findAll();
+  @Put(':groupId/members/:userId')
+  async addMember(
+    @Param('groupId') groupId: number,
+    @Param('userId') userId: number,
+  ) {
+    return await this.groupService.addMemberToGroup(groupId, userId);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.groupsService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateGroupDto: UpdateGroupDto) {
-    return this.groupsService.update(+id, updateGroupDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.groupsService.remove(+id);
+  @Put(':groupId/permissions')
+  async assignPermissions(
+    @Param('groupId') groupId: number,
+    @Body('permissionIds') permissionIds: number[],
+  ) {
+    return await this.groupService.assignPermissionsToGroup(
+      groupId,
+      permissionIds,
+    );
   }
 }

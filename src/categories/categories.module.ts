@@ -9,7 +9,7 @@ import { ReceiptItem } from 'src/receipt-item/entities/receipt-item.entity';
 import { Product } from 'src/products/entities/product.entity';
 import { ProductTypeTopping } from 'src/product-type-toppings/entities/product-type-topping.entity';
 import { Topping } from 'src/toppings/entities/topping.entity';
-import { RolesGuard } from 'src/guards/roles.guard';
+import { PermissionsGuard } from 'src/guards/roles.guard';
 import { UsersModule } from 'src/users/users.module';
 
 @Module({
@@ -26,6 +26,6 @@ import { UsersModule } from 'src/users/users.module';
     UsersModule,
   ],
   controllers: [CategoriesController],
-  providers: [CategoriesService, RolesGuard],
+  providers: [CategoriesService, PermissionsGuard],
 })
 export class CategoriesModule {}

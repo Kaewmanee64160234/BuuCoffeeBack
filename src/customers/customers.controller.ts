@@ -13,7 +13,7 @@ import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { RolesGuard } from 'src/guards/roles.guard';
+import { PermissionsGuard } from 'src/guards/roles.guard';
 import { Permissions } from 'src/decorators/permissions.decorator';
 import { Customer } from './entities/customer.entity';
 
@@ -22,28 +22,28 @@ export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการข้อมูลลูกค้า')
   create(@Body() createCustomerDto: CreateCustomerDto) {
     return this.customersService.create(createCustomerDto);
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูข้อมูลลูกค้า')
   findAll() {
     return this.customersService.findAll();
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูข้อมูลลูกค้า')
   findOne(@Param('id') id: string) {
     return this.customersService.findOne(+id);
   }
 
   @Get('paginate')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูรายการลูกค้า')
   async getProducts(
     @Query('page') page = 1,
@@ -54,7 +54,7 @@ export class CustomersController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการข้อมูลลูกค้า')
   update(
     @Param('id') id: string,
@@ -64,7 +64,7 @@ export class CustomersController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการข้อมูลลูกค้า')
   remove(@Param('id') id: string) {
     return this.customersService.remove(+id);

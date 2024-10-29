@@ -3,8 +3,8 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
   ManyToMany,
+  ManyToOne,
 } from 'typeorm';
 import { Role } from 'src/role/entities/role.entity';
 import { GroupPermission } from 'src/groups/entities/group.entity';
@@ -12,17 +12,17 @@ import { GroupPermission } from 'src/groups/entities/group.entity';
 @Entity('permissions')
 export class Permission {
   @PrimaryGeneratedColumn()
-  permissionId: number;
+  id: number;
 
   @Column({ unique: true })
-  name: string; // e.g., "canSell", "canEditTopping", "canCreateTopping"
+  name: string; // E.g., "canSell", "canEditTopping", "canCreateTopping"
 
   @Column({ nullable: true })
-  description: string;
-
-  @ManyToOne(() => GroupPermission, (group) => group.permissions)
-  group: GroupPermission;
+  description: string; // Description of what the permission does
 
   @ManyToMany(() => Role, (role) => role.permissions)
   roles: Role[];
+  // group
+  @ManyToOne(() => GroupPermission, (group) => group.permissions)
+  group: GroupPermission;
 }

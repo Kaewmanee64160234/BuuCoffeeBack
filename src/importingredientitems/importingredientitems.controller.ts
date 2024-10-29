@@ -11,7 +11,7 @@ import {
 import { ImportingredientitemsService } from './importingredientitems.service';
 import { CreateImportingredientitemDto } from './dto/create-importingredientitem.dto';
 import { UpdateImportingredientitemDto } from './dto/update-importingredientitem.dto';
-import { RolesGuard } from 'src/guards/roles.guard';
+import { PermissionsGuard } from 'src/guards/roles.guard';
 import { Permissions } from 'src/decorators/permissions.decorator';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
@@ -22,7 +22,7 @@ export class ImportingredientitemsController {
   ) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการการนำเข้าวัตถุดิบ')
   create(@Body() createImportingredientitemDto: CreateImportingredientitemDto) {
     return this.importingredientitemsService.create(
@@ -31,21 +31,21 @@ export class ImportingredientitemsController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูการนำเข้าวัตถุดิบ')
   findAll() {
     return this.importingredientitemsService.findAll();
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูการนำเข้าวัตถุดิบ')
   findOne(@Param('id') id: string) {
     return this.importingredientitemsService.findOne(+id);
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการการนำเข้าวัตถุดิบ')
   update(
     @Param('id') id: string,
@@ -58,7 +58,7 @@ export class ImportingredientitemsController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการการนำเข้าวัตถุดิบ')
   remove(@Param('id') id: string) {
     return this.importingredientitemsService.remove(+id);

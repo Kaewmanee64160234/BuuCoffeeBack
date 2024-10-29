@@ -14,7 +14,7 @@ import { CreateSubInventoriesCoffeeDto } from './dto/create-sub-inventories-coff
 import { UpdateSubInventoriesCoffeeDto } from './dto/update-sub-inventories-coffee.dto';
 import { Permissions } from 'src/decorators/permissions.decorator';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { RolesGuard } from 'src/guards/roles.guard';
+import { PermissionsGuard } from 'src/guards/roles.guard';
 import { SubInventoriesCoffee } from './entities/sub-inventories-coffee.entity';
 
 @Controller('sub-inventories-coffee')
@@ -24,7 +24,7 @@ export class SubInventoriesCoffeeController {
   ) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการวัตถุดิบ')
   create(@Body() createSubInventoriesCoffeeDto: CreateSubInventoriesCoffeeDto) {
     return this.subInventoriesCoffeeService.create(
@@ -33,7 +33,7 @@ export class SubInventoriesCoffeeController {
   }
 
   @Get('paginate')
-  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @UseGuards(JwtAuthGuard, PermissionsGuard)
   // @Permissions('ดูรายการใบเสร็จ')
   async getReceipts(
     @Query('page') page = 1,
@@ -48,21 +48,21 @@ export class SubInventoriesCoffeeController {
   }
 
   @Get()
-  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @UseGuards(JwtAuthGuard, PermissionsGuard)
   // @Permissions('ดูวัตถุดิบ')
   findAll() {
     return this.subInventoriesCoffeeService.findAll();
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูวัตถุดิบ')
   findOne(@Param('id') id: string) {
     return this.subInventoriesCoffeeService.findOne(+id);
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการวัตถุดิบ')
   update(
     @Param('id') id: string,
@@ -75,14 +75,14 @@ export class SubInventoriesCoffeeController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการวัตถุดิบ')
   remove(@Param('id') id: string) {
     return this.subInventoriesCoffeeService.remove(+id);
   }
 
   // @Get('paginate')
-  // // @UseGuards(JwtAuthGuard, RolesGuard)
+  // // @UseGuards(JwtAuthGuard, PermissionsGuard)
   // // @Permissions('ดูรายการใบเสร็จ')
   // async getReceipts(
   //   @Query('page') page = 1,

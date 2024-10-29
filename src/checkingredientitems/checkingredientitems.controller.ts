@@ -12,7 +12,7 @@ import { CheckingredientitemsService } from './checkingredientitems.service';
 import { CreateCheckingredientitemDto } from './dto/create-checkingredientitem.dto';
 import { UpdateCheckingredientitemDto } from './dto/update-checkingredientitem.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { RolesGuard } from 'src/guards/roles.guard';
+import { PermissionsGuard } from 'src/guards/roles.guard';
 import { Permissions } from 'src/decorators/permissions.decorator';
 
 @Controller('checkingredientitems')
@@ -22,7 +22,7 @@ export class CheckingredientitemsController {
   ) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการการเช็ควัตถุดิบ')
   create(@Body() createCheckingredientitemDto: CreateCheckingredientitemDto) {
     return this.checkingredientitemsService.create(
@@ -31,21 +31,21 @@ export class CheckingredientitemsController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูการเช็ควัตถุดิบ')
   findAll() {
     return this.checkingredientitemsService.findAll();
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูการเช็ควัตถุดิบ')
   findOne(@Param('id') id: string) {
     return this.checkingredientitemsService.findOne(+id);
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการการเช็ควัตถุดิบ')
   update(
     @Param('id') id: string,
@@ -58,7 +58,7 @@ export class CheckingredientitemsController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการการเช็ควัตถุดิบ')
   remove(@Param('id') id: string) {
     return this.checkingredientitemsService.remove(+id);

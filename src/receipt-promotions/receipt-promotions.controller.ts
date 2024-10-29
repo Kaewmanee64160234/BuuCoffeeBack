@@ -13,7 +13,7 @@ import { CreateReceiptPromotionDto } from './dto/create-receipt-promotion.dto';
 import { UpdateReceiptPromotionDto } from './dto/update-receipt-promotion.dto';
 import { Permissions } from 'src/decorators/permissions.decorator';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { RolesGuard } from 'src/guards/roles.guard';
+import { PermissionsGuard } from 'src/guards/roles.guard';
 
 @Controller('receipt-promotions')
 export class ReceiptPromotionsController {
@@ -22,28 +22,28 @@ export class ReceiptPromotionsController {
   ) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการสินค้า')
   create(@Body() createReceiptPromotionDto: CreateReceiptPromotionDto) {
     return this.receiptPromotionsService.create(createReceiptPromotionDto);
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูรายการสินค้า')
   findAll() {
     return this.receiptPromotionsService.findAll();
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูรายการสินค้า')
   findOne(@Param('id') id: string) {
     return this.receiptPromotionsService.findOne(+id);
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการสินค้า')
   update(
     @Param('id') id: string,
@@ -53,7 +53,7 @@ export class ReceiptPromotionsController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการสินค้า')
   remove(@Param('id') id: string) {
     return this.receiptPromotionsService.remove(+id);

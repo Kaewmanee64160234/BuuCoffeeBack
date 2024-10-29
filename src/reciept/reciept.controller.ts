@@ -16,7 +16,7 @@ import { CreateRecieptDto } from './dto/create-reciept.dto';
 import { UpdateRecieptDto } from './dto/update-reciept.dto';
 import { Permissions } from 'src/decorators/permissions.decorator';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { RolesGuard } from 'src/guards/roles.guard';
+import { PermissionsGuard } from 'src/guards/roles.guard';
 import { Reciept } from './entities/reciept.entity';
 
 @Controller('receipts')
@@ -24,13 +24,13 @@ export class RecieptController {
   constructor(private readonly recieptService: RecieptService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการสินค้า')
   create(@Body() createRecieptDto: CreateRecieptDto) {
     return this.recieptService.create(createRecieptDto);
   }
   @Get('query-date')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูรายการสินค้า')
   async findAllQueryDate(
     @Query('startDate') startDate: string,
@@ -63,13 +63,13 @@ export class RecieptController {
   }
   // update
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการสินค้า')
   update(@Param('id') id: string, @Body() updateRecieptDto: UpdateRecieptDto) {
     return this.recieptService.update(+id, updateRecieptDto);
   }
   @Get('ingredient-usage-report')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูรายการสินค้า')
   async getIngredientUsageReport(
     @Query('startDate') startDate?: string,
@@ -87,7 +87,7 @@ export class RecieptController {
   }
 
   @Get('daily-report')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูรายการสินค้า')
   async getDailyReport(@Query('receiptType') receiptType: string) {
     try {
@@ -104,7 +104,7 @@ export class RecieptController {
     }
   }
   @Get('products-usage')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูรายการสินค้า')
   async getProductsUsageByDateRangeAndReceiptType(
     @Query('startDate') startDate?: string,
@@ -159,7 +159,7 @@ export class RecieptController {
   }
 
   @Get('/grouped')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูรายการสินค้า')
   async getGroupedReceipts(
     @Query('startDate') startDate: string,
@@ -185,7 +185,7 @@ export class RecieptController {
     }
   }
   @Get('/coffee-summary')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูรายการสินค้า')
   async getCoffeeReceiptsWithCostAndDiscounts(
     @Query('start') start: string,
@@ -207,7 +207,7 @@ export class RecieptController {
   // getRecieptIn1Day
   // param typeOfProduct
   @Get('/receipt-in-1-day')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูรายการสินค้า')
   async getRecieptIn1Day(@Query('typeOfProduct') typeOfProduct: string) {
     return this.recieptService.getRecieptIn1Day(typeOfProduct);
@@ -215,14 +215,14 @@ export class RecieptController {
 
   // getRecieptCateringIn24Hours
   @Get('/receipt-catering-in-24-hours')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูรายการสินค้า')
   async getRecieptCateringIn24Hours() {
     return this.recieptService.getRecieptCateringIn24Hours();
   }
 
   @Get('paginate')
-  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @UseGuards(JwtAuthGuard, PermissionsGuard)
   // @Permissions('ดูรายการใบเสร็จ')
   async getReceipts(
     @Query('page') page = 1,
@@ -233,14 +233,14 @@ export class RecieptController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูรายการสินค้า')
   findAll() {
     return this.recieptService.findAll();
   }
 
   @Get('/sum')
-  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @UseGuards(JwtAuthGuard, PermissionsGuard)
   // @Permissions('ดูรายการสินค้า')
   async getSumTodayByPaymentMethod(
     @Query('startDate') startDate: string,
@@ -280,7 +280,7 @@ export class RecieptController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูรายการสินค้า')
   findOne(@Param('id') id: string) {
     return this.recieptService.findOne(+id);
@@ -288,13 +288,13 @@ export class RecieptController {
 
   // cancelReceipt from param
   @Delete('cancel/:id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการสินค้า')
   async cancelReceipt(@Param('id') id: string) {
     return this.recieptService.cancelReceipt(+id);
   }
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการสินค้า')
   remove(@Param('id') id: string) {
     return this.recieptService.remove(+id);
@@ -317,7 +317,7 @@ export class RecieptController {
   // }
 
   // @Get('paginate')
-  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @UseGuards(JwtAuthGuard, PermissionsGuard)
   // @Permissions('ดูรายการใบเสร็จ')
   // async getReceipts(
   //   @Query('page') page = 1,
