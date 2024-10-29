@@ -90,6 +90,12 @@ export class GroupService {
       throw new Error('Failed to create group');
     }
   }
+  // get all groups
+  async findAll() {
+    return await this.groupRepository.find({
+      relations: ['permissions', 'members'],
+    });
+  }
 
   async addUsersToGroup(
     groupId: number,
@@ -147,11 +153,5 @@ export class GroupService {
     group.permissions = permissions;
 
     return await this.groupRepository.save(group);
-  }
-  // get all groups
-  async findAll() {
-    return await this.groupRepository.find({
-      relations: ['permissions', 'members'],
-    });
   }
 }
