@@ -25,6 +25,14 @@ export class GroupsController {
   async createGroup(@Body() createGroupDto: CreateGroupDto) {
     return await this.groupService.createGroup(createGroupDto);
   }
+  // pach
+  @Patch(':groupId')
+  async updateGroup(
+    @Param('groupId') groupId: number,
+    @Body() createGroupDto: CreateGroupDto,
+  ) {
+    return await this.groupService.updateGroup(groupId, createGroupDto);
+  }
 
   @Patch(':groupId/users')
   async addUsersToGroup(
