@@ -9,7 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { MoreThanOrEqual, Repository } from 'typeorm';
 import { CreateCashierDto } from './dto/create-cashier.dto';
 import { UpdateCashierDto } from './dto/update-cashier.dto';
-import { Cashier } from './entities/cashier.entity';
+import { Cashier, CashierType } from './entities/cashier.entity';
 import { User } from 'src/users/entities/user.entity';
 import { CashierItem } from './entities/cashierItem.entity';
 @Injectable()
@@ -78,8 +78,33 @@ export class CashiersService {
 
     return cashier;
   }
+  async checkCashierTodayForTypes(): Promise<{
+    rice: boolean;
+    coffee: boolean;
+  }> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-  async isCashierCreatedToday(): Promise<boolean> {
+    const riceCashier = await this.cashierRepository.findOne({
+      where: {
+        createdDate: MoreThanOrEqual(today),
+        type: CashierType.RICE,
+      },
+    });
+
+    const coffeeCashier = await this.cashierRepository.findOne({
+      where: {
+        createdDate: MoreThanOrEqual(today),
+        type: CashierType.COFFEE,
+      },
+    });
+
+    return {
+      rice: !!riceCashier,
+      coffee: !!coffeeCashier,
+    };
+  }
+  async isCashierCreatedToday(type: CashierType): Promise<boolean> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
