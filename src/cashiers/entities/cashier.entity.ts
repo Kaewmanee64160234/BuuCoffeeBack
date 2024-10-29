@@ -11,6 +11,10 @@ import {
   OneToMany,
 } from 'typeorm';
 import { CashierItem } from './cashierItem.entity';
+export enum CashierType {
+  RICE = 'rice',
+  COFFEE = 'coffee',
+}
 
 @Entity()
 export class Cashier {
@@ -28,7 +32,8 @@ export class Cashier {
 
   @Column({ type: 'datetime', nullable: true })
   closedDate: Date;
-
+  @Column({ type: 'enum', enum: CashierType })
+  type: CashierType;
   @Column({ type: 'float', nullable: true })
   closedAmount: number;
 

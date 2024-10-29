@@ -9,7 +9,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { Cashier } from '../entities/cashier.entity';
+import { Cashier, CashierType } from '../entities/cashier.entity';
 
 export class CreateCashierDto {
   @IsNumber()
@@ -21,7 +21,8 @@ export class CreateCashierDto {
   @ValidateNested({ each: true })
   @Type(() => CashierItemDto)
   items: CashierItemDto[];
-
+  @IsEnum(CashierType)
+  type: CashierType;
   @IsNumber()
   @IsNotEmpty()
   userId: number;

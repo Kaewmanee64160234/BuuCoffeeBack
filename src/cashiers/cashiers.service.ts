@@ -3,12 +3,13 @@ import {
   HttpException,
   HttpStatus,
   NotFoundException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MoreThanOrEqual, Repository } from 'typeorm';
 import { CreateCashierDto } from './dto/create-cashier.dto';
 import { UpdateCashierDto } from './dto/update-cashier.dto';
-import { Cashier } from './entities/cashier.entity';
+import { Cashier, CashierType } from './entities/cashier.entity';
 import { User } from 'src/users/entities/user.entity';
 import { CashierItem } from './entities/cashierItem.entity';
 @Injectable()
@@ -37,11 +38,14 @@ export class CashiersService {
     const existingCashier = await this.cashierRepository.findOne({
       where: {
         createdDate: MoreThanOrEqual(today),
+        type: createCashierDto.type,
       },
     });
 
     if (existingCashier) {
-      throw new Error('Cashier can only be created once per day.');
+      throw new ConflictException(
+        `Cashier for type ${createCashierDto.type} can only be created once per day.`,
+      );
     }
 
     let cashierAmount = 0;
@@ -61,6 +65,7 @@ export class CashiersService {
       cashierAmount,
       createdDate: new Date(),
       openedBy: user,
+      type: createCashierDto.type, // กำหนด type ของ Cashier
       cashierItems: [],
     });
 
@@ -72,6 +77,44 @@ export class CashiersService {
     await this.cashierItemRepository.save(cashierItems);
 
     return cashier;
+  }
+  async checkCashierTodayForTypes(): Promise<{
+    rice: boolean;
+    coffee: boolean;
+  }> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const riceCashier = await this.cashierRepository.findOne({
+      where: {
+        createdDate: MoreThanOrEqual(today),
+        type: CashierType.RICE,
+      },
+    });
+
+    const coffeeCashier = await this.cashierRepository.findOne({
+      where: {
+        createdDate: MoreThanOrEqual(today),
+        type: CashierType.COFFEE,
+      },
+    });
+
+    return {
+      rice: !!riceCashier,
+      coffee: !!coffeeCashier,
+    };
+  }
+  async isCashierCreatedToday(type: CashierType): Promise<boolean> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const existingCashier = await this.cashierRepository.findOne({
+      where: {
+        createdDate: MoreThanOrEqual(today),
+      },
+    });
+
+    return !!existingCashier;
   }
 
   async findToday(): Promise<Cashier> {

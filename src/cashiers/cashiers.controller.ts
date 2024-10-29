@@ -18,7 +18,7 @@ import { UpdateCashierDto } from './dto/update-cashier.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { PermissionsGuard } from 'src/guards/roles.guard';
 import { Permissions } from 'src/decorators/permissions.decorator';
-import { Cashier } from './entities/cashier.entity';
+import { Cashier, CashierType } from './entities/cashier.entity';
 import { User } from 'src/users/entities/user.entity';
 
 @Controller('cashiers')
@@ -35,7 +35,10 @@ export class CashiersController {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
-
+  @Get('check-today')
+  async checkTodayCashiers(): Promise<{ rice: boolean; coffee: boolean }> {
+    return this.cashiersService.checkCashierTodayForTypes();
+  }
   // paginate
   @Get('paginate')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
