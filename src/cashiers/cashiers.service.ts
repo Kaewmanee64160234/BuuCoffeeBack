@@ -3,6 +3,7 @@ import {
   HttpException,
   HttpStatus,
   NotFoundException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MoreThanOrEqual, Repository } from 'typeorm';
@@ -37,11 +38,14 @@ export class CashiersService {
     const existingCashier = await this.cashierRepository.findOne({
       where: {
         createdDate: MoreThanOrEqual(today),
+        type: createCashierDto.type,
       },
     });
 
     if (existingCashier) {
-      throw new Error('Cashier can only be created once per day.');
+      throw new ConflictException(
+        `Cashier for type ${createCashierDto.type} can only be created once per day.`,
+      );
     }
 
     let cashierAmount = 0;
@@ -61,6 +65,7 @@ export class CashiersService {
       cashierAmount,
       createdDate: new Date(),
       openedBy: user,
+      type: createCashierDto.type, // กำหนด type ของ Cashier
       cashierItems: [],
     });
 
