@@ -1,40 +1,49 @@
 // group.controller.ts
-import { Controller, Post, Body, Param, Put } from '@nestjs/common';
+import { Controller, Post, Body, Param, Put, Patch, Get } from '@nestjs/common';
 import { GroupService } from './groups.service';
+import { CreateGroupDto } from './dto/create-group.dto';
 
 @Controller('groups')
 export class GroupsController {
   constructor(private readonly groupService: GroupService) {}
+  // findAll
+  @Get()
+  async findAll() {
+    return await this.groupService.findAll();
+  }
 
   @Post()
-  async createGroup(@Body('name') name: string) {
-    return await this.groupService.createGroup(name);
+  async createGroup(@Body() createGroupDto: CreateGroupDto) {
+    return await this.groupService.createGroup(createGroupDto);
   }
 
-  @Put(':groupId/users')
+  @Patch(':groupId/users')
   async addUsersToGroup(
     @Param('groupId') groupId: number,
-    @Body('userIds') userIds: number[],
+    @Body() createGroupDto: CreateGroupDto,
   ) {
-    return await this.groupService.addUsersToGroup(groupId, userIds);
+    return await this.groupService.addUsersToGroup(
+      groupId,
+      createGroupDto.userIds,
+    );
   }
 
-  @Put(':groupId/members/:userId')
+  @Patch(':groupId/members/:userId')
   async addMember(
     @Param('groupId') groupId: number,
     @Param('userId') userId: number,
   ) {
-    return await this.groupService.addMemberToGroup(groupId, userId);
+    return await this.groupService.addUserToGroup(groupId, userId);
   }
 
-  @Put(':groupId/permissions')
+  @Patch(':groupId/permissions')
   async assignPermissions(
     @Param('groupId') groupId: number,
-    @Body('permissionIds') permissionIds: number[],
+    @Body() createGroupDto: CreateGroupDto,
   ) {
     return await this.groupService.assignPermissionsToGroup(
       groupId,
-      permissionIds,
+      createGroupDto.userIds,
     );
   }
 }

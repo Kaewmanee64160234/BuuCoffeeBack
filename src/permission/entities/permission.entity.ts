@@ -1,10 +1,9 @@
-// permission.entity.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  ManyToMany,
   ManyToOne,
+  ManyToMany,
 } from 'typeorm';
 import { Role } from 'src/role/entities/role.entity';
 import { GroupPermission } from 'src/groups/entities/group.entity';
@@ -15,14 +14,15 @@ export class Permission {
   id: number;
 
   @Column({ unique: true })
-  name: string; // E.g., "canSell", "canEditTopping", "canCreateTopping"
+  name: string; // Name of the permission (e.g., "canSell", "canEditTopping")
 
   @Column({ nullable: true })
   description: string; // Description of what the permission does
 
   @ManyToMany(() => Role, (role) => role.permissions)
   roles: Role[];
-  // group
+
+  // Associating each permission with a specific group
   @ManyToOne(() => GroupPermission, (group) => group.permissions)
   group: GroupPermission;
 }
