@@ -59,6 +59,7 @@ export class GroupService {
         // Update the group with its permissions
         await this.groupRepository.save(newGroup);
       }
+      console.log('UserIds:', createGroupDto.userIds);
 
       // If there are user IDs, find users and add them as group members
       if (createGroupDto.userIds && createGroupDto.userIds.length > 0) {
@@ -93,7 +94,7 @@ export class GroupService {
   // get all groups
   async findAll() {
     return await this.groupRepository.find({
-      relations: ['permissions', 'members'],
+      relations: ['permissions', 'members', 'permissions', 'members.user'],
     });
   }
 
@@ -147,11 +148,21 @@ export class GroupService {
       relations: ['permissions'],
     });
 
-    const permissions = await this.permissionRepository.findByIds(
-      permissionIds,
-    );
-    group.permissions = permissions;
+    if (!group) {
+      throw new Error('Group not found');
+    }
+    // loop permission to add permisstion
+    for (const permissionId of permissionIds) {
+      const permission = await this.permissionRepository.findOne({
+        where: { id: permissionId },
+      });
+      console.log('Added permission:', permissionId);
 
+      if (permission) {
+        group.permissions.push(permission);
+      }
+    }
+    // save group
     return await this.groupRepository.save(group);
   }
   // delete deleteGroup delete all data that relate

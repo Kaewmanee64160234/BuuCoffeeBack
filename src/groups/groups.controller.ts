@@ -52,7 +52,7 @@ export class GroupsController {
   ) {
     return await this.groupService.assignPermissionsToGroup(
       groupId,
-      createGroupDto.userIds,
+      createGroupDto.permissionIds,
     );
   }
   // deleteGroup
