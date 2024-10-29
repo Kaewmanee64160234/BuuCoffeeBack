@@ -1,5 +1,14 @@
 // group.controller.ts
-import { Controller, Post, Body, Param, Put, Patch, Get } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Param,
+  Put,
+  Patch,
+  Get,
+  Delete,
+} from '@nestjs/common';
 import { GroupService } from './groups.service';
 import { CreateGroupDto } from './dto/create-group.dto';
 
@@ -45,5 +54,10 @@ export class GroupsController {
       groupId,
       createGroupDto.userIds,
     );
+  }
+  // deleteGroup
+  @Delete(':groupId')
+  async deleteGroup(@Param('groupId') groupId: number) {
+    return await this.groupService.deleteGroup(groupId);
   }
 }

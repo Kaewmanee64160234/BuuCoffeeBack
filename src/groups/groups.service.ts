@@ -154,4 +154,28 @@ export class GroupService {
 
     return await this.groupRepository.save(group);
   }
+  // delete deleteGroup delete all data that relate
+  async deleteGroup(groupId: number) {
+    const group = await this.groupRepository.findOne({
+      where: { groupId: groupId },
+      relations: ['permissions', 'members'],
+    });
+
+    if (!group) {
+      throw new Error('Group not found');
+    }
+
+    // Delete all group members and permissions manually
+    await this.groupMemberRepository.delete({ group: group });
+    await this.permissionRepository
+      .createQueryBuilder()
+      .relation(GroupPermission, 'permissions')
+      .of(groupId)
+      .remove(group.permissions);
+
+    // Finally, delete the group
+    await this.groupRepository.delete({ groupId: groupId });
+
+    return true;
+  }
 }

@@ -11,9 +11,15 @@ export class GroupPermission {
   @Column()
   name: string; // Name of the group (e.g., "Product Manager", "Cashier")
 
-  @OneToMany(() => Permission, (permission) => permission.group)
+  @OneToMany(() => GroupMember, (groupMember) => groupMember.group, {
+    cascade: true,
+    onDelete: 'CASCADE',
+  })
   permissions: Permission[];
 
-  @OneToMany(() => GroupMember, (groupMember) => groupMember.group)
+  @OneToMany(() => GroupMember, (groupMember) => groupMember.group, {
+    cascade: true,
+    onDelete: 'CASCADE',
+  })
   members: GroupMember[];
 }

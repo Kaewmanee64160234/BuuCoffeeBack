@@ -23,6 +23,8 @@ export class Permission {
   roles: Role[];
 
   // Associating each permission with a specific group
-  @ManyToOne(() => GroupPermission, (group) => group.permissions)
+  @ManyToOne(() => GroupPermission, (group) => group.permissions, {
+    onDelete: 'CASCADE',
+  })
   group: GroupPermission;
 }
