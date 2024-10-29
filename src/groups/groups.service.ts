@@ -156,6 +156,8 @@ export class GroupService {
   }
   // delete deleteGroup delete all data that relate
   async deleteGroup(groupId: number) {
+    console.log('Deleting group:', groupId);
+
     const group = await this.groupRepository.findOne({
       where: { groupId: groupId },
       relations: ['permissions', 'members'],
@@ -176,6 +178,6 @@ export class GroupService {
     // Finally, delete the group
     await this.groupRepository.delete({ groupId: groupId });
 
-    return true;
+    return group;
   }
 }
