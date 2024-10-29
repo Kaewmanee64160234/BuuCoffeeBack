@@ -9,11 +9,11 @@ export class GroupPermission {
   groupId: number;
 
   @Column({ length: 64 })
-  name: string; // Name of the group, e.g., "Barista Team"
+  name: string;
 
   @OneToMany(() => GroupMember, (groupMember) => groupMember.group)
   members: GroupMember[];
 
   @OneToMany(() => Permission, (permission) => permission.group)
-  permissions: Permission[]; // Permissions granted to the group
+  permissions: Permission[];
 }

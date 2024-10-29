@@ -11,23 +11,23 @@ export class PermissionService {
     @InjectRepository(Permission)
     private permissionRepository: Repository<Permission>,
   ) {}
-  async create(createPermissionDto: CreatePermissionDto) {
-    // const permission = await this.permissionRepository.findOne({
-    //   where: { name: createPermissionDto.name },
-    // });
-    // if (permission) {
-    //   throw new Error(
-    //     `Permission with name ${createPermissionDto.name} already exists`,
-    //   );
-    // }
-    // const newPermission = this.permissionRepository.create({
-    //   description: createPermissionDto.description,
-    //   group: createPermissionDto.group,
-    //   name: permission.name,
-    // });
+  async create(createPermissionDto: CreatePermissionDto): Promise<Permission> {
+    const permission = new Permission();
+    permission.name = createPermissionDto.name;
+    permission.description = createPermissionDto.description;
+    return await this.permissionRepository.save(permission);
+  }
 
-    // return this.permissionRepository.save(createPermissionDto);
-    return 'This action adds a new permission';
+  async editPermission(id: number, updatePermissionDto: UpdatePermissionDto) {
+    const permission = await this.permissionRepository.findOne({
+      where: { id: id },
+    });
+    if (!permission) {
+      throw new Error('Permission not found');
+    }
+    permission.name = updatePermissionDto.name;
+    permission.description = updatePermissionDto.description;
+    return await this.permissionRepository.save(permission);
   }
 
   findAll() {

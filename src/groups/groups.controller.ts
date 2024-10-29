@@ -11,6 +11,14 @@ export class GroupsController {
     return await this.groupService.createGroup(name);
   }
 
+  @Put(':groupId/users')
+  async addUsersToGroup(
+    @Param('groupId') groupId: number,
+    @Body('userIds') userIds: number[],
+  ) {
+    return await this.groupService.addUsersToGroup(groupId, userIds);
+  }
+
   @Put(':groupId/members/:userId')
   async addMember(
     @Param('groupId') groupId: number,

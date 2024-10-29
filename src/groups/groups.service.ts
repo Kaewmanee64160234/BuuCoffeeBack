@@ -24,6 +24,28 @@ export class GroupService {
     const group = this.groupRepository.create({ name });
     return await this.groupRepository.save(group);
   }
+  async addUsersToGroup(
+    groupId: number,
+    userIds: number[],
+  ): Promise<GroupMember[]> {
+    const group = await this.groupRepository.findOne({ where: { groupId } });
+
+    if (!group) {
+      throw new Error('Group not found');
+    }
+
+    const groupMembers = [];
+
+    for (const userId of userIds) {
+      const user = await this.userRepository.findOne({ where: { userId } });
+      if (user) {
+        const groupMember = this.groupMemberRepository.create({ group, user });
+        groupMembers.push(await this.groupMemberRepository.save(groupMember));
+      }
+    }
+
+    return groupMembers;
+  }
 
   async addMemberToGroup(
     groupId: number,
