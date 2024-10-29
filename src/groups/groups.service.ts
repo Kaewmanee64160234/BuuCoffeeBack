@@ -1,26 +1,59 @@
+// group.service.ts
 import { Injectable } from '@nestjs/common';
-import { CreateGroupDto } from './dto/create-group.dto';
-import { UpdateGroupDto } from './dto/update-group.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Permission } from 'src/permission/entities/permission.entity';
+import { GroupPermission } from './entities/group.entity';
+import { GroupMember } from 'src/group-members/entities/group-member.entity';
+import { User } from 'src/users/entities/user.entity';
 
 @Injectable()
-export class GroupsService {
-  create(createGroupDto: CreateGroupDto) {
-    return 'This action adds a new group';
+export class GroupService {
+  constructor(
+    @InjectRepository(GroupPermission)
+    private groupRepository: Repository<GroupPermission>,
+    @InjectRepository(GroupMember)
+    private groupMemberRepository: Repository<GroupMember>,
+    @InjectRepository(Permission)
+    private permissionRepository: Repository<Permission>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+  ) {}
+
+  async createGroup(name: string): Promise<GroupPermission> {
+    const group = this.groupRepository.create({ name });
+    return await this.groupRepository.save(group);
   }
 
-  findAll() {
-    return `This action returns all groups`;
+  async addMemberToGroup(
+    groupId: number,
+    userId: number,
+  ): Promise<GroupMember> {
+    const group = await this.groupRepository.findOne({
+      where: { groupId: groupId },
+    });
+    const user = await this.userRepository.findOne({
+      where: { userId: userId },
+    });
+
+    const groupMember = this.groupMemberRepository.create({ group, user });
+    return await this.groupMemberRepository.save(groupMember);
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} group`;
-  }
+  async assignPermissionsToGroup(
+    groupId: number,
+    permissionIds: number[],
+  ): Promise<GroupPermission> {
+    const group = await this.groupRepository.findOne({
+      where: { groupId },
+      relations: ['permissions'],
+    });
 
-  update(id: number, updateGroupDto: UpdateGroupDto) {
-    return `This action updates a #${id} group`;
-  }
+    const permissions = await this.permissionRepository.findByIds(
+      permissionIds,
+    );
+    group.permissions = permissions;
 
-  remove(id: number) {
-    return `This action removes a #${id} group`;
+    return await this.groupRepository.save(group);
   }
 }
