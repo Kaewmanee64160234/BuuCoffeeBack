@@ -38,9 +38,13 @@ export class CashiersController {
     }
   }
   @Get('check-today')
-  async checkTodayCashiers(): Promise<{ rice: boolean; coffee: boolean }> {
-    return this.cashiersService.checkCashierTodayForTypes();
+  async checkTodayCashiers(): Promise<{
+    rice: { closedDate: boolean; createdToday: boolean };
+    coffee: { closedDate: boolean; createdToday: boolean };
+  }> {
+    return this.cashiersService.checkCashierStatus();
   }
+
   // paginate
   @Get('paginate')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -55,12 +59,12 @@ export class CashiersController {
   findAll() {
     return this.cashiersService.findAll();
   }
-  @Get('today')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @Permissions('ดูรายงาน')
-  findToday() {
-    return this.cashiersService.checkCashierTodayForTypes();
-  }
+  // @Get('today')
+  // @UseGuards(JwtAuthGuard, PermissionsGuard)
+  // @Permissions('ดูรายงาน')
+  // findToday() {
+  //   return this.cashiersService.checkCashierTodayForTypes();
+  // }
 
   @Get(':id')
   @UseGuards(JwtAuthGuard, PermissionsGuard)

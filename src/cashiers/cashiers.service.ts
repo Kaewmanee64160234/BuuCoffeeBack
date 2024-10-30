@@ -78,45 +78,47 @@ export class CashiersService {
 
     return cashier;
   }
-  async checkCashierTodayForTypes(): Promise<{
-    rice: boolean;
-    coffee: boolean;
+  async checkCashierStatus(): Promise<{
+    rice: { closedDate: boolean; createdToday: boolean };
+    coffee: { closedDate: boolean; createdToday: boolean };
   }> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const riceCashier = await this.cashierRepository.findOne({
-      where: {
-        createdDate: MoreThanOrEqual(today),
-        type: CashierType.RICE,
-      },
+      where: { type: CashierType.RICE, createdDate: MoreThanOrEqual(today) },
     });
 
     const coffeeCashier = await this.cashierRepository.findOne({
-      where: {
-        createdDate: MoreThanOrEqual(today),
-        type: CashierType.COFFEE,
-      },
+      where: { type: CashierType.COFFEE, createdDate: MoreThanOrEqual(today) },
     });
 
     return {
-      rice: !!riceCashier,
-      coffee: !!coffeeCashier,
+      rice: {
+        closedDate: riceCashier ? !!riceCashier.closedDate : false,
+        createdToday: !!riceCashier,
+      },
+      coffee: {
+        closedDate: coffeeCashier ? !!coffeeCashier.closedDate : false,
+        createdToday: !!coffeeCashier,
+      },
     };
   }
+
   async isCashierCreatedToday(type: CashierType): Promise<boolean> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const existingCashier = await this.cashierRepository.findOne({
       where: {
+        type: type,
         createdDate: MoreThanOrEqual(today),
+        closedDate: null,
       },
     });
 
     return !!existingCashier;
   }
-
   async findAll(): Promise<Cashier[]> {
     return await this.cashierRepository.find({
       withDeleted: true,
