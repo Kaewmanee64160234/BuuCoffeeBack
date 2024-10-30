@@ -31,8 +31,8 @@ export class SubInventoriesRiceController {
   }
 
   @Get('paginate')
-  // @UseGuards(JwtAuthGuard, PermissionsGuard)
-  // @Permissions('ดูรายการใบเสร็จ')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('ดูวัตถุดิบ')
   async getReceipts(
     @Query('page') page = 1,
     @Query('limit') limit = 5,
@@ -46,8 +46,8 @@ export class SubInventoriesRiceController {
   }
 
   @Get()
-  // @UseGuards(JwtAuthGuard, PermissionsGuard)
-  // @Permissions('ดูวัตถุดิบ')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('ดูวัตถุดิบ')
   findAll() {
     return this.subInventoriesRiceService.findAll();
   }

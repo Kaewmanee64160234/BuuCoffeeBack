@@ -100,7 +100,7 @@ export class IngredientsService {
     return barcode;
   }
 
-  async findAllQuery(query): Promise<Paginate> {
+  async findAllQuery(query) {
     try {
       const page = query.page || 1;
       const take = query.take || 10;

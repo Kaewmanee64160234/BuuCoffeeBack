@@ -45,4 +45,13 @@ export class AuthService {
       throw new InternalServerErrorException('Internal server error');
     }
   }
+  async validateUser(userId: number): Promise<any> {
+    // Fetch user along with group memberships and permissions
+    const user = await this.usersService.findOne(userId);
+
+    if (user) {
+      return user; // user now has group memberships with permissions
+    }
+    return null;
+  }
 }

@@ -35,6 +35,8 @@ import { Permissions } from 'src/decorators/permissions.decorator';
 export class IngredientsController {
   constructor(private readonly ingredientsService: IngredientsService) {}
   @Get('prices')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('จัดการวัตถุดิบ')
   async findAllIngredientPrice() {
     try {
       return await this.ingredientsService.findAllIngredientPrice();

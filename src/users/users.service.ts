@@ -63,6 +63,13 @@ export class UsersService {
     try {
       const user = this.usersRepository.findOne({
         where: { userId: id },
+        relations: [
+          'role',
+          'role.permissions',
+          'groupMemberships',
+          'groupMemberships.group',
+          'groupMemberships.group.permissions',
+        ],
       });
       if (!user) {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
@@ -78,12 +85,20 @@ export class UsersService {
 
       const user = await this.usersRepository.findOne({
         where: { userEmail: email },
-        relations: ['role', 'role.permissions'],
+        relations: [
+          'role',
+          'role.permissions',
+          'groupMemberships',
+          'groupMemberships.group',
+          'groupMemberships.group.permissions',
+        ],
       });
 
       if (!user) {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
+      console.log(user);
+
       return user;
     } catch (error) {
       console.error('Error finding user by email:', email, error);
@@ -193,5 +208,17 @@ export class UsersService {
     });
 
     return { data, total };
+  }
+  async findByIdWithRelations(userId: number): Promise<User> {
+    return this.usersRepository.findOne({
+      where: { userId: userId },
+      relations: [
+        'role',
+        'role.permissions',
+        'groupMemberships',
+        'groupMemberships.group',
+        'groupMemberships.group.permissions',
+      ],
+    });
   }
 }

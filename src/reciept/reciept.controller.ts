@@ -222,8 +222,8 @@ export class RecieptController {
   }
 
   @Get('paginate')
-  // @UseGuards(JwtAuthGuard, PermissionsGuard)
-  // @Permissions('ดูรายการใบเสร็จ')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('ดูรายการสินค้า')
   async getReceipts(
     @Query('page') page = 1,
     @Query('limit') limit = 5,
@@ -240,8 +240,8 @@ export class RecieptController {
   }
 
   @Get('/sum')
-  // @UseGuards(JwtAuthGuard, PermissionsGuard)
-  // @Permissions('ดูรายการสินค้า')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('ดูรายการสินค้า')
   async getSumTodayByPaymentMethod(
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
