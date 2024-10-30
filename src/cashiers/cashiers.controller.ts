@@ -11,6 +11,8 @@ import {
   UseGuards,
   Query,
   Req,
+  ParseIntPipe,
+  NotFoundException,
 } from '@nestjs/common';
 import { CashiersService } from './cashiers.service';
 import { CreateCashierDto } from './dto/create-cashier.dto';
@@ -48,22 +50,37 @@ export class CashiersController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Permissions('ดูรายงาน')
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Permissions('ดูรายงาน')
   findAll() {
     return this.cashiersService.findAll();
   }
-  @Get('today')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Permissions('ดูรายงาน')
-  findToday() {
-    return this.cashiersService.findToday();
-  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Permissions('ดูรายงาน')
   findOne(@Param('id') id: string) {
     return this.cashiersService.findOne(+id);
+  }
+  @Post('close/:type/:userId')
+  async closeCashier(
+    @Param('type') type: CashierType,
+    @Param('userId', ParseIntPipe) userId: number,
+    @Body() createCashierDto: CreateCashierDto,
+  ): Promise<any> {
+    try {
+      const closedCashier = await this.cashiersService.closeCashier(
+        type,
+        userId,
+        createCashierDto,
+      );
+      return {
+        message: 'Cashier closed successfully',
+        data: closedCashier,
+      };
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
   }
 
   @Patch(':id')

@@ -17,6 +17,7 @@ import { Importingredient } from 'src/importingredients/entities/importingredien
 import { Recipe } from 'src/recipes/entities/recipe.entity';
 import { Checkingredient } from 'src/checkingredients/entities/checkingredient.entity';
 import { UsersModule } from 'src/users/users.module';
+import { Cashier } from 'src/cashiers/entities/cashier.entity';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { UsersModule } from 'src/users/users.module';
       ReceiptPromotion,
       Importingredient,
       Checkingredient,
+      Cashier,
     ]),
     UsersModule,
   ],

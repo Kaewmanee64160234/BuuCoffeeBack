@@ -22,7 +22,22 @@ import { Reciept } from './entities/reciept.entity';
 @Controller('receipts')
 export class RecieptController {
   constructor(private readonly recieptService: RecieptService) {}
+  @Get('sales-report')
+  async getSalesReport(@Query('date') date?: string) {
+    const dateObj = date ? new Date(date) : undefined;
+    return this.recieptService.generateSalesReport(dateObj);
+  }
+  @Get('type-report')
+  async getReport(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const start = startDate ? new Date(startDate) : undefined;
+    const end = endDate ? new Date(endDate) : undefined;
 
+    const reportData = await this.recieptService.generateReport(start, end);
+    return reportData;
+  }
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Permissions('จัดการสินค้า')

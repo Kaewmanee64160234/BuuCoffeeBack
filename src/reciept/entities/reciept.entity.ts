@@ -47,8 +47,8 @@ export class Reciept {
   change: number;
 
   // onr to one  to checkstovk==ck id can null'
-  @Column()
-  checkIngredientId: number;
+  // @Column()
+  // checkIngredientId: number;
 
   @ManyToOne(() => User, (user) => user.reciepts)
   user: User;
