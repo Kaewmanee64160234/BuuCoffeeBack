@@ -16,7 +16,7 @@ import { Checkingredient } from 'src/checkingredients/entities/checkingredient.e
 import { Cashier } from 'src/cashiers/entities/cashier.entity';
 import { Role } from 'src/role/entities/role.entity';
 import { CateringEvent } from 'src/catering-event/entities/catering-event.entity';
-import { GroupMember } from 'src/group-members/entities/group-member.entity';
+import { GroupPermission } from 'src/groups/entities/group.entity';
 @Entity()
 export class User {
   @PrimaryGeneratedColumn()
@@ -53,8 +53,9 @@ export class User {
   @ManyToOne(() => Role, (role) => role.users, { eager: true })
   role: Role;
 
-  @OneToMany(() => GroupMember, (groupMember) => groupMember.user)
-  groupMemberships: GroupMember[];
+  @ManyToMany(() => GroupPermission, (group) => group.users)
+  @JoinTable() // Ensure this decorator is present to create the join table
+  groups: GroupPermission[];
 
   @CreateDateColumn()
   createdDate: Date;

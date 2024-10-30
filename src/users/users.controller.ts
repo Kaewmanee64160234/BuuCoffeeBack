@@ -31,8 +31,8 @@ export class UsersController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @Permissions('จัดการผู้ใช้')
+  // @UseGuards(JwtAuthGuard, PermissionsGuard)
+  // @Permissions('จัดการผู้ใช้')
   findAll() {
     return this.usersService.findAll();
   }

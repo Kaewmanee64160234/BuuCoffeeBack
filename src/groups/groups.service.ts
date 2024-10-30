@@ -4,7 +4,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Permission } from 'src/permission/entities/permission.entity';
 import { GroupPermission } from './entities/group.entity';
-import { GroupMember } from 'src/group-members/entities/group-member.entity';
 import { User } from 'src/users/entities/user.entity';
 import { CreateGroupDto } from './dto/create-group.dto';
 
@@ -13,14 +12,11 @@ export class GroupService {
   constructor(
     @InjectRepository(GroupPermission)
     private groupRepository: Repository<GroupPermission>,
-    @InjectRepository(GroupMember)
-    private groupMemberRepository: Repository<GroupMember>,
     @InjectRepository(Permission)
     private permissionRepository: Repository<Permission>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
   ) {}
-
   async createGroup(createGroupDto: CreateGroupDto) {
     try {
       // Check if the group already exists
@@ -32,21 +28,21 @@ export class GroupService {
         throw new Error('Group already exists');
       }
 
-      // Create new group instance
+      // Create new group instance and initialize permissions and users as empty arrays
       const newGroup = this.groupRepository.create({
         name: createGroupDto.name,
+        permissions: [],
+        users: [],
       });
 
       // Save the new group to the database first to get its ID
       await this.groupRepository.save(newGroup);
 
-      // If there are permission IDs, find and add the permissions
+      // If there are permission IDs, fetch and add permissions in bulk
       if (
         createGroupDto.permissionIds &&
         createGroupDto.permissionIds.length > 0
       ) {
-        newGroup.permissions = [];
-
         for (const permissionId of createGroupDto.permissionIds) {
           const permission = await this.permissionRepository.findOne({
             where: { id: permissionId },
@@ -55,89 +51,87 @@ export class GroupService {
             newGroup.permissions.push(permission);
           }
         }
-
-        // Update the group with its permissions
-        await this.groupRepository.save(newGroup);
       }
-      console.log('UserIds:', createGroupDto.userIds);
 
-      // If there are user IDs, find users and add them as group members
+      // If there are user IDs, fetch and add users in bulk
       if (createGroupDto.userIds && createGroupDto.userIds.length > 0) {
-        newGroup.members = [];
-
         for (const userId of createGroupDto.userIds) {
-          const user = await this.userRepository.findOne({
-            where: { userId: userId },
-          });
-
+          const user = await this.userRepository.findOne({ where: { userId } });
           if (user) {
-            const groupMember = this.groupMemberRepository.create({
-              group: newGroup,
-              user: user,
-            });
-            await this.groupMemberRepository.save(groupMember);
-            newGroup.members.push(groupMember);
+            newGroup.users.push(user);
           }
         }
       }
 
-      // Return the final group with populated permissions and members
-      return await this.groupRepository.findOne({
-        where: { groupId: newGroup.groupId },
-        relations: ['permissions', 'members'],
-      });
+      // Save the group with permissions and users
+      return await this.groupRepository.save(newGroup);
     } catch (error) {
-      console.error(error);
+      console.log(error);
       throw new Error('Failed to create group');
     }
   }
+
   // get all groups
   async findAll() {
     return await this.groupRepository.find({
-      relations: ['permissions', 'members', 'permissions', 'members.user'],
+      relations: ['permissions', 'users'],
+      order: { groupId: 'ASC' },
     });
   }
 
   async addUsersToGroup(
     groupId: number,
     userIds: number[],
-  ): Promise<GroupMember[]> {
+  ): Promise<GroupPermission> {
     const group = await this.groupRepository.findOne({
-      where: { groupId: groupId },
+      where: { groupId },
+      relations: ['users'],
     });
-
-    if (!group) {
-      throw new Error('Group not found');
-    }
-
-    const groupMembers = [];
+    if (!group) throw new Error('Group not found');
 
     for (const userId of userIds) {
       const user = await this.userRepository.findOne({ where: { userId } });
-      if (user) {
-        const groupMember = this.groupMemberRepository.create({ group, user });
-        groupMembers.push(await this.groupMemberRepository.save(groupMember));
+      if (user && !group.users.some((u) => u.userId === userId)) {
+        group.users.push(user);
       }
     }
-
-    return groupMembers;
+    return await this.groupRepository.save(group);
   }
-
-  async addUserToGroup(groupId: number, userId: number): Promise<GroupMember> {
+  async removeUserFromGroup(
+    groupId: number,
+    userId: number,
+  ): Promise<GroupPermission> {
     const group = await this.groupRepository.findOne({
-      where: { groupId: groupId },
+      where: { groupId },
+      relations: ['users'],
     });
-    const user = await this.userRepository.findOne({
-      where: { userId: userId },
-    });
+    if (!group) throw new Error('Group not found');
 
-    if (!group || !user) {
-      throw new Error('Group or User not found');
-    }
-
-    const groupMember = this.groupMemberRepository.create({ group, user });
-    return await this.groupMemberRepository.save(groupMember);
+    group.users = group.users.filter((user) => user.userId !== userId);
+    return await this.groupRepository.save(group);
   }
+  async getGroupWithUsers(groupId: number): Promise<GroupPermission> {
+    return await this.groupRepository.findOne({
+      where: { groupId },
+      relations: ['users'],
+    });
+  }
+
+  // async addUserToGroup(groupId: number, userId: number): Promise<GroupMember> {
+  //   const group = await this.groupRepository.findOne({
+  //     where: { groupId: groupId },
+  //   });
+  //   const user = await this.userRepository.findOne({
+  //     where: { userId: userId },
+  //   });
+
+  //   if (!group || !user) {
+  //     throw new Error('Group or User not found');
+  //   }
+
+  //   const groupMember = this.groupMemberRepository.create({ group, user });
+  //   return await this.groupMemberRepository.save(groupMember);
+  // }
 
   async assignPermissionsToGroup(
     groupId: number,
@@ -169,33 +163,32 @@ export class GroupService {
   async deleteGroup(groupId: number) {
     console.log('Deleting group:', groupId);
 
+    // Find the group with its permissions and users
     const group = await this.groupRepository.findOne({
-      where: { groupId: groupId },
-      relations: ['permissions', 'members'],
+      where: { groupId },
+      relations: ['permissions', 'users'],
     });
 
     if (!group) {
       throw new Error('Group not found');
     }
 
-    // Delete all group members and permissions manually
-    await this.groupMemberRepository.delete({ group: group });
-    await this.permissionRepository
-      .createQueryBuilder()
-      .relation(GroupPermission, 'permissions')
-      .of(groupId)
-      .remove(group.permissions);
+    // Remove all associated permissions and users
+    group.permissions = [];
+    group.users = [];
+    await this.groupRepository.save(group); // Save the cleared relationships
 
     // Finally, delete the group
-    await this.groupRepository.delete({ groupId: groupId });
+    await this.groupRepository.delete({ groupId });
 
     return group;
   }
+
   // update group
   async updateGroup(groupId: number, createGroupDto: CreateGroupDto) {
     const group = await this.groupRepository.findOne({
-      where: { groupId: groupId },
-      relations: ['permissions', 'members', 'members.user'],
+      where: { groupId },
+      relations: ['permissions', 'users'],
     });
 
     if (!group) {
@@ -207,82 +200,27 @@ export class GroupService {
 
     // Update permissions
     if (createGroupDto.permissionIds) {
-      // Find existing permission IDs
-      const currentPermissionIds = group.permissions.map((p) => p.id);
-
-      // Determine permissions to add
-      const newPermissions = createGroupDto.permissionIds.filter(
-        (id) => !currentPermissionIds.includes(id),
+      // Fetch permissions by IDs from the database
+      const newPermissions = await this.permissionRepository.findByIds(
+        createGroupDto.permissionIds,
       );
 
-      // Determine permissions to remove
-      const permissionsToRemove = currentPermissionIds.filter(
-        (id) => !createGroupDto.permissionIds.includes(id),
-      );
-
-      // Add new permissions
-      for (const permissionId of newPermissions) {
-        const permission = await this.permissionRepository.findOne({
-          where: { id: permissionId },
-        });
-        if (permission) {
-          group.permissions.push(permission);
-        }
-      }
-
-      // Remove old permissions
-      if (permissionsToRemove.length > 0) {
-        group.permissions = group.permissions.filter(
-          (permission) => !permissionsToRemove.includes(permission.id),
-        );
-      }
+      // Replace old permissions with the new ones
+      group.permissions = newPermissions;
     }
 
-    // Update members
+    // Update users
     if (createGroupDto.userIds) {
-      // Find existing user IDs
-      const currentUserIds = group.members.map((member) => member.user.userId);
-
-      // Determine users to add
-      const newUserIds = createGroupDto.userIds.filter(
-        (id) => !currentUserIds.includes(id),
+      // Fetch users by IDs from the database
+      const newUsers = await this.userRepository.findByIds(
+        createGroupDto.userIds,
       );
 
-      // Determine users to remove
-      const usersToRemove = currentUserIds.filter(
-        (id) => !createGroupDto.userIds.includes(id),
-      );
-
-      // Add new members
-      for (const userId of newUserIds) {
-        const user = await this.userRepository.findOne({
-          where: { userId: userId },
-        });
-
-        if (user) {
-          const groupMember = this.groupMemberRepository.create({
-            group: group,
-            user: user,
-          });
-          await this.groupMemberRepository.save(groupMember);
-          group.members.push(groupMember);
-        }
-      }
-
-      // Remove old members
-      if (usersToRemove.length > 0) {
-        for (const userId of usersToRemove) {
-          await this.groupMemberRepository.delete({
-            group: group,
-            user: { userId: userId },
-          });
-        }
-        group.members = group.members.filter(
-          (member) => !usersToRemove.includes(member.user.userId),
-        );
-      }
+      // Replace old users with the new ones
+      group.users = newUsers;
     }
 
+    // Save updated group
     return await this.groupRepository.save(group);
   }
 }

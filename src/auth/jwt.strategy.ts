@@ -20,14 +20,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Invalid token');
     }
 
-    // Custom token expiration check (optional, if you need more control)
-    const currentTime = Math.floor(Date.now() / 1000); // current time in seconds
+    const currentTime = Math.floor(Date.now() / 1000);
     if (payload.exp < currentTime) {
       throw new UnauthorizedException('Token has expired');
     }
+
     const user = await this.userService.findOne(payload.sub);
 
-    // Return validated user data (you can add any other checks here if needed)
     return { userId: payload.sub, username: payload.username, user };
   }
 }

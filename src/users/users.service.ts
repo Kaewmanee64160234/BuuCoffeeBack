@@ -49,11 +49,17 @@ export class UsersService {
     }
   }
 
-  findAll() {
+  async findAll() {
     try {
-      return this.usersRepository.find({
-        relations: ['role', 'role.permissions'],
+      const users = await this.usersRepository.find({
+        relations: [
+          'role',
+          'groups', // Include the groups the user belongs to
+          'groups.permissions',
+        ],
       });
+      console.log(users);
+      return users;
     } catch (error) {
       throw new HttpException('Failed to fetch users', HttpStatus.BAD_REQUEST);
     }
@@ -61,16 +67,15 @@ export class UsersService {
 
   async findOne(id: number) {
     try {
-      const user = this.usersRepository.findOne({
+      const user = await this.usersRepository.findOne({
         where: { userId: id },
         relations: [
           'role',
-          'role.permissions',
-          'groupMemberships',
-          'groupMemberships.group',
-          'groupMemberships.group.permissions',
+          'groups', // Include the groups the user belongs to
+          'groups.permissions',
         ],
       });
+
       if (!user) {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
@@ -79,25 +84,21 @@ export class UsersService {
       throw new HttpException('Failed to fetch user', HttpStatus.BAD_REQUEST);
     }
   }
+
   async findOneByEmail(email: string): Promise<User> {
     try {
-      console.log(email);
-
       const user = await this.usersRepository.findOne({
         where: { userEmail: email },
         relations: [
           'role',
-          'role.permissions',
-          'groupMemberships',
-          'groupMemberships.group',
-          'groupMemberships.group.permissions',
+          'groups', // Include the groups the user belongs to
         ],
       });
+      console.log(user);
 
       if (!user) {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
-      console.log(user);
 
       return user;
     } catch (error) {

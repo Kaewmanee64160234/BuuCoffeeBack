@@ -19,12 +19,6 @@ export class Permission {
   @Column({ nullable: true })
   description: string; // Description of what the permission does
 
-  @ManyToMany(() => Role, (role) => role.permissions)
-  roles: Role[];
-
-  // Associating each permission with a specific group
-  @ManyToOne(() => GroupPermission, (group) => group.permissions, {
-    onDelete: 'CASCADE',
-  })
-  group: GroupPermission;
+  @ManyToMany(() => GroupPermission, (group) => group.permissions)
+  groups: GroupPermission[];
 }

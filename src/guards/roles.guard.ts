@@ -6,7 +6,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { GroupMember } from 'src/group-members/entities/group-member.entity';
+import { GroupPermission } from 'src/groups/entities/group.entity';
 import { Permission } from 'src/permission/entities/permission.entity';
 
 @Injectable()
@@ -20,24 +20,20 @@ export class PermissionsGuard implements CanActivate {
     );
     console.log('requiredPermission', requiredPermission);
 
-    // If no specific permission is required, allow access
     if (!requiredPermission) return true;
 
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
-    console.log('user', user); // Ensure user object has groupMemberships and permissions
-
-    // Check if the user has the required permission through their group memberships
-    const hasPermission = user.user.groupMemberships.some(
-      (groupMember: GroupMember) =>
-        groupMember.group.permissions.some(
-          (permission: Permission) => permission.name === requiredPermission,
-        ),
+    // Check for the permission in the user's role and groups
+    const hasPermission = user.user.groups?.some((group: GroupPermission) =>
+      group.permissions.some(
+        (permission: Permission) => permission.name === requiredPermission,
+      ),
     );
+
     console.log('hasPermission', hasPermission);
 
-    // If the user lacks permission, throw a 403 Forbidden exception
     if (!hasPermission) {
       throw new ForbiddenException(
         'You do not have permission to access this resource.',

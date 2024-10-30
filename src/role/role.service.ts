@@ -16,37 +16,32 @@ export class RoleService {
   ) {}
 
   // Create a new role with a set of permissions
-  async createRole(name: string, permissions: string[]): Promise<Role> {
-    // Check if role already exists
-    const existingRole = await this.roleRepository.findOne({ where: { name } });
-    if (existingRole) {
-      throw new Error(`Role with name ${name} already exists`);
-    }
+  async createRole(name: string, permissions: string[]) {
+    // // Check if role already exists
+    // const existingRole = await this.roleRepository.findOne({ where: { name } });
+    // if (existingRole) {
+    //   throw new Error(`Role with name ${name} already exists`);
+    // }
 
-    // Find permissions by looping over each permission name
-    const permissionEntities: Permission[] = [];
-    for (const permissionName of permissions) {
-      const permission = await this.permissionRepository.findOne({
-        where: { name: permissionName },
-      });
-      if (!permission) {
-        throw new Error(`Permission ${permissionName} not found`);
-      }
-      permissionEntities.push(permission); // Ensure to push each permission into the array
-    }
+    // // Find permissions by looping over each permission name
+    // const permissionEntities: Permission[] = [];
+    // for (const permissionName of permissions) {
+    //   const permission = await this.permissionRepository.findOne({
+    //     where: { name: permissionName },
+    //   });
+    //   if (!permission) {
+    //     throw new Error(`Permission ${permissionName} not found`);
+    //   }
+    //   permissionEntities.push(permission); // Ensure to push each permission into the array
+    // }
 
-    // Create and save the new role with the found permissions
-    const role = this.roleRepository.create({
-      name,
-      permissions: permissionEntities,
-    });
+    // const savedRole = await this.roleRepository.save(role);
 
-    const savedRole = await this.roleRepository.save(role);
-
-    return this.roleRepository.findOne({
-      where: { id: savedRole.id },
-      relations: ['permissions'],
-    });
+    // return this.roleRepository.findOne({
+    //   where: { id: savedRole.id },
+    //   relations: ['permissions'],
+    // });
+    return 'role';
   }
 
   // Assign a set of permissions to an existing role
@@ -66,9 +61,6 @@ export class RoleService {
       throw new Error('Role not found');
     }
 
-    // Remove all current permissions (optional step, if you want to clear first)
-    role.permissions = [];
-
     // Extract permission names from CreatePermissionDto[] (assuming it has a 'name' property)
     const permissionNames = permissions.map((permission) => permission.name);
 
@@ -76,9 +68,6 @@ export class RoleService {
     const permissionEntities = await this.permissionRepository.findBy({
       name: In(permissionNames),
     });
-
-    // Assign the new permissions
-    role.permissions = permissionEntities;
 
     // Save the updated role with the new permissions
     return this.roleRepository.save(role);
