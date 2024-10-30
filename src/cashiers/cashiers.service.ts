@@ -117,20 +117,6 @@ export class CashiersService {
     return !!existingCashier;
   }
 
-  async findToday(): Promise<Cashier> {
-    const currentDate = new Date();
-    currentDate.setHours(0, 0, 0, 0); // กำหนดเวลาให้เป็น 00:00:00
-
-    const cashier = await this.cashierRepository.findOne({
-      where: { createdDate: currentDate },
-    });
-
-    if (!cashier) {
-      throw new HttpException('ไม่มีข้อมูลวันนี้', HttpStatus.NOT_FOUND);
-    }
-
-    return cashier;
-  }
   async findAll(): Promise<Cashier[]> {
     return await this.cashierRepository.find({
       withDeleted: true,
@@ -167,8 +153,57 @@ export class CashiersService {
       throw new HttpException('Cashier not found', HttpStatus.NOT_FOUND);
     }
   }
+  async closeCashier(
+    type: CashierType,
+    userId: number,
+    closeCashierDto: CreateCashierDto,
+  ): Promise<Cashier> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-  // get event catering paginate
+    const existingCashier = await this.cashierRepository.findOne({
+      where: {
+        createdDate: MoreThanOrEqual(today),
+        type,
+        closedDate: null,
+      },
+    });
+
+    if (!existingCashier) {
+      throw new ConflictException(`No cashier found for type ${type} today.`);
+    }
+
+    // คำนวณจำนวนเงินที่ปิดการขาย
+    let cashierAmount = 0;
+    const cashierItems = await Promise.all(
+      closeCashierDto.items.map(async (item) => {
+        const amount = parseFloat(item.denomination) * item.quantity;
+        cashierAmount += amount;
+        return this.cashierItemRepository.create({
+          denomination: item.denomination,
+          quantity: item.quantity,
+          timestamp: item.timestamp || new Date(),
+        });
+      }),
+    );
+
+    existingCashier.closedDate = new Date();
+    existingCashier.closedAmount = cashierAmount;
+    existingCashier.closedBy = await this.usersRepository.findOne({
+      where: { userId },
+    });
+
+    await this.cashierRepository.save(existingCashier);
+
+    cashierItems.forEach((item) => {
+      item.cashier = existingCashier;
+    });
+
+    await this.cashierItemRepository.save(cashierItems);
+
+    return existingCashier;
+  }
+
   async paginate(page = 1, limit = 10): Promise<any> {
     const cashiers = await this.cashierRepository.findAndCount({
       take: limit,

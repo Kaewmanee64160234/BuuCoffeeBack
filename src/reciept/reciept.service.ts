@@ -5,7 +5,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Reciept } from './entities/reciept.entity';
 import { User } from 'src/users/entities/user.entity';
 import { Customer } from 'src/customers/entities/customer.entity';
-import { Repository, Between, Not, Like } from 'typeorm';
+import {
+  Repository,
+  Between,
+  Not,
+  Like,
+  MoreThanOrEqual,
+  LessThanOrEqual,
+  IsNull,
+} from 'typeorm';
 import { ProductType } from 'src/product-types/entities/product-type.entity';
 import { Product } from 'src/products/entities/product.entity';
 import { ProductTypeTopping } from 'src/product-type-toppings/entities/product-type-topping.entity';
@@ -16,8 +24,8 @@ import { ReceiptPromotion } from 'src/receipt-promotions/entities/receipt-promot
 import { Importingredient } from 'src/importingredients/entities/importingredient.entity';
 import * as moment from 'moment-timezone';
 import { Recipe } from 'src/recipes/entities/recipe.entity';
-import { Checkingredientitem } from 'src/checkingredientitems/entities/checkingredientitem.entity';
 import { Checkingredient } from 'src/checkingredients/entities/checkingredient.entity';
+import { Cashier } from 'src/cashiers/entities/cashier.entity';
 @Injectable()
 export class RecieptService {
   private readonly logger = new Logger(RecieptService.name);
@@ -48,7 +56,8 @@ export class RecieptService {
     // check stock
     @InjectRepository(Checkingredient)
     private checkIngredientRepository: Repository<Checkingredient>,
-
+    @InjectRepository(Cashier)
+    private readonly cashierRepository: Repository<Cashier>,
     // recipe
     @InjectRepository(Recipe)
     private recipeRepository: Repository<Recipe>,
@@ -75,7 +84,7 @@ export class RecieptService {
 
           if (checkStock) {
             // Set the checkIngredient relationship on the receipt
-            receiptFinish.checkIngredientId = checkStock.CheckID;
+            // receiptFinish.checkIngredientId = checkStock.CheckID;
             receiptFinish.receiptType = createRecieptDto.receiptType;
             receiptFinish.receiptTotalPrice =
               createRecieptDto.receiptTotalPrice;
@@ -320,19 +329,19 @@ export class RecieptService {
           console.log('createRecieptDto.receiptType', createRecieptDto);
 
           // Find the CheckIngredient entity based on checkStockId
-          const checkStock = await this.checkIngredientRepository.findOne({
-            where: { CheckID: createRecieptDto.checkStockId },
-          });
+          // const checkStock = await this.checkIngredientRepository.findOne({
+          //   where: { CheckID: createRecieptDto.checkStockId },
+          // });
 
-          if (checkStock) {
-            // Set the checkIngredient relationship on the receipt
-            receiptFinish.checkIngredientId = checkStock.CheckID;
+          // if (checkStock) {
+          //   // Set the checkIngredient relationship on the receipt
+          //   receiptFinish.checkIngredientId = checkStock.CheckID;
 
-            // Save the receipt again to persist the relationship
-            console.log('receiptFinish', receiptFinish);
-          }
+          //   // Save the receipt again to persist the relationship
+          //   console.log('receiptFinish', receiptFinish);
+          // }
         } else {
-          receiptFinish.checkIngredientId = null;
+          // receiptFinish.checkIngredientId = null;
         }
         if (createRecieptDto.createdDate) {
           receiptFinish.createdDate = createRecieptDto.createdDate;
@@ -1788,6 +1797,38 @@ export class RecieptService {
 
     return formattedResult;
   }
+  async generateSalesReport(date?: Date): Promise<any[]> {
+    const startDate = date ? new Date(date) : new Date();
+    startDate.setHours(0, 0, 0, 0); // ตั้งค่าชั่วโมงให้เป็น 00:00:00
+
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 1); // จบที่ 24 ชั่วโมงถัดไป
+
+    const results = [];
+
+    for (let i = 0; i < 24; i += 2) {
+      const startHour = new Date(startDate);
+      startHour.setHours(i, 0, 0, 0);
+      const endHour = new Date(startHour);
+      endHour.setHours(i + 2, 0, 0, 0);
+
+      const sales = await this.recieptRepository
+        .createQueryBuilder('receipt')
+        .select('SUM(receipt.receiptTotalPrice)', 'totalSales')
+        .where(
+          'receipt.createdDate >= :startHour AND receipt.createdDate < :endHour',
+          { startHour, endHour },
+        )
+        .getRawOne();
+
+      results.push({
+        timeSlot: `${i}:00 - ${i + 2}:00`,
+        totalSales: sales.totalSales ? parseFloat(sales.totalSales) : 0,
+      });
+    }
+
+    return results;
+  }
 
   // async getReceipts(
   //   page: number,
@@ -1820,4 +1861,111 @@ export class RecieptService {
 
   //   return { data, total };
   // }
+  async generateReport(startDate?: Date, endDate?: Date) {
+    console.log('Generating report...');
+    console.log(`Start Date: ${startDate}, End Date: ${endDate}`);
+
+    // ตั้งค่าเงื่อนไขเพื่อรวมเฉพาะแคชเชียร์ที่ปิด
+    const cashierConditions: any = {
+      closedDate: Not(IsNull()),
+    };
+
+    if (startDate) {
+      cashierConditions['createdDate'] = MoreThanOrEqual(startDate);
+      console.log(`Added start date filter: ${startDate}`);
+    } else {
+      console.log('No start date filter applied.');
+    }
+    if (endDate) {
+      cashierConditions['closedDate'] = LessThanOrEqual(endDate);
+      console.log(`Added end date filter: ${endDate}`);
+    } else {
+      console.log('No end date filter applied.');
+    }
+
+    // ดึงข้อมูลแคชเชียร์ทั้งหมดเพื่อบันทึกสำหรับการตรวจสอบ
+    const allCashiers = await this.cashierRepository.find();
+    console.log('All Cashiers:', allCashiers);
+
+    // บันทึกเงื่อนไขการกรอง
+    console.log('Cashier Conditions:', cashierConditions);
+    console.log('Fetching cashiers...');
+    const cashiers = await this.cashierRepository.find({
+      relations: ['openedBy', 'closedBy', 'cashierItems'],
+      where: cashierConditions,
+      order: { closedDate: 'DESC' },
+    });
+    console.log(`Retrieved ${cashiers.length} cashiers.`);
+
+    // การดึงข้อมูลใบเสร็จ
+    const recieptConditions = { receiptStatus: 'paid' };
+    if (startDate) {
+      recieptConditions['createdDate'] = { $gte: startDate };
+    }
+    if (endDate) {
+      recieptConditions['createdDate'] = { $lte: endDate };
+    }
+
+    console.log('Fetching receipts...');
+    const reciepts = await this.recieptRepository.find({
+      where: recieptConditions,
+      order: { createdDate: 'ASC' },
+    });
+    console.log(`Retrieved ${reciepts.length} receipts.`);
+
+    // สร้างรายงาน
+    const reportData = cashiers.map((cashier) => {
+      const relatedReciepts = reciepts.filter(
+        (reciept) =>
+          reciept.createdDate >= cashier.createdDate &&
+          reciept.createdDate <= cashier.closedDate,
+      );
+
+      const cashItems = relatedReciepts.filter(
+        (reciept) => reciept.paymentMethod === 'cash',
+      );
+      const qrcodeItems = relatedReciepts.filter(
+        (reciept) => reciept.paymentMethod === 'qrcode',
+      );
+
+      const cashTotal = cashItems.reduce(
+        (total, reciept) => total + Number(reciept.receiptNetPrice || 0),
+        0,
+      );
+      const qrcodeTotal = qrcodeItems.reduce(
+        (total, reciept) => total + Number(reciept.receiptNetPrice || 0),
+        0,
+      );
+
+      console.log(`Processed cashier ID: ${cashier.cashierId}`);
+      console.log(`Cash total: ${cashTotal}, QR code total: ${qrcodeTotal}`);
+
+      return {
+        cashierId: cashier.cashierId,
+        openedDate: cashier.createdDate,
+        closedDate: cashier.closedDate,
+        cashierAmount: cashier.cashierAmount,
+        closedAmount: cashier.closedAmount,
+        openedBy: cashier.openedBy?.userName,
+        closedBy: cashier.closedBy?.userName,
+        cash: cashItems.map((reciept) => ({
+          saleTime: reciept.createdDate,
+          totalPrice: reciept.receiptTotalPrice,
+          netPrice: reciept.receiptNetPrice,
+          change: reciept.change,
+        })),
+        qrcode: qrcodeItems.map((reciept) => ({
+          saleTime: reciept.createdDate,
+          totalPrice: reciept.receiptTotalPrice,
+          netPrice: reciept.receiptNetPrice,
+          change: reciept.change,
+        })),
+        cashTotal,
+        qrcodeTotal,
+      };
+    });
+
+    console.log('Report generation completed.');
+    return reportData;
+  }
 }
