@@ -40,7 +40,7 @@ export class RecieptController {
   }
   @Post()
   @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @Permissions('จัดการสินค้า')
+  @Permissions('สามารถขายได้')
   create(@Body() createRecieptDto: CreateRecieptDto) {
     return this.recieptService.create(createRecieptDto);
   }
@@ -223,7 +223,7 @@ export class RecieptController {
   // param typeOfProduct
   @Get('/receipt-in-1-day')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @Permissions('ดูรายการสินค้า')
+  @Permissions('สามารถขายได้')
   async getRecieptIn1Day(@Query('typeOfProduct') typeOfProduct: string) {
     return this.recieptService.getRecieptIn1Day(typeOfProduct);
   }
@@ -231,7 +231,7 @@ export class RecieptController {
   // getRecieptCateringIn24Hours
   @Get('/receipt-catering-in-24-hours')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @Permissions('ดูรายการสินค้า')
+  @Permissions('สามารถขายได้')
   async getRecieptCateringIn24Hours() {
     return this.recieptService.getRecieptCateringIn24Hours();
   }

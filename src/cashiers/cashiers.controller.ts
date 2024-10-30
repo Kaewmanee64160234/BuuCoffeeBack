@@ -59,7 +59,7 @@ export class CashiersController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูรายงาน')
   findToday() {
-    return this.cashiersService.findToday();
+    return this.cashiersService.checkCashierTodayForTypes();
   }
 
   @Get(':id')
