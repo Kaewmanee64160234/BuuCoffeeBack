@@ -8,6 +8,8 @@ import { MealProduct } from 'src/meal-products/entities/meal-product.entity';
 import { Product } from 'src/products/entities/product.entity';
 import { Reciept } from 'src/reciept/entities/reciept.entity';
 import { CreateCateringEventDto } from './dto/create-catering-event.dto';
+import { SubInventoriesCoffee } from 'src/sub-inventories-coffee/entities/sub-inventories-coffee.entity';
+import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 
 @Injectable()
 export class CateringEventService {
@@ -28,6 +30,10 @@ export class CateringEventService {
     // receipt repository
     @InjectRepository(Reciept)
     private receiptRepository: Repository<Reciept>,
+    @InjectRepository(SubInventoriesCoffee)
+    private subInventoriesCoffeeRepository: Repository<SubInventoriesCoffee>,
+    @InjectRepository(Ingredient)
+    private ingredientRepository: Repository<Ingredient>,
   ) {}
 
   async findAll(): Promise<CateringEvent[]> {
@@ -74,10 +80,36 @@ export class CateringEventService {
     if (cateringEventData.coffeeReceiptId) {
       cateringEvent.coffeeReceiptId = cateringEventData.coffeeReceiptId;
     }
+    if (cateringEventData.coffeeReceiptId) {
+      cateringEvent.coffeeReceiptId = cateringEventData.coffeeReceiptId;
 
-    // Create meals and link meal products
+      const ingredient = await this.ingredientRepository.findOne({
+        where: { ingredientId: cateringEventData.coffeeReceiptId },
+      });
+
+      if (!ingredient) {
+        throw new NotFoundException('Ingredient not found');
+      }
+
+      const coffeeInventory = await this.subInventoriesCoffeeRepository.findOne(
+        {
+          where: { ingredient },
+        },
+      );
+
+      if (!coffeeInventory) {
+        throw new NotFoundException('Coffee inventory not found');
+      }
+
+      if (coffeeInventory.quantity - coffeeInventory.reservedQuantity < 2) {
+        throw new Error('Insufficient coffee inventory');
+      }
+
+      coffeeInventory.reservedQuantity += 2;
+      await this.subInventoriesCoffeeRepository.save(coffeeInventory);
+    }
+
     if (cateringEventData.meals) {
-      // Map and create meals
       const meals = await Promise.all(
         cateringEventData.meals.map(async (mealData: Meal) => {
           const newMeal = new Meal();
@@ -86,12 +118,10 @@ export class CateringEventService {
           newMeal.description = mealData.description;
           newMeal.totalPrice = mealData.totalPrice;
 
-          // Map and create meal products
           newMeal.mealProducts = await Promise.all(
             mealData.mealProducts.map(async (mealProductData: MealProduct) => {
               const mealProduct = new MealProduct();
 
-              // Find the product to link
               const product = await this.productRepository.findOne({
                 where: { productId: mealProductData.product.productId },
               });
@@ -110,7 +140,6 @@ export class CateringEventService {
               mealProduct.totalPrice = mealProductData.totalPrice;
               mealProduct.type = mealProductData.type;
 
-              // Save the meal product
               const mealProductSaved = await this.mealProductRepository.save(
                 mealProduct,
               );
@@ -120,7 +149,6 @@ export class CateringEventService {
             }),
           );
 
-          // Save the meal (which includes the meal products)
           const mealSaved = await this.mealRepository.save(newMeal);
           console.log(mealSaved);
 

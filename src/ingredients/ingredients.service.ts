@@ -14,14 +14,15 @@ export class IngredientsService {
     @InjectRepository(Ingredient)
     private ingredientRepository: Repository<Ingredient>,
   ) {}
-
   async create(
     createIngredientDto: CreateIngredientDto,
+    categoryId: number, // Added categoryId as a parameter
     imageFile?: Express.Multer.File,
   ): Promise<Ingredient> {
     try {
       console.log('Creating a new ingredient with data:', createIngredientDto);
 
+      // Create a new instance of Ingredient but do not save yet
       const newIngredient = new Ingredient();
       newIngredient.ingredientName = createIngredientDto.ingredientName;
       newIngredient.ingredientSupplier = createIngredientDto.ingredientSupplier;
@@ -35,14 +36,22 @@ export class IngredientsService {
       newIngredient.ingredientQuantityPerSubUnit =
         createIngredientDto.ingredientQuantityPerSubUnit;
 
+      // Assign a temporary barcode if it's not provided
       if (createIngredientDto.ingredientBarcode) {
         newIngredient.ingredientBarcode = createIngredientDto.ingredientBarcode;
         console.log('Using provided barcode:', newIngredient.ingredientBarcode);
       } else {
-        newIngredient.ingredientBarcode = await this.generateBarcode();
-        console.log('Generated barcode:', newIngredient.ingredientBarcode);
+        // Generate a temporary barcode using categoryId
+        newIngredient.ingredientBarcode = await this.createRandomBarcode(
+          categoryId,
+        );
+        console.log(
+          'Generated temporary barcode:',
+          newIngredient.ingredientBarcode,
+        );
       }
 
+      // Handle the image file (if provided)
       if (imageFile && imageFile.filename) {
         newIngredient.ingredientImage = imageFile.filename;
         console.log(
@@ -50,17 +59,29 @@ export class IngredientsService {
           newIngredient.ingredientImage,
         );
       } else {
-        newIngredient.ingredientImage = 'no-image.png';
+        newIngredient.ingredientImage = 'no-image.png'; // Default image
         console.log(
           'No image file provided, using default:',
           newIngredient.ingredientImage,
         );
       }
 
+      // Save the ingredient
       const savedIngredient = await this.ingredientRepository.save(
         newIngredient,
       );
       console.log('Ingredient created successfully:', savedIngredient);
+
+      // Update the barcode with the ingredientId after save
+      savedIngredient.ingredientBarcode = await this.createRandomBarcode(
+        categoryId,
+        savedIngredient.ingredientId,
+      );
+      await this.ingredientRepository.save(savedIngredient);
+      console.log(
+        'Updated barcode with ingredientId:',
+        savedIngredient.ingredientBarcode,
+      );
 
       return savedIngredient;
     } catch (error) {
@@ -72,32 +93,18 @@ export class IngredientsService {
     }
   }
 
-  private async generateBarcode(): Promise<string> {
-    let barcode: string;
-    let isUnique = false;
+  // Adjusted createRandomBarcode method
+  private createRandomBarcode(
+    categoryId: number,
+    ingredientId?: number,
+  ): string {
+    const prefix = '8852498';
+    const categoryPart = categoryId.toString().padStart(2, '0'); // Ensure category is 2 digits
+    const ingredientPart = ingredientId
+      ? ingredientId.toString().padStart(4, '0')
+      : '0000'; // Ingredient ID is optional for the initial generation
 
-    while (!isUnique) {
-      barcode = this.createRandomBarcode();
-
-      const existingIngredient = await this.ingredientRepository.findOne({
-        where: { ingredientBarcode: barcode },
-      });
-      isUnique = !existingIngredient;
-    }
-
-    return barcode;
-  }
-
-  private createRandomBarcode(): string {
-    const length = 13;
-    const chars = '0123456789';
-    let barcode = '';
-
-    for (let i = 0; i < length; i++) {
-      barcode += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-
-    return barcode;
+    return `${prefix}${categoryPart}${ingredientPart}`;
   }
 
   async findAllQuery(query) {

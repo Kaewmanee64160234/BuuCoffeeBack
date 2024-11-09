@@ -14,6 +14,7 @@ import {
   UseGuards,
   HttpException,
   HttpStatus,
+  ParseIntPipe,
 } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -90,9 +91,14 @@ export class IngredientsController {
   )
   async createIngredient(
     @Body() createIngredientDto: CreateIngredientDto,
+    @Body('categoryId', ParseIntPipe) categoryId: number,
     @UploadedFile() imageFile: Express.Multer.File,
   ) {
-    return this.ingredientsService.create(createIngredientDto, imageFile);
+    return this.ingredientsService.create(
+      createIngredientDto,
+      categoryId,
+      imageFile,
+    );
   }
 
   @Post('upload/:ingredientId')

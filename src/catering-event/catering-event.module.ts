@@ -8,6 +8,8 @@ import { User } from 'src/users/entities/user.entity';
 import { Meal } from 'src/meal/entities/meal.entity';
 import { MealProduct } from 'src/meal-products/entities/meal-product.entity';
 import { Reciept } from 'src/reciept/entities/reciept.entity';
+import { SubInventoriesCoffee } from 'src/sub-inventories-coffee/entities/sub-inventories-coffee.entity';
+import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 
 @Module({
   imports: [
@@ -18,6 +20,8 @@ import { Reciept } from 'src/reciept/entities/reciept.entity';
       Meal,
       MealProduct,
       Reciept,
+      SubInventoriesCoffee,
+      Ingredient,
     ]),
   ],
   controllers: [CateringEventController],
