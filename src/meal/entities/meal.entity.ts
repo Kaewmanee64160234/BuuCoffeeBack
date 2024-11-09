@@ -19,6 +19,9 @@ export class Meal {
   cateringEvent: CateringEvent;
 
   @Column()
+  description: string;
+
+  @Column()
   mealName: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })

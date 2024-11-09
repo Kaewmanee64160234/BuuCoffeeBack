@@ -83,6 +83,7 @@ export class CateringEventService {
           const newMeal = new Meal();
           newMeal.mealName = mealData.mealName;
           newMeal.mealTime = mealData.mealTime;
+          newMeal.description = mealData.description;
           newMeal.totalPrice = mealData.totalPrice;
 
           // Map and create meal products

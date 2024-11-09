@@ -1,5 +1,12 @@
 import { Type } from 'class-transformer';
-import { IsString, IsDecimal, IsNotEmpty, IsDate } from 'class-validator';
+import {
+  IsString,
+  IsDecimal,
+  IsNotEmpty,
+  IsDate,
+  IsOptional,
+  isString,
+} from 'class-validator';
 import { CreateMealProductDto } from 'src/meal-products/dto/create-meal-product.dto';
 
 export class CreateMealDto {
@@ -14,6 +21,10 @@ export class CreateMealDto {
   @IsNotEmpty()
   @IsDate()
   mealTime: Date;
+
+  @IsOptional()
+  @IsString()
+  description: string;
 
   @IsNotEmpty()
   cateringEventId: number;

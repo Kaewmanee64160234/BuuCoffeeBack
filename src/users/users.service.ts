@@ -92,6 +92,7 @@ export class UsersService {
         relations: [
           'role',
           'groups', // Include the groups the user belongs to
+          'groups.permissions',
         ],
       });
       console.log(user);
