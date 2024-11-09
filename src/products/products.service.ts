@@ -115,10 +115,64 @@ export class ProductsService {
       }
     } else {
       // Create ingredient
+      let res;
+      if (createProductDto.needLinkIngredient) {
+        createProductDto.ingredient.ingredientName =
+          createProductDto.productName;
+        // create ingredian
+        console.log(
+          'Creating a new ingredient with data:',
+          createProductDto.ingredient,
+        );
 
-      const ing = await this.ingredientService.create(
-        createProductDto.createIngredientDto,
-      );
+        // Create a new instance of Ingredient but do not save yet
+        const newIngredient = new Ingredient();
+        console.log('New ingredient instance created:', newIngredient);
+
+        newIngredient.ingredientName =
+          createProductDto.ingredient.ingredientName;
+        newIngredient.ingredientSupplier =
+          createProductDto.ingredient.ingredientSupplier;
+        newIngredient.ingredientMinimun =
+          createProductDto.ingredient.ingredientMinimun;
+        newIngredient.ingredientUnit =
+          createProductDto.ingredient.ingredientUnit;
+        newIngredient.ingredientVolumeUnit =
+          createProductDto.ingredient.ingredientVolumeUnit;
+        newIngredient.ingredientQuantityInStock = 0;
+        newIngredient.ingredientQuantityPerUnit =
+          createProductDto.ingredient.ingredientQuantityPerUnit;
+        newIngredient.ingredientQuantityPerSubUnit =
+          createProductDto.ingredient.ingredientQuantityPerSubUnit;
+
+        // Assign a temporary barcode if it's not provided
+        if (createProductDto.ingredient.ingredientBarcode) {
+          newIngredient.ingredientBarcode =
+            createProductDto.ingredient.ingredientBarcode;
+          console.log(
+            'Using provided barcode:',
+            newIngredient.ingredientBarcode,
+          );
+        } else {
+          // Generate a temporary barcode using categoryId
+          newIngredient.ingredientBarcode =
+            await this.ingredientService.createRandomBarcode(
+              category.categoryId,
+            );
+          console.log(
+            'Generated temporary barcode:',
+            newIngredient.ingredientBarcode,
+          );
+        }
+        res = await this.ingredientRepository.save(newIngredient);
+        // save image on ingredient_images
+        if (createProductDto.ingredient.ingredientImage) {
+          await this.ingredientService.uploadImage(
+            res.ingredientId,
+            createProductDto.productImage,
+          );
+        }
+      }
 
       // Create product type and recipe
       const newProductType = new ProductType();
@@ -129,17 +183,26 @@ export class ProductsService {
       const savedProductType = await this.productTypeRepository.save(
         newProductType,
       );
+      // update ingredient to product
 
-      // const newRecipe = new Recipe();
-      // newRecipe.quantity = 1;
-      // newRecipe.ingredient = ing;
-      // newRecipe.productType = savedProductType;
-      // await this.recipeRepository.save(newRecipe);
+      if (ingredient) {
+        ingredient.product = savedProduct;
+        await this.ingredientRepository.save(ingredient);
+      }
+      await this.productRepository.save({
+        ...savedProduct,
+        ingredient: ingredient,
+      });
     }
 
     return this.productRepository.findOne({
       where: { productId: savedProduct.productId },
-      relations: ['productTypes', 'productTypes.recipes', 'category'],
+      relations: [
+        'productTypes',
+        'productTypes.recipes',
+        'category',
+        'ingredient',
+      ],
     });
   }
 

@@ -24,6 +24,8 @@ export class IngredientsService {
 
       // Create a new instance of Ingredient but do not save yet
       const newIngredient = new Ingredient();
+      console.log('New ingredient instance created:', newIngredient);
+
       newIngredient.ingredientName = createIngredientDto.ingredientName;
       newIngredient.ingredientSupplier = createIngredientDto.ingredientSupplier;
       newIngredient.ingredientMinimun = createIngredientDto.ingredientMinimun;
@@ -94,7 +96,7 @@ export class IngredientsService {
   }
 
   // Adjusted createRandomBarcode method
-  private createRandomBarcode(
+  public createRandomBarcode(
     categoryId: number,
     ingredientId?: number,
   ): string {

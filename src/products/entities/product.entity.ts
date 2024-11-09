@@ -33,6 +33,9 @@ export class Product {
   @Column()
   storeType: string;
 
+  @Column({ default: false })
+  needLinkIngredient: boolean;
+
   @ManyToOne(() => Category, (category) => category.products)
   category: Category;
 

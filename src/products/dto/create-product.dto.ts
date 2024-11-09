@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
+  isNotEmpty,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -12,6 +13,7 @@ import { CreateProductTypeDto } from 'src/product-types/dto/create-product-type.
 import { ProductType } from 'src/product-types/entities/product-type.entity';
 import { Product } from '../entities/product.entity';
 import { CreateIngredientDto } from 'src/ingredients/dto/create-ingredient.dto';
+import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 
 export class CreateProductDto {
   @IsString()
@@ -21,9 +23,6 @@ export class CreateProductDto {
   @IsNumber()
   @IsNotEmpty()
   productPrice: number;
-
-  @IsOptional()
-  ingredientDto: CreateIngredientDto;
 
   productImage: string;
 
@@ -36,8 +35,11 @@ export class CreateProductDto {
   @IsNotEmpty()
   categoryId: string;
 
+  @IsNotEmpty()
+  @IsBoolean()
+  needLinkIngredient: boolean;
   @IsOptional()
-  createIngredientDto: CreateIngredientDto;
+  ingredient: CreateIngredientDto;
 
   category: Category;
   product: Product;
