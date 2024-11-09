@@ -45,7 +45,7 @@ export class ProductsService {
       haveTopping,
     } = createProductDto; // Include barcode here
 
-    console.log('productTypes', productTypes);
+    console.log('createProductDto', createProductDto);
 
     // Parse and validate categoryId
     const parsedCategoryId = Number(categoryId);
@@ -114,21 +114,16 @@ export class ProductsService {
         );
       }
     } else {
-      // Create ingredient
-      let res;
+      let ingredient;
       if (createProductDto.needLinkIngredient) {
         createProductDto.ingredient.ingredientName =
           createProductDto.productName;
-        // create ingredian
         console.log(
           'Creating a new ingredient with data:',
           createProductDto.ingredient,
         );
 
-        // Create a new instance of Ingredient but do not save yet
         const newIngredient = new Ingredient();
-        console.log('New ingredient instance created:', newIngredient);
-
         newIngredient.ingredientName =
           createProductDto.ingredient.ingredientName;
         newIngredient.ingredientSupplier =
@@ -145,54 +140,38 @@ export class ProductsService {
         newIngredient.ingredientQuantityPerSubUnit =
           createProductDto.ingredient.ingredientQuantityPerSubUnit;
 
-        // Assign a temporary barcode if it's not provided
-        if (createProductDto.ingredient.ingredientBarcode) {
-          newIngredient.ingredientBarcode =
-            createProductDto.ingredient.ingredientBarcode;
-          console.log(
-            'Using provided barcode:',
-            newIngredient.ingredientBarcode,
-          );
-        } else {
-          // Generate a temporary barcode using categoryId
-          newIngredient.ingredientBarcode =
-            await this.ingredientService.createRandomBarcode(
-              category.categoryId,
-            );
-          console.log(
-            'Generated temporary barcode:',
-            newIngredient.ingredientBarcode,
-          );
-        }
-        res = await this.ingredientRepository.save(newIngredient);
-        // save image on ingredient_images
+        newIngredient.ingredientBarcode =
+          createProductDto.ingredient.ingredientBarcode ||
+          (await this.ingredientService.createRandomBarcode(
+            category.categoryId,
+          ));
+
+        ingredient = await this.ingredientRepository.save(newIngredient);
+
         if (createProductDto.ingredient.ingredientImage) {
-          await this.ingredientService.uploadImage(
-            res.ingredientId,
-            createProductDto.productImage,
+          const imagePath = await this.ingredientService.uploadImage(
+            ingredient.ingredientId,
+            createProductDto.product.productImage,
           );
+          ingredient.ingredientImage = imagePath;
+        } else {
+          ingredient.ingredientImage = 'no_image.jpg';
         }
+
+        await this.ingredientRepository.save(ingredient);
       }
 
-      // Create product type and recipe
       const newProductType = new ProductType();
       newProductType.productTypeName = '';
       newProductType.productTypePrice = 0;
       newProductType.product = savedProduct;
 
-      const savedProductType = await this.productTypeRepository.save(
-        newProductType,
-      );
-      // update ingredient to product
+      await this.productTypeRepository.save(newProductType);
 
       if (ingredient) {
-        ingredient.product = savedProduct;
-        await this.ingredientRepository.save(ingredient);
+        savedProduct.ingredient = ingredient;
+        await this.productRepository.save(savedProduct);
       }
-      await this.productRepository.save({
-        ...savedProduct,
-        ingredient: ingredient,
-      });
     }
 
     return this.productRepository.findOne({
