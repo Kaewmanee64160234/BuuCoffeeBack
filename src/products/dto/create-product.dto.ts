@@ -35,6 +35,10 @@ export class CreateProductDto {
   @IsNumber()
   @IsNotEmpty()
   categoryId: string;
+
+  @IsOptional()
+  createIngredientDto: CreateIngredientDto;
+
   category: Category;
   product: Product;
   countingPoint: string;

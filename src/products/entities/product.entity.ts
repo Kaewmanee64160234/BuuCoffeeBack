@@ -53,12 +53,9 @@ export class Product {
   @OneToMany(() => MealProduct, (mealProduct) => mealProduct.product)
   mealProducts: MealProduct[];
 
-  @OneToOne(() => Ingredient, (topping) => topping.product, {
-    cascade: true,
-    nullable: false,
-  })
+  @OneToOne(() => Ingredient, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn()
-  ingredient: Ingredient;
+  ingredient: Ingredient | null;
 
   @CreateDateColumn()
   createdDate: Date;

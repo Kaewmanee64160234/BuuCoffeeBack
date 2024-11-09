@@ -67,8 +67,9 @@ export class Ingredient {
   @ManyToOne(() => Category, (category) => category.ingredient)
   category: Category;
 
-  @OneToOne(() => Product, (product) => product.ingredient)
-  product: Product;
+  @ManyToOne(() => Product, { onDelete: 'SET NULL' })
+  @JoinColumn()
+  product: Product | null;
 
   @CreateDateColumn()
   createdDate: Date;

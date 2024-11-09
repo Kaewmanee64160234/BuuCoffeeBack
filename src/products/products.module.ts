@@ -13,6 +13,7 @@ import { Recipe } from 'src/recipes/entities/recipe.entity';
 import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 import { PermissionsGuard } from 'src/guards/roles.guard';
 import { UsersModule } from 'src/users/users.module';
+import { IngredientsService } from 'src/ingredients/ingredients.service';
 
 @Module({
   imports: [
@@ -30,6 +31,6 @@ import { UsersModule } from 'src/users/users.module';
     UsersModule,
   ],
   controllers: [ProductsController],
-  providers: [ProductsService, PermissionsGuard],
+  providers: [ProductsService, PermissionsGuard, IngredientsService],
 })
 export class ProductsModule {}

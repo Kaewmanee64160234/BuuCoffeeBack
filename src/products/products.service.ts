@@ -16,7 +16,7 @@ import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 import { Multer } from 'multer';
 import { UpdateRecipeDto } from 'src/recipes/dto/update-recipe.dto';
 import { UpdateProductTypeDto } from 'src/product-types/dto/update-product-type.dto';
-
+import { IngredientsService } from '../ingredients/ingredients.service';
 @Injectable()
 export class ProductsService {
   constructor(
@@ -30,6 +30,7 @@ export class ProductsService {
     private recipeRepository: Repository<Recipe>,
     @InjectRepository(Ingredient)
     private ingredientRepository: Repository<Ingredient>,
+    private ingredientService: IngredientsService,
   ) {}
 
   async create(createProductDto: CreateProductDto): Promise<Product> {
@@ -114,17 +115,10 @@ export class ProductsService {
       }
     } else {
       // Create ingredient
-      const ingredient = new Ingredient();
-      ingredient.ingredientName = productName;
-      ingredient.ingredientMinimun = 10;
-      ingredient.ingredientUnit = 'ชิ้น';
-      ingredient.ingredientQuantityInStock = 0;
-      ingredient.ingredientQuantityPerUnit = 1;
-      ingredient.ingredientQuantityPerSubUnit = 'ชิ้น';
-      ingredient.ingredientSupplier = productName;
-      ingredient.ingredientImage = 'no-image.png';
 
-      const ing = await this.ingredientRepository.save(ingredient);
+      const ing = await this.ingredientService.create(
+        createProductDto.createIngredientDto,
+      );
 
       // Create product type and recipe
       const newProductType = new ProductType();
