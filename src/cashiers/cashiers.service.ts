@@ -24,16 +24,22 @@ export class CashiersService {
   ) {}
 
   async create(createCashierDto: CreateCashierDto): Promise<Cashier> {
+    console.log('Starting create cashier process...');
+    console.log('Received createCashierDto:', createCashierDto);
+
     const user = await this.usersRepository.findOne({
       where: { userId: createCashierDto.userId },
     });
+    console.log('Fetched user:', user);
 
     if (!user) {
+      console.error('User not found for userId:', createCashierDto.userId);
       throw new NotFoundException('User not found.');
     }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    console.log("Today's date set to midnight:", today);
 
     const existingCashier = await this.cashierRepository.findOne({
       where: {
@@ -41,18 +47,26 @@ export class CashiersService {
         type: createCashierDto.type,
       },
     });
+    console.log('Checked for existing cashier:', existingCashier);
 
     if (existingCashier) {
+      console.error(
+        `Cashier for type ${createCashierDto.type} already exists for today.`,
+      );
       throw new ConflictException(
         `Cashier for type ${createCashierDto.type} can only be created once per day.`,
       );
     }
 
     let cashierAmount = 0;
+    console.log('Calculating cashier amount from items...');
     const cashierItems = await Promise.all(
       createCashierDto.items.map(async (item) => {
         const amount = parseFloat(item.denomination) * item.quantity;
         cashierAmount += amount;
+        console.log(
+          `Adding item: denomination = ${item.denomination}, quantity = ${item.quantity}, amount = ${amount}`,
+        );
         return this.cashierItemRepository.create({
           denomination: item.denomination,
           quantity: item.quantity,
@@ -60,24 +74,32 @@ export class CashiersService {
         });
       }),
     );
+    console.log('Total cashier amount calculated:', cashierAmount);
 
     const cashier = this.cashierRepository.create({
       cashierAmount,
       createdDate: new Date(),
       openedBy: user,
-      type: createCashierDto.type, // กำหนด type ของ Cashier
-      cashierItems: [],
+      type: createCashierDto.type,
+      cashierItems: createCashierDto.items,
     });
+    console.log('Created cashier entity:', cashier);
 
     cashierItems.forEach((item) => {
       item.cashier = cashier;
+      console.log('Assigned cashier to item:', item);
     });
 
     await this.cashierRepository.save(cashier);
-    await this.cashierItemRepository.save(cashierItems);
+    console.log('Saved cashier to repository:', cashier);
 
+    await this.cashierItemRepository.save(cashierItems);
+    console.log('Saved cashier items to repository:', cashierItems);
+
+    console.log('Cashier creation process completed successfully.');
     return cashier;
   }
+
   async checkCashierStatus(): Promise<{
     rice: { closedDate: boolean; createdToday: boolean };
     coffee: { closedDate: boolean; createdToday: boolean };
@@ -174,8 +196,10 @@ export class CashiersService {
     if (!existingCashier) {
       throw new ConflictException(`No cashier found for type ${type} today.`);
     }
+    if (existingCashier.closedDate) {
+      throw new ConflictException('ไม่สามารถดำเนินการได้.');
+    }
 
-    // คำนวณจำนวนเงินที่ปิดการขาย
     let cashierAmount = 0;
     const cashierItems = await Promise.all(
       closeCashierDto.items.map(async (item) => {
