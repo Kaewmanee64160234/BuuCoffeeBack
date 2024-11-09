@@ -1,3 +1,4 @@
+import { Category } from 'src/categories/entities/category.entity';
 import { Checkingredientitem } from 'src/checkingredientitems/entities/checkingredientitem.entity';
 import { Importingredientitem } from 'src/importingredientitems/entities/importingredientitem.entity';
 import { Recipe } from 'src/recipes/entities/recipe.entity';
@@ -60,6 +61,8 @@ export class Ingredient {
     (subInventory) => subInventory.ingredient,
   )
   coffeeShopSubInventories: SubInventoriesCoffee[];
+  @ManyToOne(() => Category, (category) => category.ingredient)
+  category: Category;
 
   @CreateDateColumn()
   createdDate: Date;

@@ -1,3 +1,4 @@
+import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 import { Product } from 'src/products/entities/product.entity';
 import {
   Column,
@@ -19,6 +20,8 @@ export class Category {
 
   @OneToMany(() => Product, (product) => product.category)
   products: Product[];
+  @OneToMany(() => Ingredient, (ingredient) => ingredient.category)
+  ingredient: Ingredient[];
 
   @CreateDateColumn()
   createdDate: Date;
