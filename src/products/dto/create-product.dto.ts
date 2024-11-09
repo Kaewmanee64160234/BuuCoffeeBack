@@ -3,6 +3,7 @@ import {
   IsBoolean,
   IsNotEmpty,
   IsNumber,
+  IsOptional,
   IsString,
   ValidateNested,
 } from 'class-validator';
@@ -10,6 +11,7 @@ import { Category } from 'src/categories/entities/category.entity';
 import { CreateProductTypeDto } from 'src/product-types/dto/create-product-type.dto';
 import { ProductType } from 'src/product-types/entities/product-type.entity';
 import { Product } from '../entities/product.entity';
+import { CreateIngredientDto } from 'src/ingredients/dto/create-ingredient.dto';
 
 export class CreateProductDto {
   @IsString()
@@ -19,6 +21,9 @@ export class CreateProductDto {
   @IsNumber()
   @IsNotEmpty()
   productPrice: number;
+
+  @IsOptional()
+  ingredientDto: CreateIngredientDto;
 
   productImage: string;
 

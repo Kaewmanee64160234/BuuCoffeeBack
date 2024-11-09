@@ -1,4 +1,5 @@
 import { Category } from 'src/categories/entities/category.entity';
+import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 import { MealProduct } from 'src/meal-products/entities/meal-product.entity';
 import { ProductType } from 'src/product-types/entities/product-type.entity';
 import { ReceiptItem } from 'src/receipt-item/entities/receipt-item.entity';
@@ -7,8 +8,10 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -49,6 +52,13 @@ export class Product {
   haveTopping: boolean;
   @OneToMany(() => MealProduct, (mealProduct) => mealProduct.product)
   mealProducts: MealProduct[];
+
+  @OneToOne(() => Ingredient, (topping) => topping.product, {
+    cascade: true,
+    nullable: false,
+  })
+  @JoinColumn()
+  ingredient: Ingredient;
 
   @CreateDateColumn()
   createdDate: Date;

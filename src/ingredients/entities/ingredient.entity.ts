@@ -1,6 +1,7 @@
 import { Category } from 'src/categories/entities/category.entity';
 import { Checkingredientitem } from 'src/checkingredientitems/entities/checkingredientitem.entity';
 import { Importingredientitem } from 'src/importingredientitems/entities/importingredientitem.entity';
+import { Product } from 'src/products/entities/product.entity';
 import { Recipe } from 'src/recipes/entities/recipe.entity';
 import { SubInventoriesCoffee } from 'src/sub-inventories-coffee/entities/sub-inventories-coffee.entity';
 import { SubInventoriesRice } from 'src/sub-inventories-rice/entities/sub-inventories-rice.entity';
@@ -9,8 +10,10 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -63,6 +66,9 @@ export class Ingredient {
   coffeeShopSubInventories: SubInventoriesCoffee[];
   @ManyToOne(() => Category, (category) => category.ingredient)
   category: Category;
+
+  @OneToOne(() => Product, (product) => product.ingredient)
+  product: Product;
 
   @CreateDateColumn()
   createdDate: Date;
