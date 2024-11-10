@@ -7,12 +7,16 @@ import { Ingredient } from './entities/ingredient.entity';
 import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
+import { Product } from 'src/products/entities/product.entity';
 
 @Injectable()
 export class IngredientsService {
   constructor(
     @InjectRepository(Ingredient)
     private ingredientRepository: Repository<Ingredient>,
+    // Product
+    @InjectRepository(Product)
+    private productRepository: Repository<Product>,
   ) {}
   async create(
     createIngredientDto: CreateIngredientDto,
@@ -284,6 +288,16 @@ export class IngredientsService {
         ...ingredient,
         ...updateIngredientDto,
       });
+      const product = await this.productRepository.findOne({
+        where: { ingredient: { ingredientId: updatedIngredient.ingredientId } },
+        relations: ['ingredient'],
+      });
+      if (!product) {
+        throw new HttpException('Ingredient not found', HttpStatus.NOT_FOUND);
+      } else {
+        product.productName = updateIngredientDto.ingredientName;
+        await this.productRepository.save(product);
+      }
 
       return updatedIngredient;
     } catch (error) {

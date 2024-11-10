@@ -37,7 +37,7 @@ export class CreateProductDto {
 
   @IsNotEmpty()
   @IsBoolean()
-  needLinkIngredient: boolean;
+  needLinkIngredient: string;
 
   @IsOptional()
   ingredient: CreateIngredientDto;

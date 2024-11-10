@@ -43,6 +43,7 @@ export class ProductsService {
       storeType,
       countingPoint,
       haveTopping,
+      needLinkIngredient,
     } = createProductDto; // Include barcode here
 
     console.log('createProductDto', createProductDto);
@@ -64,6 +65,11 @@ export class ProductsService {
     const newProduct = new Product();
     newProduct.productName = productName;
     newProduct.productPrice = Number(productPrice);
+    if (needLinkIngredient == 'true') {
+      newProduct.needLinkIngredient = true;
+    } else {
+      newProduct.needLinkIngredient = false;
+    }
     if (countingPoint == 'true') {
       newProduct.countingPoint = true;
     } else {
@@ -349,8 +355,10 @@ export class ProductsService {
 
       const product = await this.productRepository.findOne({
         where: { productId: id },
-        relations: ['category', 'productTypes'],
+        relations: ['category', 'productTypes', 'ingredient'],
       });
+      console.log(`found product: ${product}`);
+
       if (!product) {
         throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
       }
@@ -375,6 +383,15 @@ export class ProductsService {
         product.haveTopping = true;
       } else {
         product.haveTopping = false;
+      }
+      if (product.needLinkIngredient === true) {
+        const ingredient = await this.ingredientRepository.findOne({
+          where: { ingredientId: product.ingredient.ingredientId },
+        });
+        console.log('ingredient', ingredient);
+
+        ingredient.ingredientName = updateProductDto.productName;
+        await this.ingredientRepository.save(ingredient);
       }
 
       const isProductTypesChanged = await this.isProductTypesChanged(
