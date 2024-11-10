@@ -22,6 +22,9 @@ export class SubInventoriesRice {
   @Column()
   quantity: number;
 
+  @Column()
+  reservedQuantity: number;
+
   @CreateDateColumn()
   createdDate: Date;
 

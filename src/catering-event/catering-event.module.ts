@@ -10,6 +10,7 @@ import { MealProduct } from 'src/meal-products/entities/meal-product.entity';
 import { Reciept } from 'src/reciept/entities/reciept.entity';
 import { SubInventoriesCoffee } from 'src/sub-inventories-coffee/entities/sub-inventories-coffee.entity';
 import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
+import { SubInventoriesRice } from 'src/sub-inventories-rice/entities/sub-inventories-rice.entity';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
       MealProduct,
       Reciept,
       SubInventoriesCoffee,
+      SubInventoriesRice,
       Ingredient,
     ]),
   ],

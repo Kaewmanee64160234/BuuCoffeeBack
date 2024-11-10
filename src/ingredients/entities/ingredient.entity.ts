@@ -75,6 +75,9 @@ export class Ingredient {
   createdDate: Date;
   @UpdateDateColumn()
   updatedDate: Date;
+  @Column()
+  reservedQuantity: number;
+
   @DeleteDateColumn()
   deletedDate: Date;
 }

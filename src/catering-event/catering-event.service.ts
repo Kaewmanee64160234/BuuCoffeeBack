@@ -10,6 +10,8 @@ import { Reciept } from 'src/reciept/entities/reciept.entity';
 import { CreateCateringEventDto } from './dto/create-catering-event.dto';
 import { SubInventoriesCoffee } from 'src/sub-inventories-coffee/entities/sub-inventories-coffee.entity';
 import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
+import { log } from 'console';
+import { SubInventoriesRice } from 'src/sub-inventories-rice/entities/sub-inventories-rice.entity';
 
 @Injectable()
 export class CateringEventService {
@@ -34,6 +36,9 @@ export class CateringEventService {
     private subInventoriesCoffeeRepository: Repository<SubInventoriesCoffee>,
     @InjectRepository(Ingredient)
     private ingredientRepository: Repository<Ingredient>,
+    // subInventoriesRiceRepository
+    @InjectRepository(SubInventoriesRice)
+    private subInventoriesRiceRepository: Repository<SubInventoriesRice>,
   ) {}
 
   async findAll(): Promise<CateringEvent[]> {
@@ -57,60 +62,25 @@ export class CateringEventService {
     const cateringEvent = new CateringEvent();
     cateringEvent.eventName = cateringEventData.eventName;
     cateringEvent.eventDate = new Date(cateringEventData.eventDate);
-    cateringEvent.status = 'pending'; // pending, approved, rejected
+    cateringEvent.status = cateringEventData.status || 'pending';
     cateringEvent.totalBudget = cateringEventData.totalBudget;
+    cateringEvent.eventLocation = cateringEventData.eventLocation;
+    cateringEvent.attendeeCount = cateringEventData.attendeeCount;
 
-    // Find user
+    // Find and associate user
     const user = await this.userRepository.findOne({
       where: { userId: cateringEventData.user.userId },
     });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
+    if (!user) throw new NotFoundException('User not found');
     cateringEvent.user = user;
-    cateringEvent.status = cateringEventData.status;
-    cateringEvent.eventLocation = cateringEventData.eventLocation;
-    cateringEvent.attendeeCount = cateringEventData.attendeeCount;
-    cateringEvent.totalBudget = cateringEventData.totalBudget;
-    if (cateringEventData.riceReceiptId) {
+
+    if (cateringEventData.riceReceiptId)
       cateringEvent.riceReceiptId = cateringEventData.riceReceiptId;
-    }
-    if (cateringEventData.coffeeReceiptId) {
+    if (cateringEventData.coffeeReceiptId)
       cateringEvent.coffeeReceiptId = cateringEventData.coffeeReceiptId;
-    }
-    if (cateringEventData.coffeeReceiptId) {
-      cateringEvent.coffeeReceiptId = cateringEventData.coffeeReceiptId;
-
-      const ingredient = await this.ingredientRepository.findOne({
-        where: { ingredientId: cateringEventData.coffeeReceiptId },
-      });
-
-      if (!ingredient) {
-        throw new NotFoundException('Ingredient not found');
-      }
-
-      const coffeeInventory = await this.subInventoriesCoffeeRepository.findOne(
-        {
-          where: { ingredient },
-        },
-      );
-
-      if (!coffeeInventory) {
-        throw new NotFoundException('Coffee inventory not found');
-      }
-
-      if (coffeeInventory.quantity - coffeeInventory.reservedQuantity < 2) {
-        throw new Error('Insufficient coffee inventory');
-      }
-
-      coffeeInventory.reservedQuantity += 2;
-      await this.subInventoriesCoffeeRepository.save(coffeeInventory);
-    }
 
     if (cateringEventData.meals) {
-      const meals = await Promise.all(
+      cateringEvent.meals = await Promise.all(
         cateringEventData.meals.map(async (mealData: Meal) => {
           const newMeal = new Meal();
           newMeal.mealName = mealData.mealName;
@@ -122,50 +92,86 @@ export class CateringEventService {
             mealData.mealProducts.map(async (mealProductData: MealProduct) => {
               const mealProduct = new MealProduct();
 
+              // Fetch and validate product
               const product = await this.productRepository.findOne({
                 where: { productId: mealProductData.product.productId },
+                relations: ['ingredient'],
               });
-              if (!product) {
-                console.log('Product not found');
-                console.log(mealProductData);
+              if (!product && mealProductData.type != 'เลี้ยงรับรอง')
+                throw new NotFoundException('Product not found');
 
-                mealProduct.productName = mealProductData.productName;
-                mealProduct.price = mealProductData.price;
-                mealProduct.product = null;
-              } else {
-                mealProduct.product = product;
+              // Check and reserve inventory if product has linked ingredient
+              if (
+                mealProductData.type != 'เลี้ยงรับรอง' &&
+                product.needLinkIngredient &&
+                product.ingredient
+              ) {
+                const ingredientId_ = product.ingredient.ingredientId;
+                console.log('ingredientId_', ingredientId_);
+
+                let inventory;
+                if (mealProductData.type === 'ร้านกาแฟ') {
+                  inventory = await this.subInventoriesCoffeeRepository.findOne(
+                    {
+                      where: { ingredient: { ingredientId: ingredientId_ } },
+                    },
+                  );
+                  if (!inventory)
+                    throw new NotFoundException('Coffee inventory not found');
+                } else if (mealProductData.type === 'ร้านข้าว') {
+                  console.log('rice', ingredientId_);
+
+                  inventory = await this.subInventoriesRiceRepository.findOne({
+                    where: { ingredient: { ingredientId: ingredientId_ } },
+                  });
+
+                  if (!inventory)
+                    throw new NotFoundException('Rice inventory not found');
+                  console.log('rice', inventory);
+                }
+
+                if (
+                  inventory.quantity - inventory.reservedQuantity <
+                  mealProductData.quantity
+                ) {
+                  throw new Error(
+                    `Insufficient ${mealProductData.type} inventory`,
+                  );
+                }
+
+                // Reserve inventory quantity
+                inventory.reservedQuantity += mealProductData.quantity;
+                if (mealProductData.type === 'ร้านกาแฟ') {
+                  await this.subInventoriesCoffeeRepository.save(inventory);
+                }
+                if (mealProductData.type === 'ร้านข้าว') {
+                  await this.subInventoriesRiceRepository.save(inventory);
+                }
               }
 
+              // Set meal product properties
+              mealProduct.product = product;
+              if (mealProductData.type === 'เลี้ยงรับรอง') {
+                mealProduct.productName = mealProductData.productName;
+              } else {
+                mealProduct.productName =
+                  product.productName || mealProductData.productName;
+              }
+
+              mealProduct.price = mealProductData.price;
               mealProduct.quantity = mealProductData.quantity;
               mealProduct.totalPrice = mealProductData.totalPrice;
               mealProduct.type = mealProductData.type;
 
-              const mealProductSaved = await this.mealProductRepository.save(
-                mealProduct,
-              );
-              console.log(mealProductSaved);
-
-              return mealProductSaved;
+              return this.mealProductRepository.save(mealProduct);
             }),
           );
 
-          const mealSaved = await this.mealRepository.save(newMeal);
-          console.log(mealSaved);
-
-          return mealSaved;
+          return this.mealRepository.save(newMeal);
         }),
       );
-      console.log('----------------------------------');
-      console.log(meals);
 
-      cateringEvent.meals = meals;
-      // Save the catering event with its meals and linked meal products
-
-      const eventCateringSaved = await this.cateringEventRepository.save(
-        cateringEvent,
-      );
-
-      return eventCateringSaved;
+      return this.cateringEventRepository.save(cateringEvent);
     } else {
       throw new NotFoundException('Meals not found');
     }
@@ -190,6 +196,61 @@ export class CateringEventService {
       throw new NotFoundException(`Catering event with id ${id} not found`);
     }
     event.status = status;
+    // ujpdate quantity reserved in sub inventory
+    if (event.meals) {
+      event.meals.forEach(async (meal) => {
+        meal.mealProducts.forEach(async (mealProduct) => {
+          if (mealProduct.product.needLinkIngredient) {
+            if (mealProduct.product.storeType === 'coffee') {
+              const ingredient = await this.ingredientRepository.findOne({
+                where: {
+                  ingredientId: mealProduct.product.ingredient.ingredientId,
+                },
+              });
+
+              if (!ingredient) {
+                throw new NotFoundException('Ingredient not found');
+              }
+
+              const coffeeInventory =
+                await this.subInventoriesCoffeeRepository.findOne({
+                  where: { ingredient },
+                });
+
+              if (!coffeeInventory) {
+                throw new NotFoundException('Coffee inventory not found');
+              }
+
+              coffeeInventory.reservedQuantity -= mealProduct.quantity;
+              await this.subInventoriesCoffeeRepository.save(coffeeInventory);
+            }
+            if (mealProduct.product.storeType === 'rice') {
+              const ingredient = await this.ingredientRepository.findOne({
+                where: {
+                  ingredientId: mealProduct.product.ingredient.ingredientId,
+                },
+              });
+
+              if (!ingredient) {
+                throw new NotFoundException('Ingredient not found');
+              }
+
+              const coffeeInventory =
+                await this.subInventoriesCoffeeRepository.findOne({
+                  where: { ingredient },
+                });
+
+              if (!coffeeInventory) {
+                throw new NotFoundException('Coffee inventory not found');
+              }
+
+              coffeeInventory.reservedQuantity -= mealProduct.quantity;
+              await this.subInventoriesCoffeeRepository.save(coffeeInventory);
+            }
+          }
+        });
+      });
+    }
     return this.cateringEventRepository.save(event);
   }
 

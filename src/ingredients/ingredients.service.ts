@@ -325,7 +325,9 @@ export class IngredientsService {
           './ingredient_images',
           ingredient.ingredientImage,
         );
-        fs.unlinkSync(imagePath);
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+        }
       }
       await this.ingredientRepository.delete(id);
     } catch (error) {

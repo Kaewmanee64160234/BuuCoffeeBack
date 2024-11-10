@@ -22,6 +22,7 @@ export class SubInventoriesCoffee {
 
   @Column()
   quantity: number;
+
   @Column()
   reservedQuantity: number;
 

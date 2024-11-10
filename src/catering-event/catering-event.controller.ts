@@ -20,7 +20,12 @@ import { Permissions } from 'src/decorators/permissions.decorator';
 @Controller('catering-events')
 export class CateringEventController {
   constructor(private readonly cateringEventService: CateringEventService) {}
-
+  @Post()
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('จัดการการเลี้ยงรับรอง')
+  async create(@Body() createCateringEventDto: CreateCateringEventDto) {
+    return this.cateringEventService.create(createCateringEventDto);
+  }
   @Get()
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการการเลี้ยงรับรอง')
@@ -39,13 +44,6 @@ export class CateringEventController {
   @Permissions('จัดการการเลี้ยงรับรอง')
   async findOne(@Param('id') id: string): Promise<CateringEvent> {
     return this.cateringEventService.findOne(+id);
-  }
-
-  @Post()
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @Permissions('จัดการการเลี้ยงรับรอง')
-  async create(@Body() createCateringEventDto: CreateCateringEventDto) {
-    return this.cateringEventService.create(createCateringEventDto);
   }
 
   @Put(':id')
