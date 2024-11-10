@@ -26,6 +26,8 @@ import * as moment from 'moment-timezone';
 import { Recipe } from 'src/recipes/entities/recipe.entity';
 import { Checkingredient } from 'src/checkingredients/entities/checkingredient.entity';
 import { Cashier } from 'src/cashiers/entities/cashier.entity';
+import { SubInventoriesCoffee } from 'src/sub-inventories-coffee/entities/sub-inventories-coffee.entity';
+import { SubInventoriesRice } from 'src/sub-inventories-rice/entities/sub-inventories-rice.entity';
 @Injectable()
 export class RecieptService {
   private readonly logger = new Logger(RecieptService.name);
@@ -61,6 +63,12 @@ export class RecieptService {
     // recipe
     @InjectRepository(Recipe)
     private recipeRepository: Repository<Recipe>,
+
+    @InjectRepository(SubInventoriesCoffee)
+    private subInventoryCoffeeRepository: Repository<SubInventoriesCoffee>,
+    // /subInventoryRepository rice
+    @InjectRepository(SubInventoriesRice)
+    private subInventoryRiceRepository: Repository<SubInventoriesRice>,
   ) {}
 
   async create(createRecieptDto: CreateRecieptDto) {
@@ -70,36 +78,6 @@ export class RecieptService {
       });
       if (!user) {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-      }
-      if (createRecieptDto.receiptType == 'ร้านจัดเลี้ยง') {
-        const checkStock = await this.checkIngredientRepository.findOne({
-          where: { CheckID: createRecieptDto.checkStockId },
-        });
-        if (createRecieptDto.receiptItems.length === 0) {
-          console.log('createRecieptDto.receiptType', createRecieptDto);
-
-          // Find the CheckIngredient entity based on checkStockId
-
-          const receiptFinish = new Reciept();
-
-          if (checkStock) {
-            // Set the checkIngredient relationship on the receipt
-            // receiptFinish.checkIngredientId = checkStock.CheckID;
-            receiptFinish.receiptType = createRecieptDto.receiptType;
-            receiptFinish.receiptTotalPrice =
-              createRecieptDto.receiptTotalPrice;
-            receiptFinish.receiptTotalDiscount =
-              createRecieptDto.receiptTotalDiscount;
-            receiptFinish.receiptNetPrice = createRecieptDto.receiptNetPrice;
-            receiptFinish.receiptStatus = createRecieptDto.receiptStatus;
-            receiptFinish.user = user;
-
-            // Save the receipt again to persist the relationship
-            await this.recieptRepository.save(receiptFinish);
-            console.log('receiptFinish', receiptFinish);
-            return;
-          }
-        }
       }
 
       let customer = null;
@@ -112,9 +90,7 @@ export class RecieptService {
         }
       }
 
-      // Set the receipt number before creating the receipt
       const receiptNumber = await this.getNextReceiptNumber();
-
       const newReciept = this.recieptRepository.create({
         receiptNumber: receiptNumber,
         receiptTotalPrice: createRecieptDto.receiptTotalPrice,
@@ -149,6 +125,7 @@ export class RecieptService {
             'productTypes',
             'productTypes.recipes',
             'productTypes.recipes.ingredient',
+            'ingredient',
           ],
         });
 
@@ -186,14 +163,78 @@ export class RecieptService {
           );
         }
 
-        // Ensure every productType has recipes
-        // if (!productType.recipes || productType.recipes.length === 0) {
-        //   throw new HttpException(
-        //     'Product Type is missing recipes',
-        //     HttpStatus.BAD_REQUEST,
-        //   );
-        // }
+        // Inventory check for products that have `haveTopping` = false and `needLinkIngredient` = true
+        if (
+          product.haveTopping === false &&
+          product.needLinkIngredient === true
+        ) {
+          console.log('product', product);
 
+          if (product.storeType === 'ร้านกาแฟ') {
+            const ingredient = await this.ingredientRepository.findOne({
+              where: {
+                ingredientId: product.ingredient.ingredientId,
+              },
+            });
+            const inventory = await this.subInventoryCoffeeRepository.findOne({
+              where: {
+                ingredient: { ingredientId: ingredient.ingredientId },
+              },
+            });
+
+            if (!inventory) {
+              throw new HttpException(
+                'Inventory not found',
+                HttpStatus.NOT_FOUND,
+              );
+            }
+
+            const availableQuantity =
+              inventory.quantity - inventory.reservedQuantity;
+            if (availableQuantity < receiptItemDto.quantity) {
+              throw new HttpException(
+                `Insufficient inventory for product ${product.productName}`,
+                HttpStatus.BAD_REQUEST,
+              );
+            }
+
+            // Deduct the quantity from the inventory
+            inventory.quantity -= receiptItemDto.quantity;
+            await this.subInventoryCoffeeRepository.save(inventory);
+          }
+          if (product.storeType === 'ร้านข้าว') {
+            const ingredient = await this.ingredientRepository.findOne({
+              where: {
+                ingredientId: product.ingredient.ingredientId,
+              },
+            });
+            const inventory = await this.subInventoryRiceRepository.findOne({
+              where: {
+                ingredient: { ingredientId: ingredient.ingredientId },
+              },
+            });
+
+            if (!inventory) {
+              throw new HttpException(
+                'Inventory not found',
+                HttpStatus.NOT_FOUND,
+              );
+            }
+
+            const availableQuantity =
+              inventory.quantity - inventory.reservedQuantity;
+            if (availableQuantity < receiptItemDto.quantity) {
+              throw new HttpException(
+                `Insufficient inventory for product ${product.productName}`,
+                HttpStatus.BAD_REQUEST,
+              );
+            }
+
+            // Deduct the quantity from the inventory
+            inventory.quantity -= receiptItemDto.quantity;
+            await this.subInventoryRiceRepository.save(inventory);
+          }
+        }
         const newRecieptItem = this.recieptItemRepository.create({
           ...receiptItemDto,
           reciept: recieptSave,
@@ -201,13 +242,6 @@ export class RecieptService {
           productType: productType,
           receiptSubTotal: receiptItemDto.receiptSubTotal,
         });
-        //loging
-        // productType.recipes.forEach((recipe) => {
-        //   const usedQuantity = recipe.quantity * receiptItemDto.quantity;
-        //   this.logger.log(
-        //     `Ingredient ${recipe.ingredient.ingredientName} used: ${usedQuantity} ${recipe.ingredient.ingredientUnit}`,
-        //   );
-        // });
 
         const recieptItemSave = await this.recieptItemRepository.save(
           newRecieptItem,
@@ -242,17 +276,6 @@ export class RecieptService {
               );
             }
 
-            // Ensure every topping productType has recipes
-            // if (
-            //   !toppingProductType.recipes ||
-            //   toppingProductType.recipes.length === 0
-            // ) {
-            //   throw new HttpException(
-            //     'Topping Product Type is missing recipes',
-            //     HttpStatus.BAD_REQUEST,
-            //   );
-            // }
-
             const topping = await this.toppingRepository.findOne({
               where: {
                 toppingId:
@@ -284,27 +307,9 @@ export class RecieptService {
 
           recieptItemSave.productTypeToppings = productTypeToppings;
 
-          // Add base product price and product type price only once per receipt item
           await this.recieptItemRepository.save(recieptItemSave);
         }
-        // productType.recipes.forEach(async (recipe) => {
-        //   const usedQuantity = recipe.quantity * receiptItemDto.quantity;
 
-        //   const ingredientUsageLog = this.ingredientUsageLogRepository.create({
-        //     ingredient: recipe.ingredient,
-        //     recieptItem: recieptItemSave,
-        //     usedQuantity: usedQuantity,
-        //     unit: receiptItemDto.quantity,
-        //   });
-
-        //   await this.ingredientUsageLogRepository.save(ingredientUsageLog);
-
-        //   this.logger.log(
-        //     `Ingredient ${recipe.ingredient.ingredientName} used: ${usedQuantity} ${recipe.ingredient.ingredientUnit}`,
-        //   );
-        // });
-
-        // Calculate points if the product has countingPoint = true
         if (product.countingPoint) {
           totalPoints += receiptItemDto.quantity;
         }
@@ -327,19 +332,6 @@ export class RecieptService {
       if (createRecieptDto.receiptType === 'ร้านจัดเลี้ยง') {
         if (createRecieptDto.checkStockId) {
           console.log('createRecieptDto.receiptType', createRecieptDto);
-
-          // Find the CheckIngredient entity based on checkStockId
-          // const checkStock = await this.checkIngredientRepository.findOne({
-          //   where: { CheckID: createRecieptDto.checkStockId },
-          // });
-
-          // if (checkStock) {
-          //   // Set the checkIngredient relationship on the receipt
-          //   receiptFinish.checkIngredientId = checkStock.CheckID;
-
-          //   // Save the receipt again to persist the relationship
-          //   console.log('receiptFinish', receiptFinish);
-          // }
         } else {
           // receiptFinish.checkIngredientId = null;
         }
@@ -348,7 +340,7 @@ export class RecieptService {
         }
         await this.recieptRepository.save(receiptFinish);
       }
-      // Update customer points if customer exists
+
       if (customer) {
         customer.customerNumberOfStamp += totalPoints;
         await this.customerRepository.save(customer);
@@ -372,8 +364,6 @@ export class RecieptService {
           'receiptPromotions.promotion',
         ],
       });
-
-      // await this.updateIngredientStock(recipt.receiptItems);
 
       return recipt;
     } catch (error) {
