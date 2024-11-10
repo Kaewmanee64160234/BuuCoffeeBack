@@ -228,6 +228,7 @@ export class ProductsService {
           'category',
           'productTypes.recipes',
           'productTypes.recipes.ingredient',
+          'ingredient',
         ],
       });
     } catch (error) {
@@ -271,6 +272,7 @@ export class ProductsService {
           'category',
           'productTypes.recipes',
           'productTypes.recipes.ingredient',
+          'ingredient',
         ],
       });
     } catch (error) {

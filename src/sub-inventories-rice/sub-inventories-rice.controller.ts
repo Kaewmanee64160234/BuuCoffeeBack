@@ -45,6 +45,14 @@ export class SubInventoriesRiceController {
     );
   }
 
+  // getInventoryByProductId
+  @Get('product/:productId')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('ดูวัตถุดิบ')
+  async getInventoryByProductId(@Param('productId') productId: string) {
+    return this.subInventoriesRiceService.getInventoryByProductId(+productId);
+  }
+
   @Get()
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูวัตถุดิบ')

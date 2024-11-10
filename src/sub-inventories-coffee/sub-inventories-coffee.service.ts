@@ -5,12 +5,20 @@ import { SubInventoriesCoffee } from './entities/sub-inventories-coffee.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, Like, Repository } from 'typeorm';
 import { Equal } from 'typeorm';
+import { Product } from 'src/products/entities/product.entity';
+import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 
 @Injectable()
 export class SubInventoriesCoffeeService {
   constructor(
     @InjectRepository(SubInventoriesCoffee)
     private coffeeShopSubInventoryRepository: Repository<SubInventoriesCoffee>,
+    // product
+    @InjectRepository(Product)
+    private productRepository: Repository<Product>,
+    // ingredient
+    @InjectRepository(Ingredient)
+    private ingredientRepository: Repository<Ingredient>,
   ) {}
   create(createSubInventoriesCoffeeDto: CreateSubInventoriesCoffeeDto) {
     return 'This action adds a new subInventoriesCoffee';
@@ -53,6 +61,36 @@ export class SubInventoriesCoffeeService {
     updateSubInventoriesCoffeeDto: UpdateSubInventoriesCoffeeDto,
   ) {
     return `This action updates a #${id} subInventoriesCoffee`;
+  }
+
+  // get inventory by product id
+  // getInventoryCoffeeByProductId
+  async getInventoryByProductId(productId: number) {
+    // Select the appropriate repository based on store type
+    console.log('productId', productId);
+
+    const product = await this.productRepository.findOne({
+      where: { productId: productId },
+      relations: ['ingredient'],
+    });
+
+    const ingredient = await this.ingredientRepository.findOne({
+      where: { ingredientId: product.ingredient.ingredientId },
+    });
+
+    const subInventory = await this.coffeeShopSubInventoryRepository.findOne({
+      where: {
+        ingredient: {
+          ingredientId: ingredient.ingredientId,
+        },
+      },
+    });
+
+    if (!subInventory) {
+      throw new Error('ไม่พบวัตถุดิบ'); // "Ingredient not found"
+    }
+
+    return subInventory;
   }
 
   remove(id: number) {

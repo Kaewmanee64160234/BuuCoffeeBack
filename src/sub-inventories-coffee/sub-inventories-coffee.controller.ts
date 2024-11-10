@@ -32,6 +32,14 @@ export class SubInventoriesCoffeeController {
     );
   }
 
+  // getInventoryByProductId
+  @Get('product/:productId')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('ดูวัตถุดิบ')
+  async getInventoryByProductId(@Param('productId') productId: string) {
+    return this.subInventoriesCoffeeService.getInventoryByProductId(+productId);
+  }
+
   @Get('paginate')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('ดูวัตถุดิบ')

@@ -4,11 +4,19 @@ import { UpdateSubInventoriesRiceDto } from './dto/update-sub-inventories-rice.d
 import { SubInventoriesRice } from './entities/sub-inventories-rice.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { Product } from 'src/products/entities/product.entity';
+import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 @Injectable()
 export class SubInventoriesRiceService {
   constructor(
     @InjectRepository(SubInventoriesRice)
     private riceShopSubInventoryRepository: Repository<SubInventoriesRice>,
+    // productRepository
+    @InjectRepository(Product)
+    private productRepository: Repository<Product>,
+    // ingredientRepository
+    @InjectRepository(Ingredient)
+    private ingredientRepository: Repository<Ingredient>,
   ) {}
   create(createSubInventoriesRiceDto: CreateSubInventoriesRiceDto) {
     return 'This action adds a new subInventoriesRice';
@@ -42,6 +50,34 @@ export class SubInventoriesRiceService {
     });
   }
 
+  // getInventoryByProductId
+  async getInventoryByProductId(productId: number) {
+    // Select the appropriate repository based on store type
+    console.log('productId', productId);
+
+    const product = await this.productRepository.findOne({
+      where: { productId: productId },
+      relations: ['ingredient'],
+    });
+
+    const ingredient = await this.ingredientRepository.findOne({
+      where: { ingredientId: product.ingredient.ingredientId },
+    });
+
+    const subInventory = await this.riceShopSubInventoryRepository.findOne({
+      where: {
+        ingredient: {
+          ingredientId: ingredient.ingredientId,
+        },
+      },
+    });
+
+    if (!subInventory) {
+      throw new Error('ไม่พบวัตถุดิบ'); // "Ingredient not found"
+    }
+
+    return subInventory;
+  }
   findOne(id: number) {
     return `This action returns a #${id} subInventoriesRice`;
   }
