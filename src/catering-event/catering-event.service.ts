@@ -141,6 +141,7 @@ export class CateringEventService {
 
                 // Reserve inventory quantity
                 inventory.reservedQuantity += mealProductData.quantity;
+
                 if (mealProductData.type === 'ร้านกาแฟ') {
                   await this.subInventoriesCoffeeRepository.save(inventory);
                 }
@@ -191,66 +192,74 @@ export class CateringEventService {
   }
 
   async updateStatus(id: number, status: string): Promise<CateringEvent> {
-    const event = await this.findOne(id);
+    // Ensure all necessary relationships are loaded
+    const event = await this.cateringEventRepository.findOne({
+      where: { eventId: id },
+      relations: [
+        'meals',
+        'meals.mealProducts',
+        'meals.mealProducts.product',
+        'meals.mealProducts.product.ingredient',
+      ],
+    });
+
     if (!event) {
       throw new NotFoundException(`Catering event with id ${id} not found`);
     }
-    event.status = status;
-    // ujpdate quantity reserved in sub inventory
+
+    // Perform inventory updates based on status change
     if (event.meals) {
-      event.meals.forEach(async (meal) => {
-        meal.mealProducts.forEach(async (mealProduct) => {
-          if (mealProduct.product.needLinkIngredient) {
-            if (mealProduct.product.storeType === 'coffee') {
-              const ingredient = await this.ingredientRepository.findOne({
-                where: {
-                  ingredientId: mealProduct.product.ingredient.ingredientId,
-                },
-              });
+      for (const meal of event.meals) {
+        for (const mealProduct of meal.mealProducts) {
+          if (mealProduct.product && mealProduct.product.needLinkIngredient) {
+            const ingredientId = mealProduct.product.ingredient?.ingredientId;
+            if (ingredientId) {
+              let inventory;
 
-              if (!ingredient) {
-                throw new NotFoundException('Ingredient not found');
-              }
-
-              const coffeeInventory =
-                await this.subInventoriesCoffeeRepository.findOne({
-                  where: { ingredient },
+              if (mealProduct.product.storeType === 'ร้านกาแฟ') {
+                inventory = await this.subInventoriesCoffeeRepository.findOne({
+                  where: { ingredient: { ingredientId } },
                 });
-
-              if (!coffeeInventory) {
-                throw new NotFoundException('Coffee inventory not found');
-              }
-
-              coffeeInventory.reservedQuantity -= mealProduct.quantity;
-              await this.subInventoriesCoffeeRepository.save(coffeeInventory);
-            }
-            if (mealProduct.product.storeType === 'rice') {
-              const ingredient = await this.ingredientRepository.findOne({
-                where: {
-                  ingredientId: mealProduct.product.ingredient.ingredientId,
-                },
-              });
-
-              if (!ingredient) {
-                throw new NotFoundException('Ingredient not found');
-              }
-
-              const coffeeInventory =
-                await this.subInventoriesCoffeeRepository.findOne({
-                  where: { ingredient },
+                if (!inventory)
+                  throw new NotFoundException('Coffee inventory not found');
+              } else if (mealProduct.product.storeType === 'ร้านข้าว') {
+                inventory = await this.subInventoriesRiceRepository.findOne({
+                  where: { ingredient: { ingredientId } },
                 });
-
-              if (!coffeeInventory) {
-                throw new NotFoundException('Coffee inventory not found');
+                if (!inventory)
+                  throw new NotFoundException('Rice inventory not found');
               }
+              console.log('status', status);
 
-              coffeeInventory.reservedQuantity -= mealProduct.quantity;
-              await this.subInventoriesCoffeeRepository.save(coffeeInventory);
+              if (inventory) {
+                if (status === 'paid') {
+                  // On success, deduct quantity and reserved quantity if sufficient reserve exists
+                  if (inventory.reservedQuantity >= mealProduct.quantity) {
+                    inventory.quantity -= mealProduct.quantity;
+                    inventory.reservedQuantity -= mealProduct.quantity;
+                  } else {
+                    throw new Error(
+                      `Insufficient reserved quantity for ${mealProduct.product.storeType}`,
+                    );
+                  }
+                }
+                if (status === 'canceled') {
+                  inventory.quantity += mealProduct.quantity;
+                  inventory.reservedQuantity -= mealProduct.quantity;
+                }
+                await (mealProduct.product.storeType === 'ร้านกาแฟ'
+                  ? this.subInventoriesCoffeeRepository
+                  : this.subInventoriesRiceRepository
+                ).save(inventory);
+              }
             }
           }
-        });
-      });
+        }
+      }
     }
+
+    // Update the status of the event
+    event.status = status;
     return this.cateringEventRepository.save(event);
   }
 
@@ -280,29 +289,81 @@ export class CateringEventService {
     };
   }
 
-  // cancel
   async cancel(id: number): Promise<CateringEvent> {
-    const event = await this.findOne(id);
+    // Load the event with all necessary relationships
+    const event = await this.cateringEventRepository.findOne({
+      where: { eventId: id },
+      relations: [
+        'meals',
+        'meals.mealProducts',
+        'meals.mealProducts.product',
+        'meals.mealProducts.product.ingredient',
+      ],
+    });
+
     if (!event) {
       throw new NotFoundException(`Catering event with id ${id} not found`);
     }
+
+    // Set event status to "canceled"
     event.status = 'canceled';
-    // find receipt and update status
+
+    // Update inventory for each meal product
+    if (event.meals) {
+      for (const meal of event.meals) {
+        for (const mealProduct of meal.mealProducts) {
+          if (mealProduct.product && mealProduct.product.needLinkIngredient) {
+            const ingredientId = mealProduct.product.ingredient?.ingredientId;
+            if (ingredientId) {
+              let inventory;
+
+              if (mealProduct.product.storeType === 'ร้านกาแฟ') {
+                inventory = await this.subInventoriesCoffeeRepository.findOne({
+                  where: { ingredient: { ingredientId } },
+                });
+                if (!inventory)
+                  throw new NotFoundException('Coffee inventory not found');
+              } else if (mealProduct.product.storeType === 'ร้านข้าว') {
+                inventory = await this.subInventoriesRiceRepository.findOne({
+                  where: { ingredient: { ingredientId } },
+                });
+                if (!inventory)
+                  throw new NotFoundException('Rice inventory not found');
+              }
+
+              if (inventory) {
+                // Adjust inventory for "canceled" status
+                inventory.quantity += mealProduct.quantity;
+                inventory.reservedQuantity -= mealProduct.quantity;
+                await (mealProduct.product.storeType === 'ร้านกาแฟ'
+                  ? this.subInventoriesCoffeeRepository
+                  : this.subInventoriesRiceRepository
+                ).save(inventory);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Update related receipts to "canceled" status
     const receiptRice = await this.receiptRepository.findOne({
       where: { receiptId: event.riceReceiptId },
     });
     if (receiptRice) {
-      receiptRice.receiptStatus = 'cancel';
-      await this.productRepository.save(receiptRice);
+      receiptRice.receiptStatus = 'canceled';
+      await this.receiptRepository.save(receiptRice);
     }
+
     const receiptCoffee = await this.receiptRepository.findOne({
       where: { receiptId: event.coffeeReceiptId },
     });
     if (receiptCoffee) {
-      receiptCoffee.receiptStatus = 'cancel';
-      await this.productRepository.save(receiptCoffee);
+      receiptCoffee.receiptStatus = 'canceled';
+      await this.receiptRepository.save(receiptCoffee);
     }
 
+    // Save and return the updated event with the "canceled" status
     return this.cateringEventRepository.save(event);
   }
 }
