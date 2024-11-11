@@ -166,7 +166,8 @@ export class RecieptService {
         // Inventory check for products that have `haveTopping` = false and `needLinkIngredient` = true
         if (
           product.haveTopping === false &&
-          product.needLinkIngredient === true
+          product.needLinkIngredient === true &&
+          recieptSave.receiptStatus !== 'ร้านจัดเลี้ยง'
         ) {
           console.log('product', product);
 

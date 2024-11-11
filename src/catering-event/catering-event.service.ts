@@ -80,8 +80,79 @@ export class CateringEventService {
       cateringEvent.coffeeReceiptId = cateringEventData.coffeeReceiptId;
 
     if (cateringEventData.meals) {
+      // Step 1: Aggregate required quantities by ingredient ID across all meals
+      const ingredientQuantities: {
+        [ingredientId: number]: { quantity: number; type: string };
+      } = {};
+
+      for (const mealData of cateringEventData.meals) {
+        for (const mealProductData of mealData.mealProducts) {
+          const product = await this.productRepository.findOne({
+            where: { productId: mealProductData.product.productId },
+            relations: ['ingredient'],
+          });
+          if (!product && mealProductData.type !== 'เลี้ยงรับรอง')
+            throw new NotFoundException('Product not found');
+
+          if (
+            mealProductData.type !== 'เลี้ยงรับรอง' &&
+            product.needLinkIngredient &&
+            product.ingredient
+          ) {
+            const ingredientId = product.ingredient.ingredientId;
+            if (!ingredientQuantities[ingredientId]) {
+              ingredientQuantities[ingredientId] = {
+                quantity: 0,
+                type: mealProductData.type,
+              };
+            }
+            ingredientQuantities[ingredientId].quantity +=
+              mealProductData.quantity;
+          }
+        }
+      }
+
+      // Step 2: Check inventory for each ingredient and reserve if sufficient
+      for (const [ingredientId, { quantity, type }] of Object.entries(
+        ingredientQuantities,
+      )) {
+        const ingredientIdNum = Number(ingredientId);
+        let inventory;
+
+        // Retrieve inventory based on the type (ร้านกาแฟ or ร้านข้าว)
+        if (type === 'ร้านกาแฟ') {
+          inventory = await this.subInventoriesCoffeeRepository.findOne({
+            where: { ingredient: { ingredientId: ingredientIdNum } },
+          });
+          if (!inventory)
+            throw new NotFoundException('Coffee inventory not found');
+        } else if (type === 'ร้านข้าว') {
+          inventory = await this.subInventoriesRiceRepository.findOne({
+            where: { ingredient: { ingredientId: ingredientIdNum } },
+          });
+          if (!inventory)
+            throw new NotFoundException('Rice inventory not found');
+        }
+
+        // Check if inventory is sufficient
+        if (inventory.quantity - inventory.reservedQuantity < quantity) {
+          throw new Error(
+            `Insufficient ${type} inventory for ingredient ID ${ingredientId}`,
+          );
+        }
+
+        // Reserve inventory if sufficient
+        inventory.reservedQuantity += quantity;
+        if (type === 'ร้านกาแฟ') {
+          await this.subInventoriesCoffeeRepository.save(inventory);
+        } else if (type === 'ร้านข้าว') {
+          await this.subInventoriesRiceRepository.save(inventory);
+        }
+      }
+
+      // Step 3: Save each meal and mealProduct once inventory is confirmed sufficient
       cateringEvent.meals = await Promise.all(
-        cateringEventData.meals.map(async (mealData: Meal) => {
+        cateringEventData.meals.map(async (mealData) => {
           const newMeal = new Meal();
           newMeal.mealName = mealData.mealName;
           newMeal.mealTime = mealData.mealTime;
@@ -89,76 +160,14 @@ export class CateringEventService {
           newMeal.totalPrice = mealData.totalPrice;
 
           newMeal.mealProducts = await Promise.all(
-            mealData.mealProducts.map(async (mealProductData: MealProduct) => {
+            mealData.mealProducts.map(async (mealProductData) => {
               const mealProduct = new MealProduct();
-
-              // Fetch and validate product
               const product = await this.productRepository.findOne({
                 where: { productId: mealProductData.product.productId },
-                relations: ['ingredient'],
               });
-              if (!product && mealProductData.type != 'เลี้ยงรับรอง')
-                throw new NotFoundException('Product not found');
 
-              // Check and reserve inventory if product has linked ingredient
-              if (
-                mealProductData.type != 'เลี้ยงรับรอง' &&
-                product.needLinkIngredient &&
-                product.ingredient
-              ) {
-                const ingredientId_ = product.ingredient.ingredientId;
-                console.log('ingredientId_', ingredientId_);
-
-                let inventory;
-                if (mealProductData.type === 'ร้านกาแฟ') {
-                  inventory = await this.subInventoriesCoffeeRepository.findOne(
-                    {
-                      where: { ingredient: { ingredientId: ingredientId_ } },
-                    },
-                  );
-                  if (!inventory)
-                    throw new NotFoundException('Coffee inventory not found');
-                } else if (mealProductData.type === 'ร้านข้าว') {
-                  console.log('rice', ingredientId_);
-
-                  inventory = await this.subInventoriesRiceRepository.findOne({
-                    where: { ingredient: { ingredientId: ingredientId_ } },
-                  });
-
-                  if (!inventory)
-                    throw new NotFoundException('Rice inventory not found');
-                  console.log('rice', inventory);
-                }
-
-                if (
-                  inventory.quantity - inventory.reservedQuantity <
-                  mealProductData.quantity
-                ) {
-                  throw new Error(
-                    `Insufficient ${mealProductData.type} inventory`,
-                  );
-                }
-
-                // Reserve inventory quantity
-                inventory.reservedQuantity += mealProductData.quantity;
-
-                if (mealProductData.type === 'ร้านกาแฟ') {
-                  await this.subInventoriesCoffeeRepository.save(inventory);
-                }
-                if (mealProductData.type === 'ร้านข้าว') {
-                  await this.subInventoriesRiceRepository.save(inventory);
-                }
-              }
-
-              // Set meal product properties
               mealProduct.product = product;
-              if (mealProductData.type === 'เลี้ยงรับรอง') {
-                mealProduct.productName = mealProductData.productName;
-              } else {
-                mealProduct.productName =
-                  product.productName || mealProductData.productName;
-              }
-
+              mealProduct.productName = mealProductData.productName;
               mealProduct.price = mealProductData.price;
               mealProduct.quantity = mealProductData.quantity;
               mealProduct.totalPrice = mealProductData.totalPrice;
