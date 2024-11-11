@@ -50,7 +50,13 @@ export class CateringEventService {
   async findOne(id: number): Promise<CateringEvent> {
     const event = await this.cateringEventRepository.findOne({
       where: { eventId: id },
-      relations: ['meals', 'user'],
+      relations: [
+        'meals',
+        'user',
+        'meals.mealProducts',
+        'meals.mealProducts.product',
+        'meals.mealProducts.product.ingredient',
+      ],
     });
     if (!event) {
       throw new NotFoundException(`Catering event with id ${id} not found`);
