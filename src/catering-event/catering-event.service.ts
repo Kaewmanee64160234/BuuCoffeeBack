@@ -195,15 +195,170 @@ export class CateringEventService {
 
   async update(
     id: number,
-    updateData: Partial<CateringEvent>,
+    updateData: Partial<CreateCateringEventDto>,
   ): Promise<CateringEvent> {
-    const event = await this.findOne(id);
-    if (!event) {
+    const existingEvent = await this.cateringEventRepository.findOne({
+      where: { eventId: id },
+      relations: [
+        'meals',
+        'meals.mealProducts',
+        'meals.mealProducts.product',
+        'meals.mealProducts.product.ingredient',
+      ],
+    });
+
+    if (!existingEvent) {
       throw new NotFoundException(`Catering event with id ${id} not found`);
     }
 
-    Object.assign(event, updateData);
-    return this.cateringEventRepository.save(event);
+    // Step 1: Release previously reserved inventory for this event
+    const ingredientQuantitiesToRelease: {
+      [ingredientId: number]: { quantity: number; type: string };
+    } = {};
+    existingEvent.meals.forEach((meal) => {
+      meal.mealProducts.forEach((mealProduct) => {
+        const product = mealProduct.product;
+        if (product && product.ingredient && product.needLinkIngredient) {
+          const ingredientId = product.ingredient.ingredientId;
+          if (!ingredientQuantitiesToRelease[ingredientId]) {
+            ingredientQuantitiesToRelease[ingredientId] = {
+              quantity: 0,
+              type: mealProduct.type,
+            };
+          }
+          ingredientQuantitiesToRelease[ingredientId].quantity +=
+            mealProduct.quantity;
+        }
+      });
+    });
+
+    for (const [ingredientId, { quantity, type }] of Object.entries(
+      ingredientQuantitiesToRelease,
+    )) {
+      const ingredientIdNum = Number(ingredientId);
+      let inventory;
+
+      if (type === 'ร้านกาแฟ') {
+        inventory = await this.subInventoriesCoffeeRepository.findOne({
+          where: { ingredient: { ingredientId: ingredientIdNum } },
+        });
+        if (!inventory)
+          throw new NotFoundException('Coffee inventory not found');
+      } else if (type === 'ร้านข้าว') {
+        inventory = await this.subInventoriesRiceRepository.findOne({
+          where: { ingredient: { ingredientId: ingredientIdNum } },
+        });
+        if (!inventory) throw new NotFoundException('Rice inventory not found');
+      }
+
+      inventory.reservedQuantity -= quantity;
+      await (type === 'ร้านกาแฟ'
+        ? this.subInventoriesCoffeeRepository
+        : this.subInventoriesRiceRepository
+      ).save(inventory);
+    }
+
+    // Step 2: Calculate new ingredient requirements and check inventory
+    const newIngredientQuantities: {
+      [ingredientId: number]: { quantity: number; type: string };
+    } = {};
+    if (updateData.meals) {
+      for (const mealData of updateData.meals) {
+        for (const mealProductData of mealData.mealProducts) {
+          const product = await this.productRepository.findOne({
+            where: { productId: mealProductData.product.productId },
+            relations: ['ingredient'],
+          });
+          if (!product && mealProductData.type !== 'เลี้ยงรับรอง') {
+            throw new NotFoundException('Product not found');
+          }
+          if (
+            mealProductData.type !== 'เลี้ยงรับรอง' &&
+            product.needLinkIngredient &&
+            product.ingredient
+          ) {
+            const ingredientId = product.ingredient.ingredientId;
+            if (!newIngredientQuantities[ingredientId]) {
+              newIngredientQuantities[ingredientId] = {
+                quantity: 0,
+                type: mealProductData.type,
+              };
+            }
+            newIngredientQuantities[ingredientId].quantity +=
+              mealProductData.quantity;
+          }
+        }
+      }
+
+      for (const [ingredientId, { quantity, type }] of Object.entries(
+        newIngredientQuantities,
+      )) {
+        const ingredientIdNum = Number(ingredientId);
+        let inventory;
+
+        if (type === 'ร้านกาแฟ') {
+          inventory = await this.subInventoriesCoffeeRepository.findOne({
+            where: { ingredient: { ingredientId: ingredientIdNum } },
+          });
+          if (!inventory)
+            throw new NotFoundException('Coffee inventory not found');
+        } else if (type === 'ร้านข้าว') {
+          inventory = await this.subInventoriesRiceRepository.findOne({
+            where: { ingredient: { ingredientId: ingredientIdNum } },
+          });
+          if (!inventory)
+            throw new NotFoundException('Rice inventory not found');
+        }
+
+        if (inventory.quantity - inventory.reservedQuantity < quantity) {
+          throw new Error(
+            `Insufficient ${type} inventory for ingredient ID ${ingredientId}`,
+          );
+        }
+
+        // Reserve new quantities
+        inventory.reservedQuantity += quantity;
+        await (type === 'ร้านกาแฟ'
+          ? this.subInventoriesCoffeeRepository
+          : this.subInventoriesRiceRepository
+        ).save(inventory);
+      }
+    }
+
+    // Step 3: Update the event with the new data
+    Object.assign(existingEvent, updateData);
+    if (updateData.meals) {
+      existingEvent.meals = await Promise.all(
+        updateData.meals.map(async (mealData) => {
+          const newMeal = new Meal();
+          newMeal.mealName = mealData.mealName;
+          newMeal.mealTime = mealData.mealTime;
+          newMeal.description = mealData.description;
+          newMeal.totalPrice = mealData.totalPrice;
+
+          newMeal.mealProducts = await Promise.all(
+            mealData.mealProducts.map(async (mealProductData) => {
+              const mealProduct = new MealProduct();
+              const product = await this.productRepository.findOne({
+                where: { productId: mealProductData.product.productId },
+              });
+
+              mealProduct.product = product;
+              mealProduct.productName = mealProductData.productName;
+              mealProduct.price = mealProductData.price;
+              mealProduct.quantity = mealProductData.quantity;
+              mealProduct.totalPrice = mealProductData.totalPrice;
+              mealProduct.type = mealProductData.type;
+
+              return this.mealProductRepository.save(mealProduct);
+            }),
+          );
+
+          return this.mealRepository.save(newMeal);
+        }),
+      );
+    }
+    return this.cateringEventRepository.save(existingEvent);
   }
 
   async updateStatus(id: number, status: string): Promise<CateringEvent> {
