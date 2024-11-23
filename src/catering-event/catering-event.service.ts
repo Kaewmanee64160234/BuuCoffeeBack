@@ -56,6 +56,7 @@ export class CateringEventService {
         'meals.mealProducts',
         'meals.mealProducts.product',
         'meals.mealProducts.product.ingredient',
+        'meals.mealProducts.product.productTypes',
       ],
     });
     if (!event) {
@@ -174,7 +175,7 @@ export class CateringEventService {
 
               mealProduct.product = product;
               mealProduct.productName = mealProductData.productName;
-              mealProduct.price = mealProductData.price;
+              mealProduct.productPrice = mealProductData.productPrice;
               mealProduct.quantity = mealProductData.quantity;
               mealProduct.totalPrice = mealProductData.totalPrice;
               mealProduct.type = mealProductData.type;
@@ -345,7 +346,7 @@ export class CateringEventService {
 
               mealProduct.product = product;
               mealProduct.productName = mealProductData.productName;
-              mealProduct.price = mealProductData.price;
+              mealProduct.productPrice = mealProductData.productPrice;
               mealProduct.quantity = mealProductData.quantity;
               mealProduct.totalPrice = mealProductData.totalPrice;
               mealProduct.type = mealProductData.type;

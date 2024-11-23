@@ -27,7 +27,7 @@ export class MealProduct {
   productName: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
-  price: number;
+  productPrice: number;
 
   @Column()
   quantity: number;
