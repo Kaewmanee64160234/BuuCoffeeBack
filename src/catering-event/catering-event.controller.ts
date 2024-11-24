@@ -16,6 +16,7 @@ import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { PermissionsGuard } from 'src/guards/roles.guard';
 import { Permissions } from 'src/decorators/permissions.decorator';
+import { UpdateCateringEventDto } from './dto/update-catering-event.dto';
 
 @Controller('catering-events')
 export class CateringEventController {
@@ -46,12 +47,12 @@ export class CateringEventController {
     return this.cateringEventService.findOne(+id);
   }
 
-  @Put(':id')
+  @Patch(':id')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการการเลี้ยงรับรอง')
   async update(
     @Param('id') id: string,
-    @Body() updateCateringEventDto: Partial<CateringEvent>,
+    @Body() updateCateringEventDto: UpdateCateringEventDto,
   ): Promise<CateringEvent> {
     return this.cateringEventService.update(+id, updateCateringEventDto);
   }

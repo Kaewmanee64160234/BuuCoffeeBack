@@ -212,154 +212,188 @@ export class CateringEventService {
       throw new NotFoundException(`Catering event with id ${id} not found`);
     }
 
-    // Step 1: Release previously reserved inventory for this event
-    const ingredientQuantitiesToRelease: {
-      [ingredientId: number]: { quantity: number; type: string };
-    } = {};
-    existingEvent.meals.forEach((meal) => {
-      meal.mealProducts.forEach((mealProduct) => {
-        const product = mealProduct.product;
-        if (product && product.ingredient && product.needLinkIngredient) {
-          const ingredientId = product.ingredient.ingredientId;
-          if (!ingredientQuantitiesToRelease[ingredientId]) {
-            ingredientQuantitiesToRelease[ingredientId] = {
-              quantity: 0,
-              type: mealProduct.type,
-            };
-          }
-          ingredientQuantitiesToRelease[ingredientId].quantity +=
-            mealProduct.quantity;
-        }
-      });
-    });
+    // Update event-level details
+    existingEvent.eventName = updateData.eventName || existingEvent.eventName;
+    existingEvent.eventDate = updateData.eventDate || existingEvent.eventDate;
+    existingEvent.eventLocation =
+      updateData.eventLocation || existingEvent.eventLocation;
+    existingEvent.attendeeCount =
+      updateData.attendeeCount || existingEvent.attendeeCount;
+    existingEvent.totalBudget =
+      updateData.totalBudget || existingEvent.totalBudget;
+    existingEvent.status = updateData.status || existingEvent.status;
+
+    // Step 1: Release old inventory
+    const oldIngredientQuantities = this.aggregateIngredientQuantities(
+      existingEvent.meals,
+    );
 
     for (const [ingredientId, { quantity, type }] of Object.entries(
-      ingredientQuantitiesToRelease,
+      oldIngredientQuantities,
     )) {
-      const ingredientIdNum = Number(ingredientId);
-      let inventory;
-
-      if (type === 'ร้านกาแฟ') {
-        inventory = await this.subInventoriesCoffeeRepository.findOne({
-          where: { ingredient: { ingredientId: ingredientIdNum } },
-        });
-        if (!inventory)
-          throw new NotFoundException('Coffee inventory not found');
-      } else if (type === 'ร้านข้าว') {
-        inventory = await this.subInventoriesRiceRepository.findOne({
-          where: { ingredient: { ingredientId: ingredientIdNum } },
-        });
-        if (!inventory) throw new NotFoundException('Rice inventory not found');
-      }
-
-      inventory.reservedQuantity -= quantity;
-      await (type === 'ร้านกาแฟ'
-        ? this.subInventoriesCoffeeRepository
-        : this.subInventoriesRiceRepository
-      ).save(inventory);
+      await this.adjustInventory(Number(ingredientId), -quantity, type);
     }
 
-    // Step 2: Calculate new ingredient requirements and check inventory
-    const newIngredientQuantities: {
-      [ingredientId: number]: { quantity: number; type: string };
-    } = {};
-    if (updateData.meals) {
-      for (const mealData of updateData.meals) {
-        for (const mealProductData of mealData.mealProducts) {
-          const product = await this.productRepository.findOne({
-            where: { productId: mealProductData.product.productId },
-            relations: ['ingredient'],
-          });
-          if (!product && mealProductData.type !== 'เลี้ยงรับรอง') {
-            throw new NotFoundException('Product not found');
-          }
-          if (
-            mealProductData.type !== 'เลี้ยงรับรอง' &&
-            product.needLinkIngredient &&
-            product.ingredient
-          ) {
-            const ingredientId = product.ingredient.ingredientId;
-            if (!newIngredientQuantities[ingredientId]) {
-              newIngredientQuantities[ingredientId] = {
-                quantity: 0,
-                type: mealProductData.type,
-              };
-            }
-            newIngredientQuantities[ingredientId].quantity +=
-              mealProductData.quantity;
-          }
-        }
-      }
+    // Step 2: Identify mealProducts to delete
+    const existingMealProducts = existingEvent.meals.flatMap(
+      (meal) => meal.mealProducts,
+    );
+    const newMealProductIds = new Set(
+      (updateData.meals || [])
+        .flatMap((meal) => meal.mealProducts)
+        .map((mp) => mp.product?.productId),
+    );
 
-      for (const [ingredientId, { quantity, type }] of Object.entries(
-        newIngredientQuantities,
-      )) {
-        const ingredientIdNum = Number(ingredientId);
-        let inventory;
+    const mealProductsToDelete = existingMealProducts.filter(
+      (mp) => !newMealProductIds.has(mp.product?.productId),
+    );
 
-        if (type === 'ร้านกาแฟ') {
-          inventory = await this.subInventoriesCoffeeRepository.findOne({
-            where: { ingredient: { ingredientId: ingredientIdNum } },
-          });
-          if (!inventory)
-            throw new NotFoundException('Coffee inventory not found');
-        } else if (type === 'ร้านข้าว') {
-          inventory = await this.subInventoriesRiceRepository.findOne({
-            where: { ingredient: { ingredientId: ingredientIdNum } },
-          });
-          if (!inventory)
-            throw new NotFoundException('Rice inventory not found');
-        }
+    // Delete mealProducts no longer in the updated data
+    await Promise.all(
+      mealProductsToDelete.map((mp) =>
+        this.mealProductRepository.delete(mp.mealProductId),
+      ),
+    );
 
-        if (inventory.quantity - inventory.reservedQuantity < quantity) {
-          throw new Error(
-            `Insufficient ${type} inventory for ingredient ID ${ingredientId}`,
-          );
-        }
+    // Step 3: Handle new meals and mealProducts
+    const newMeals = updateData.meals || [];
+    const newIngredientQuantities = this.aggregateIngredientQuantities(
+      newMeals.filter((meal) =>
+        meal.mealProducts.every((mp) => mp.type !== 'เลี้ยงรับรอง'),
+      ),
+    );
 
-        // Reserve new quantities
-        inventory.reservedQuantity += quantity;
-        await (type === 'ร้านกาแฟ'
-          ? this.subInventoriesCoffeeRepository
-          : this.subInventoriesRiceRepository
-        ).save(inventory);
-      }
+    for (const [ingredientId, { quantity, type }] of Object.entries(
+      newIngredientQuantities,
+    )) {
+      await this.adjustInventory(Number(ingredientId), quantity, type, true);
     }
 
-    // Step 3: Update the event with the new data
-    Object.assign(existingEvent, updateData);
-    if (updateData.meals) {
-      existingEvent.meals = await Promise.all(
-        updateData.meals.map(async (mealData) => {
-          const newMeal = new Meal();
-          newMeal.mealName = mealData.mealName;
-          newMeal.mealTime = mealData.mealTime;
-          newMeal.description = mealData.description;
-          newMeal.totalPrice = mealData.totalPrice;
+    // Step 4: Update meals and persist changes
+    existingEvent.meals = await Promise.all(
+      newMeals.map(async (mealData) => {
+        const existingMeal = existingEvent.meals.find(
+          (meal) => meal.mealName === mealData.mealName,
+        );
+        const meal = existingMeal || new Meal();
 
-          newMeal.mealProducts = await Promise.all(
-            mealData.mealProducts.map(async (mealProductData) => {
-              const mealProduct = new MealProduct();
+        meal.mealName = mealData.mealName || meal.mealName;
+        meal.mealTime = mealData.mealTime || meal.mealTime;
+        meal.description = mealData.description || meal.description;
+
+        meal.totalPrice = mealData.mealProducts.reduce(
+          (sum, mp) => sum + mp.totalPrice,
+          0,
+        );
+
+        // Ensure meal.mealProducts is initialized
+        meal.mealProducts = meal.mealProducts || [];
+
+        meal.mealProducts = await Promise.all(
+          mealData.mealProducts.map(async (mealProductData) => {
+            const existingMealProduct = meal.mealProducts.find(
+              (mp) =>
+                mp.product?.productId === mealProductData.product?.productId,
+            );
+            const mealProduct = existingMealProduct || new MealProduct();
+
+            if (mealProductData.type === 'เลี้ยงรับรอง') {
+              // Skip product relationship lookup for 'เลี้ยงรับรอง'
+              mealProduct.product = null;
+            } else {
               const product = await this.productRepository.findOne({
                 where: { productId: mealProductData.product.productId },
               });
 
               mealProduct.product = product;
-              mealProduct.productName = mealProductData.productName;
-              mealProduct.productPrice = mealProductData.productPrice;
-              mealProduct.quantity = mealProductData.quantity;
-              mealProduct.totalPrice = mealProductData.totalPrice;
-              mealProduct.type = mealProductData.type;
+            }
 
-              return this.mealProductRepository.save(mealProduct);
-            }),
-          );
+            mealProduct.productName = mealProductData.productName;
+            mealProduct.productPrice = mealProductData.productPrice;
+            mealProduct.quantity = mealProductData.quantity;
+            mealProduct.totalPrice =
+              mealProductData.quantity * mealProductData.productPrice;
+            mealProduct.type = mealProductData.type;
 
-          return this.mealRepository.save(newMeal);
-        }),
-      );
-    }
+            return this.mealProductRepository.save(mealProduct);
+          }),
+        );
+
+        return this.mealRepository.save(meal);
+      }),
+    );
+
+    // Step 5: Recalculate total budget
+    existingEvent.totalBudget = existingEvent.meals.reduce(
+      (sum, meal) => sum + meal.totalPrice,
+      0,
+    );
+
     return this.cateringEventRepository.save(existingEvent);
+  }
+
+  private aggregateIngredientQuantities(meals: Meal[]): {
+    [ingredientId: number]: { quantity: number; type: string };
+  } {
+    const ingredientQuantities: {
+      [ingredientId: number]: { quantity: number; type: string };
+    } = {};
+
+    meals.forEach((meal) => {
+      meal.mealProducts.forEach((mealProduct) => {
+        const product = mealProduct.product;
+        if (product && product.ingredient && product.needLinkIngredient) {
+          const ingredientId = product.ingredient.ingredientId;
+          if (!ingredientQuantities[ingredientId]) {
+            ingredientQuantities[ingredientId] = {
+              quantity: 0,
+              type: mealProduct.type,
+            };
+          }
+          ingredientQuantities[ingredientId].quantity += mealProduct.quantity;
+        }
+      });
+    });
+
+    return ingredientQuantities;
+  }
+
+  private async adjustInventory(
+    ingredientId: number,
+    quantity: number,
+    type: string,
+    reserve = false,
+  ): Promise<void> {
+    let inventory;
+    if (type === 'เลี้ยงรับรอง') return;
+    if (type === 'ร้านกาแฟ') {
+      inventory = await this.subInventoriesCoffeeRepository.findOne({
+        where: { ingredient: { ingredientId } },
+      });
+      if (!inventory) throw new NotFoundException('Coffee inventory not found');
+    } else if (type === 'ร้านข้าว') {
+      inventory = await this.subInventoriesRiceRepository.findOne({
+        where: { ingredient: { ingredientId } },
+      });
+      if (!inventory) throw new NotFoundException('Rice inventory not found');
+    }
+
+    if (reserve) {
+      if (inventory.quantity - inventory.reservedQuantity < quantity) {
+        throw new Error(
+          `Insufficient ${type} inventory for ingredient ID ${ingredientId}`,
+        );
+      }
+      inventory.reservedQuantity += quantity;
+    } else {
+      inventory.reservedQuantity += quantity;
+    }
+
+    if (type === 'ร้านกาแฟ') {
+      await this.subInventoriesCoffeeRepository.save(inventory);
+    } else if (type === 'ร้านข้าว') {
+      await this.subInventoriesRiceRepository.save(inventory);
+    }
   }
 
   async updateStatus(id: number, status: string): Promise<CateringEvent> {
