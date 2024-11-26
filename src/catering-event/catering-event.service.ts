@@ -219,8 +219,6 @@ export class CateringEventService {
       updateData.eventLocation || existingEvent.eventLocation;
     existingEvent.attendeeCount =
       updateData.attendeeCount || existingEvent.attendeeCount;
-    existingEvent.totalBudget =
-      updateData.totalBudget || existingEvent.totalBudget;
     existingEvent.status = updateData.status || existingEvent.status;
 
     // Step 1: Release old inventory
@@ -234,61 +232,37 @@ export class CateringEventService {
       await this.adjustInventory(Number(ingredientId), -quantity, type);
     }
 
-    // Step 2: Identify mealProducts to delete
-    const existingMealProducts = existingEvent.meals.flatMap(
-      (meal) => meal.mealProducts,
+    // Step 2: Identify meals to remove
+    const updatedMealNames = new Set(
+      (updateData.meals || []).map((meal) => meal.mealName),
     );
-    const newMealProductIds = new Set(
-      (updateData.meals || [])
-        .flatMap((meal) => meal.mealProducts)
-        .map((mp) => mp.product?.productId),
+    const mealsToRemove = existingEvent.meals.filter(
+      (meal) => !updatedMealNames.has(meal.mealName),
     );
 
-    const mealProductsToDelete = existingMealProducts.filter(
-      (mp) => !newMealProductIds.has(mp.product?.productId),
-    );
-
-    // Delete mealProducts no longer in the updated data
-    await Promise.all(
-      mealProductsToDelete.map((mp) =>
-        this.mealProductRepository.delete(mp.mealProductId),
-      ),
-    );
-
-    // Step 3: Handle new meals and mealProducts
-    const newMeals = updateData.meals || [];
-    const newIngredientQuantities = this.aggregateIngredientQuantities(
-      newMeals.filter((meal) =>
-        meal.mealProducts.every((mp) => mp.type !== 'เลี้ยงรับรอง'),
-      ),
-    );
-
-    for (const [ingredientId, { quantity, type }] of Object.entries(
-      newIngredientQuantities,
-    )) {
-      await this.adjustInventory(Number(ingredientId), quantity, type, true);
+    // Remove meals and their associated mealProducts
+    for (const meal of mealsToRemove) {
+      await this.mealProductRepository.delete({
+        meal: { mealId: meal.mealId },
+      });
+      await this.mealRepository.delete(meal.mealId);
     }
 
-    // Step 4: Update meals and persist changes
+    // Step 3: Handle updated and new meals/products
     existingEvent.meals = await Promise.all(
-      newMeals.map(async (mealData) => {
+      (updateData.meals || []).map(async (mealData) => {
         const existingMeal = existingEvent.meals.find(
           (meal) => meal.mealName === mealData.mealName,
         );
         const meal = existingMeal || new Meal();
 
-        meal.mealName = mealData.mealName || meal.mealName;
-        meal.mealTime = mealData.mealTime || meal.mealTime;
-        meal.description = mealData.description || meal.description;
+        meal.mealName = mealData.mealName;
+        meal.mealTime = mealData.mealTime;
+        meal.description = mealData.description;
 
-        meal.totalPrice = mealData.mealProducts.reduce(
-          (sum, mp) => sum + mp.totalPrice,
-          0,
-        );
-
-        // Ensure meal.mealProducts is initialized
         meal.mealProducts = meal.mealProducts || [];
 
+        // Update or add mealProducts
         meal.mealProducts = await Promise.all(
           mealData.mealProducts.map(async (mealProductData) => {
             const existingMealProduct = meal.mealProducts.find(
@@ -298,7 +272,6 @@ export class CateringEventService {
             const mealProduct = existingMealProduct || new MealProduct();
 
             if (mealProductData.type === 'เลี้ยงรับรอง') {
-              // Skip product relationship lookup for 'เลี้ยงรับรอง'
               mealProduct.product = null;
             } else {
               const product = await this.productRepository.findOne({
@@ -309,23 +282,27 @@ export class CateringEventService {
             }
 
             mealProduct.productName = mealProductData.productName;
-            mealProduct.productPrice = mealProductData.productPrice;
-            mealProduct.quantity = mealProductData.quantity;
+            mealProduct.productPrice = mealProductData.productPrice || 0; // Default to 0
+            mealProduct.quantity = mealProductData.quantity || 0; // Default to 0
             mealProduct.totalPrice =
-              mealProductData.quantity * mealProductData.productPrice;
-            mealProduct.type = mealProductData.type;
+              (mealProductData.quantity || 0) *
+              (mealProductData.productPrice || 0);
 
             return this.mealProductRepository.save(mealProduct);
           }),
         );
 
+        meal.totalPrice =
+          mealData.totalPrice ||
+          meal.mealProducts.reduce((sum, mp) => sum + (mp.totalPrice || 0), 0);
+
         return this.mealRepository.save(meal);
       }),
     );
 
-    // Step 5: Recalculate total budget
+    // Step 4: Recalculate total budget dynamically
     existingEvent.totalBudget = existingEvent.meals.reduce(
-      (sum, meal) => sum + meal.totalPrice,
+      (sum, meal) => sum + (meal.totalPrice || 0),
       0,
     );
 

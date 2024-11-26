@@ -98,7 +98,6 @@ import { GroupPermission } from './groups/entities/group.entity';
         Meal,
         MealProduct,
         CashierItem,
-
         GroupPermission,
       ],
       synchronize: true,

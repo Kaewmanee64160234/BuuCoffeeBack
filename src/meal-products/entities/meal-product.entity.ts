@@ -1,10 +1,13 @@
 import { Meal } from 'src/meal/entities/meal.entity';
 import { Product } from 'src/products/entities/product.entity';
+import { ReceiptItem } from 'src/receipt-item/entities/receipt-item.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -14,7 +17,8 @@ export class MealProduct {
   @PrimaryGeneratedColumn()
   mealProductId: number;
 
-  @ManyToOne(() => Meal, (meal) => meal.mealProducts, { eager: true })
+  @ManyToOne(() => Meal, (meal) => meal.mealProducts, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'mealMealId' })
   meal: Meal;
 
   @ManyToOne(() => Product, (product) => product.mealProducts, {
@@ -37,6 +41,9 @@ export class MealProduct {
 
   @Column({ type: 'varchar', length: 20 })
   type: string;
+
+  @OneToMany(() => ReceiptItem, (receiptItem) => receiptItem.mealProduct)
+  receiptItems: ReceiptItem[];
 
   @CreateDateColumn()
   createdDate: Date;

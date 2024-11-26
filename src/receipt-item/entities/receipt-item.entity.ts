@@ -12,6 +12,7 @@ import { ProductTypeTopping } from 'src/product-type-toppings/entities/product-t
 import { ProductType } from 'src/product-types/entities/product-type.entity';
 import { Product } from 'src/products/entities/product.entity';
 import { Reciept } from 'src/reciept/entities/reciept.entity';
+import { MealProduct } from 'src/meal-products/entities/meal-product.entity';
 
 @Entity()
 export class ReceiptItem {
@@ -43,6 +44,11 @@ export class ReceiptItem {
   @ManyToOne(() => ProductType, (productType) => productType.receiptItems, {
     onDelete: 'CASCADE',
   })
+  @ManyToOne(() => MealProduct, (mealProduct) => mealProduct.receiptItems, {
+    onDelete: 'CASCADE',
+    eager: true,
+  })
+  mealProduct: MealProduct;
   productType: ProductType;
   @CreateDateColumn()
   createdDate: Date;
