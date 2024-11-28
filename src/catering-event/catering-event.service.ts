@@ -83,7 +83,6 @@ export class CateringEventService {
       cateringEvent.attendeeCount = cateringEventData.attendeeCount;
       cateringEvent.totalBudget = cateringEventData.totalBudget;
       cateringEvent.status = cateringEventData.status || 'pending';
-      cateringEvent.meals = cateringEventData.meals;
 
       // Link the user
       const user = await this.userRepository.findOne({
@@ -93,14 +92,13 @@ export class CateringEventService {
       cateringEvent.user = user;
 
       // Process meals and link receipts
-      cateringEvent.meals = await Promise.all(
+      const meals = await Promise.all(
         cateringEventData.mealDto.map(async (mealData) => {
           const meal = new Meal();
           meal.mealName = mealData.mealName;
           meal.mealTime = mealData.mealTime;
           meal.description = mealData.description;
           meal.totalPrice = mealData.totalPrice;
-          meal.cateringEvent = cateringEvent;
 
           // Find and link rice receipt
           if (mealData.riceReceiptId) {
@@ -124,16 +122,24 @@ export class CateringEventService {
             meal.coffeeReceipt = coffeeReceipt;
           }
 
-          return this.mealRepository.save(meal);
+          return meal;
         }),
       );
+
+      // Save meals independently to avoid circular references
+      await this.mealRepository.save(meals);
+
+      // Link meals to catering event
+      cateringEvent.meals = meals;
 
       // Save the catering event
       const savedCateringEvent = await this.cateringEventRepository.save(
         cateringEvent,
       );
 
-      return savedCateringEvent;
+      // Avoid returning circular references in the response
+      const { meals: _, ...result } = savedCateringEvent;
+      return result;
     } catch (error) {
       console.error('Error creating catering event:', error);
       throw new InternalServerErrorException('Failed to create catering event');
