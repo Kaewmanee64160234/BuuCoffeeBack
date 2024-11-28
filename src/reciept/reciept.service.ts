@@ -368,6 +368,8 @@ export class RecieptService {
 
       return recipt;
     } catch (error) {
+      console.log('Error creating receipt', error);
+
       this.logger.error('Error creating receipt', error.stack);
       throw new HttpException(
         'Error creating receipt',

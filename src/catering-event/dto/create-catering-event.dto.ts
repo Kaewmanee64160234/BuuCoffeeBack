@@ -19,10 +19,6 @@ export class CreateCateringEventDto {
   actionType: string;
   @IsNotEmpty()
   mealDto: CreateMealDto[];
-  @IsOptional()
-  riceReceiptId: number;
-  @IsOptional()
-  coffeeReceiptId: number;
   cashierAmount: number;
   @IsNotEmpty()
   user: User;

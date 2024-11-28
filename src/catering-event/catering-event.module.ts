@@ -11,6 +11,7 @@ import { Reciept } from 'src/reciept/entities/reciept.entity';
 import { SubInventoriesCoffee } from 'src/sub-inventories-coffee/entities/sub-inventories-coffee.entity';
 import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 import { SubInventoriesRice } from 'src/sub-inventories-rice/entities/sub-inventories-rice.entity';
+import { ReceiptItem } from 'src/receipt-item/entities/receipt-item.entity';
 
 @Module({
   imports: [
@@ -24,6 +25,8 @@ import { SubInventoriesRice } from 'src/sub-inventories-rice/entities/sub-invent
       SubInventoriesCoffee,
       SubInventoriesRice,
       Ingredient,
+      ReceiptItem,
+      Reciept,
     ]),
   ],
   controllers: [CateringEventController],

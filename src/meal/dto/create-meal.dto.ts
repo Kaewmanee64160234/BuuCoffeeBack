@@ -30,4 +30,10 @@ export class CreateMealDto {
   cateringEventId: number;
   @IsNotEmpty()
   mealProductDto: CreateMealProductDto[];
+
+  @IsOptional()
+  riceReceiptId: number;
+
+  @IsOptional()
+  coffeeReceiptId: number;
 }

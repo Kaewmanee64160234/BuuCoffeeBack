@@ -4,7 +4,6 @@ import { UpdateToppingDto } from './dto/update-topping.dto';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Like, Repository } from 'typeorm';
 import { Topping } from './entities/topping.entity';
-import { Category } from 'src/categories/entities/category.entity';
 
 @Injectable()
 export class ToppingsService {

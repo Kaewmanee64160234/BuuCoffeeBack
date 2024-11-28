@@ -71,8 +71,9 @@ export class CateringEventController {
   @Patch(':id/cancel')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการการเลี้ยงรับรอง')
-  async cancel(@Param('id') id: string): Promise<CateringEvent> {
-    return this.cateringEventService.cancel(+id);
+  async cancel(@Param('id') id: string) {
+    // return this.cateringEventService.cancel(+id);
+    return 'cancel';
   }
 
   @Delete(':id')

@@ -10,6 +10,8 @@ import {
 import { CateringEvent } from 'src/catering-event/entities/catering-event.entity';
 import { MealProduct } from 'src/meal-products/entities/meal-product.entity';
 
+import { Reciept } from 'src/reciept/entities/reciept.entity';
+
 @Entity()
 export class Meal {
   @PrimaryGeneratedColumn()
@@ -29,8 +31,16 @@ export class Meal {
 
   @Column({ type: 'time' })
   mealTime: Date;
+
   @OneToMany(() => MealProduct, (mealProduct) => mealProduct.meal)
   mealProducts: MealProduct[];
+
+  // Relationships for receipts
+  @ManyToOne(() => Reciept, { nullable: true, eager: true })
+  riceReceipt: Reciept;
+
+  @ManyToOne(() => Reciept, { nullable: true, eager: true })
+  coffeeReceipt: Reciept;
 
   @CreateDateColumn()
   createdDate: Date;

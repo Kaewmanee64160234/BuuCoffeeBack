@@ -35,10 +35,6 @@ export class CateringEvent {
   status: string; //  'pending', 'paid', 'canceled'
   @OneToMany(() => Meal, (meal) => meal.cateringEvent)
   meals: Meal[];
-  @Column({ nullable: true })
-  riceReceiptId: number;
-  @Column({ nullable: true })
-  coffeeReceiptId: number;
 
   @CreateDateColumn()
   createdDate: Date;

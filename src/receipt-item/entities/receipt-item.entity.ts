@@ -49,6 +49,9 @@ export class ReceiptItem {
     eager: true,
   })
   mealProduct: MealProduct;
+  @ManyToOne(() => ProductType, (productType) => productType.receiptItems, {
+    onDelete: 'CASCADE',
+  })
   productType: ProductType;
   @CreateDateColumn()
   createdDate: Date;

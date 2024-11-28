@@ -6,8 +6,8 @@ import {
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
-import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Like, Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Like, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { Role } from 'src/role/entities/role.entity';
