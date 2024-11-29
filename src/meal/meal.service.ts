@@ -57,7 +57,7 @@ export class MealService {
     return await this.mealRepository.findOne({ where: { mealId } });
   }
 
-  async update(mealId: number, updateMealDto: Partial<Meal>): Promise<Meal> {
+  async update(mealId: number, updateMealDto: CreateMealDto): Promise<Meal> {
     await this.mealRepository.update(mealId, updateMealDto);
     return this.findOne(mealId);
   }

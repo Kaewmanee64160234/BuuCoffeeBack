@@ -75,7 +75,7 @@ export class CateringEventService {
 
   async create(cateringEventData: CreateCateringEventDto) {
     try {
-      // Create a new CateringEvent instance
+      // Step 1: Initialize Catering Event
       const cateringEvent = new CateringEvent();
       cateringEvent.eventName = cateringEventData.eventName;
       cateringEvent.eventDate = new Date(cateringEventData.eventDate);
@@ -91,16 +91,109 @@ export class CateringEventService {
       if (!user) throw new NotFoundException('User not found');
       cateringEvent.user = user;
 
-      // Process meals and link receipts
+      // Step 2: Process Meals and Link Receipts
       const meals = await Promise.all(
         cateringEventData.mealDto.map(async (mealData) => {
           const meal = new Meal();
           meal.mealName = mealData.mealName;
           meal.mealTime = mealData.mealTime;
           meal.description = mealData.description;
-          meal.totalPrice = mealData.totalPrice;
 
-          // Find and link rice receipt
+          const ingredientQuantities: {
+            [ingredientId: number]: { quantity: number; type: string };
+          } = {};
+
+          // Process Meal Products
+          meal.mealProducts = await Promise.all(
+            mealData.mealProducts.map(async (mealProductData) => {
+              const mealProduct = new MealProduct();
+              if (mealProductData.type === 'เลี้ยงรับรอง') {
+                mealProduct.product = null;
+                mealProduct.productName = mealProductData.productName;
+                mealProduct.productPrice = mealProductData.productPrice;
+                mealProduct.quantity = mealProductData.quantity;
+                mealProduct.totalPrice = mealProductData.totalPrice;
+              } else if (
+                mealProductData.type === 'ร้านกาแฟ' ||
+                mealProductData.type === 'ร้านข้าว'
+              ) {
+                // Link product
+                const product = await this.productRepository.findOne({
+                  where: { productId: mealProductData.product.productId },
+                  relations: ['ingredient', 'productTypes'],
+                });
+                if (!product)
+                  throw new NotFoundException(
+                    'Product not found for mealProduct',
+                  );
+
+                mealProduct.product = product;
+
+                mealProduct.quantity = mealProductData.quantity;
+                mealProduct.productName = product.productName;
+                mealProduct.totalPrice = mealProductData.totalPrice;
+                mealProduct.type = mealProductData.type;
+                // Add product ingredient quantity
+                if (product.ingredient) {
+                  const ingredientId = product.ingredient.ingredientId;
+                  if (!ingredientQuantities[ingredientId]) {
+                    ingredientQuantities[ingredientId] = {
+                      quantity: 0,
+                      type: mealProductData.type,
+                    };
+                  }
+                  ingredientQuantities[ingredientId].quantity +=
+                    mealProductData.quantity;
+                }
+              }
+
+              return this.mealProductRepository.save(mealProduct);
+            }),
+          );
+
+          // Validate and Reserve Ingredient Quantities
+          for (const [ingredientId, { quantity, type }] of Object.entries(
+            ingredientQuantities,
+          )) {
+            const ingredientIdNum = Number(ingredientId);
+            let inventory;
+
+            // Retrieve inventory based on type
+            if (type === 'ร้านกาแฟ') {
+              inventory = await this.subInventoriesCoffeeRepository.findOne({
+                where: { ingredient: { ingredientId: ingredientIdNum } },
+              });
+              if (!inventory)
+                throw new NotFoundException(
+                  `Coffee inventory not found for ingredient ID ${ingredientIdNum}`,
+                );
+            } else if (type === 'ร้านข้าว') {
+              inventory = await this.subInventoriesRiceRepository.findOne({
+                where: { ingredient: { ingredientId: ingredientIdNum } },
+              });
+              if (!inventory)
+                throw new NotFoundException(
+                  `Rice inventory not found for ingredient ID ${ingredientIdNum}`,
+                );
+            }
+
+            // Check inventory sufficiency
+            if (inventory.quantity - inventory.reservedQuantity < quantity) {
+              throw new Error(
+                `Insufficient ${type} inventory for ingredient ID ${ingredientIdNum}`,
+              );
+            }
+
+            // Reserve inventory
+            inventory.reservedQuantity += quantity;
+            if (type === 'ร้านกาแฟ') {
+              await this.subInventoriesCoffeeRepository.save(inventory);
+            } else if (type === 'ร้านข้าว') {
+              await this.subInventoriesRiceRepository.save(inventory);
+            }
+          }
+
+          // Link receipts to the meal if provided
           if (mealData.riceReceiptId) {
             const riceReceipt = await this.recieptRepository.findOne({
               where: { receiptId: mealData.riceReceiptId },
@@ -111,7 +204,6 @@ export class CateringEventService {
             meal.riceReceipt = riceReceipt;
           }
 
-          // Find and link coffee receipt
           if (mealData.coffeeReceiptId) {
             const coffeeReceipt = await this.recieptRepository.findOne({
               where: { receiptId: mealData.coffeeReceiptId },
@@ -122,22 +214,19 @@ export class CateringEventService {
             meal.coffeeReceipt = coffeeReceipt;
           }
 
-          return meal;
+          return this.mealRepository.save(meal);
         }),
       );
 
-      // Save meals independently to avoid circular references
-      await this.mealRepository.save(meals);
-
-      // Link meals to catering event
+      // Step 3: Link Meals to Catering Event
       cateringEvent.meals = meals;
 
-      // Save the catering event
+      // Save the Catering Event
       const savedCateringEvent = await this.cateringEventRepository.save(
         cateringEvent,
       );
 
-      // Avoid returning circular references in the response
+      // Step 4: Avoid Circular References in the Response
       const { meals: _, ...result } = savedCateringEvent;
       return result;
     } catch (error) {

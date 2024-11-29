@@ -44,7 +44,7 @@ export class MealController {
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการข้อมูลเลี้ยงรับรอง')
   update(@Param('id') id: string, @Body() updateMealDto: UpdateMealDto) {
-    return this.mealService.update(+id, updateMealDto);
+    return this.mealService.update(+id, null);
   }
 
   @Delete(':id')

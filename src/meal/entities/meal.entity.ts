@@ -35,7 +35,6 @@ export class Meal {
   @OneToMany(() => MealProduct, (mealProduct) => mealProduct.meal)
   mealProducts: MealProduct[];
 
-  // Relationships for receipts
   @ManyToOne(() => Reciept, { nullable: true, eager: true })
   riceReceipt: Reciept;
 
