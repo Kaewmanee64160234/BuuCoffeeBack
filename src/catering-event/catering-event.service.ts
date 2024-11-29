@@ -63,8 +63,9 @@ export class CateringEventService {
         'user',
         'meals.mealProducts',
         'meals.mealProducts.product',
-        'meals.mealProducts.product.ingredient',
-        'meals.mealProducts.product.productTypes',
+        'meals.mealProducts.receiptItems',
+        'meals.coffeeReceipt',
+        'meals.riceReceipt',
       ],
     });
     if (!event) {
