@@ -128,7 +128,7 @@ export class CateringEventService {
                   );
 
                 mealProduct.product = product;
-
+                mealProduct.receiptItems = mealProductData.receiptItems;
                 mealProduct.quantity = mealProductData.quantity;
                 mealProduct.productName = product.productName;
                 mealProduct.totalPrice = mealProductData.totalPrice;
