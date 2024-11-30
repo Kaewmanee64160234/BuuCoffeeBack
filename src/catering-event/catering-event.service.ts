@@ -62,10 +62,13 @@ export class CateringEventService {
         'meals',
         'user',
         'meals.mealProducts',
-        'meals.mealProducts.product',
+        'meals.mealProducts.product.productTypes',
         'meals.mealProducts.receiptItems',
-        'meals.coffeeReceipt',
-        'meals.riceReceipt',
+        'meals.coffeeReceipt.receiptItems.product.productTypes',
+        'meals.coffeeReceipt.receiptItems.productType',
+        'meals.coffeeReceipt.receiptItems.productTypeToppings.productType',
+        'meals.coffeeReceipt.receiptItems.productTypeToppings.topping',
+        'meals.riceReceipt.receiptItems.product',
       ],
     });
     if (!event) {
@@ -108,13 +111,16 @@ export class CateringEventService {
           meal.mealProducts = await Promise.all(
             mealData.mealProducts.map(async (mealProductData) => {
               const mealProduct = new MealProduct();
+              console.log('mealProductData', mealProductData);
+
               if (mealProductData.type === 'เลี้ยงรับรอง') {
                 mealProduct.product = null;
                 mealProduct.productName = mealProductData.productName;
                 mealProduct.productPrice = mealProductData.productPrice;
                 mealProduct.quantity = mealProductData.quantity;
                 mealProduct.totalPrice = mealProductData.totalPrice;
-              } else if (
+              }
+              if (
                 mealProductData.type === 'ร้านกาแฟ' ||
                 mealProductData.type === 'ร้านข้าว'
               ) {
@@ -127,6 +133,7 @@ export class CateringEventService {
                   throw new NotFoundException(
                     'Product not found for mealProduct',
                   );
+                console.log('product', product);
 
                 mealProduct.product = product;
                 mealProduct.receiptItems = mealProductData.receiptItems;
