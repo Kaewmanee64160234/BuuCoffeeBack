@@ -37,6 +37,7 @@ export class IngredientsService {
       newIngredient.ingredientVolumeUnit =
         createIngredientDto.ingredientVolumeUnit;
       newIngredient.ingredientQuantityInStock = 0;
+      newIngredient.reservedQuantity = 0;
       newIngredient.ingredientQuantityPerUnit =
         createIngredientDto.ingredientQuantityPerUnit;
       newIngredient.ingredientQuantityPerSubUnit =
