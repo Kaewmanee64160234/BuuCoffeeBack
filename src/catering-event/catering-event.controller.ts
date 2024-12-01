@@ -52,8 +52,10 @@ export class CateringEventController {
   @Permissions('จัดการการเลี้ยงรับรอง')
   async update(
     @Param('id') id: string,
-    @Body() updateCateringEventDto: UpdateCateringEventDto,
+    @Body() updateCateringEventDto: CateringEvent,
   ): Promise<CateringEvent> {
+    console.log(updateCateringEventDto);
+
     return this.cateringEventService.update(+id, updateCateringEventDto);
   }
 
