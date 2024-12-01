@@ -704,7 +704,6 @@ export class RecieptService {
         ],
       };
 
-      // เพิ่มเงื่อนไขสำหรับ receiptType ถ้าไม่ใช่ "ทั้งหมด"
       if (receiptType && receiptType !== 'ทั้งหมด') {
         queryOptions.where['receiptType'] = receiptType;
       }
@@ -1774,110 +1773,140 @@ export class RecieptService {
   //   return { data, total };
   // }
   async generateReport(startDate?: Date, endDate?: Date) {
-    console.log('Generating report...');
-    console.log(`Start Date: ${startDate}, End Date: ${endDate}`);
+    try {
+      console.log('Generating report...');
 
-    // ตั้งค่าเงื่อนไขเพื่อรวมเฉพาะแคชเชียร์ที่ปิด
-    const cashierConditions: any = {
-      closedDate: Not(IsNull()),
-    };
+      // กำหนดค่าเริ่มต้นสำหรับวันที่
+      const now = new Date();
+      const defaultStartDate = new Date(now.setHours(0, 0, 0, 0));
+      const defaultEndDate = new Date(now.setHours(23, 59, 59, 999));
 
-    if (startDate) {
-      cashierConditions['createdDate'] = MoreThanOrEqual(startDate);
-      console.log(`Added start date filter: ${startDate}`);
-    } else {
-      console.log('No start date filter applied.');
-    }
-    if (endDate) {
-      cashierConditions['closedDate'] = LessThanOrEqual(endDate);
-      console.log(`Added end date filter: ${endDate}`);
-    } else {
-      console.log('No end date filter applied.');
-    }
+      startDate = startDate ? new Date(startDate) : defaultStartDate;
+      endDate = endDate ? new Date(endDate) : defaultEndDate;
 
-    // ดึงข้อมูลแคชเชียร์ทั้งหมดเพื่อบันทึกสำหรับการตรวจสอบ
-    const allCashiers = await this.cashierRepository.find();
-    console.log('All Cashiers:', allCashiers);
-
-    // บันทึกเงื่อนไขการกรอง
-    console.log('Cashier Conditions:', cashierConditions);
-    console.log('Fetching cashiers...');
-    const cashiers = await this.cashierRepository.find({
-      relations: ['openedBy', 'closedBy', 'cashierItems'],
-      where: cashierConditions,
-      order: { closedDate: 'DESC' },
-    });
-    console.log(`Retrieved ${cashiers.length} cashiers.`);
-
-    // การดึงข้อมูลใบเสร็จ
-    const recieptConditions = { receiptStatus: 'paid' };
-    if (startDate) {
-      recieptConditions['createdDate'] = { $gte: startDate };
-    }
-    if (endDate) {
-      recieptConditions['createdDate'] = { $lte: endDate };
-    }
-
-    console.log('Fetching receipts...');
-    const reciepts = await this.recieptRepository.find({
-      where: recieptConditions,
-      order: { createdDate: 'ASC' },
-    });
-    console.log(`Retrieved ${reciepts.length} receipts.`);
-
-    // สร้างรายงาน
-    const reportData = cashiers.map((cashier) => {
-      const relatedReciepts = reciepts.filter(
-        (reciept) =>
-          reciept.createdDate >= cashier.createdDate &&
-          reciept.createdDate <= cashier.closedDate,
+      console.log(
+        `Using date range: ${startDate.toISOString()} - ${endDate.toISOString()}`,
       );
 
-      const cashItems = relatedReciepts.filter(
-        (reciept) => reciept.paymentMethod === 'cash',
-      );
-      const qrcodeItems = relatedReciepts.filter(
-        (reciept) => reciept.paymentMethod === 'qrcode',
-      );
+      // ดึงข้อมูลแคชเชียร์ที่ปิดแล้ว
+      const cashiers = await this.cashierRepository.find({
+        relations: ['openedBy', 'closedBy'],
+        where: {
+          closedDate: Not(IsNull()),
+        },
+        order: { closedDate: 'DESC' },
+      });
 
-      const cashTotal = cashItems.reduce(
-        (total, reciept) => total + Number(reciept.receiptNetPrice || 0),
-        0,
-      );
-      const qrcodeTotal = qrcodeItems.reduce(
-        (total, reciept) => total + Number(reciept.receiptNetPrice || 0),
-        0,
-      );
+      console.log(`Found ${cashiers.length} closed cashiers`);
 
-      console.log(`Processed cashier ID: ${cashier.cashierId}`);
-      console.log(`Cash total: ${cashTotal}, QR code total: ${qrcodeTotal}`);
+      // ดึงข้อมูลใบเสร็จ
+      const receipts = await this.recieptRepository.find({
+        where: {
+          receiptStatus: 'paid',
+        },
+      });
+
+      console.log(`Found ${receipts.length} paid receipts`);
+
+      // แยกรายงานตามประเภทร้าน
+      const coffeeReportData = [];
+      const riceReportData = [];
+
+      for (const cashier of cashiers) {
+        // กรองใบเสร็จที่เกี่ยวข้องกับแคชเชียร์นี้
+        const cashierReceipts = receipts.filter(
+          (receipt) =>
+            receipt.createdDate >= cashier.createdDate &&
+            receipt.createdDate <= cashier.closedDate,
+        );
+
+        // แยกตามวิธีการชำระเงิน
+        const cashReceipts = cashierReceipts.filter(
+          (r) => r.paymentMethod === 'cash',
+        );
+        const qrcodeReceipts = cashierReceipts.filter(
+          (r) => r.paymentMethod === 'qrcode',
+        );
+
+        // คำนวณยอดรวม
+        const cashTotal = cashReceipts.reduce(
+          (sum, r) => sum + Number(r.receiptNetPrice || 0),
+          0,
+        );
+        const qrcodeTotal = qrcodeReceipts.reduce(
+          (sum, r) => sum + Number(r.receiptNetPrice || 0),
+          0,
+        );
+
+        const reportItem = {
+          cashierId: cashier.cashierId,
+          openedDate: cashier.createdDate,
+          closedDate: cashier.closedDate,
+          cashierAmount: cashier.cashierAmount,
+          closedAmount: cashier.closedAmount,
+          openedBy: cashier.openedBy?.userName || 'Unknown',
+          closedBy: cashier.closedBy?.userName || 'Unknown',
+          cash: cashReceipts.map((r) => ({
+            saleTime: r.createdDate,
+            totalPrice: r.receiptTotalPrice,
+            netPrice: r.receiptNetPrice,
+            change: r.change,
+          })),
+          qrcode: qrcodeReceipts.map((r) => ({
+            saleTime: r.createdDate,
+            totalPrice: r.receiptTotalPrice,
+            netPrice: r.receiptNetPrice,
+            change: r.change,
+          })),
+          cashTotal: Number(cashTotal.toFixed(2)),
+          qrcodeTotal: Number(qrcodeTotal.toFixed(2)),
+          totalSales: Number((cashTotal + qrcodeTotal).toFixed(2)),
+        };
+
+        // จัดกลุ่มตามประเภทร้าน
+        if (cashier.type === 'coffee') {
+          coffeeReportData.push(reportItem);
+        } else if (cashier.type === 'rice') {
+          riceReportData.push(reportItem);
+        }
+
+        console.log(
+          `Processed cashier ${cashier.cashierId} (${cashier.type}): Cash: ${cashTotal}, QR: ${qrcodeTotal}`,
+        );
+      }
+
+      // คำนวณยอดรวมทั้งหมด
+      const totals = {
+        coffee: {
+          totalCash: coffeeReportData.reduce((sum, r) => sum + r.cashTotal, 0),
+          totalQR: coffeeReportData.reduce((sum, r) => sum + r.qrcodeTotal, 0),
+          total: coffeeReportData.reduce((sum, r) => sum + r.totalSales, 0),
+        },
+        rice: {
+          totalCash: riceReportData.reduce((sum, r) => sum + r.cashTotal, 0),
+          totalQR: riceReportData.reduce((sum, r) => sum + r.qrcodeTotal, 0),
+          total: riceReportData.reduce((sum, r) => sum + r.totalSales, 0),
+        },
+      };
 
       return {
-        cashierId: cashier.cashierId,
-        openedDate: cashier.createdDate,
-        closedDate: cashier.closedDate,
-        cashierAmount: cashier.cashierAmount,
-        closedAmount: cashier.closedAmount,
-        openedBy: cashier.openedBy?.userName,
-        closedBy: cashier.closedBy?.userName,
-        cash: cashItems.map((reciept) => ({
-          saleTime: reciept.createdDate,
-          totalPrice: reciept.receiptTotalPrice,
-          netPrice: reciept.receiptNetPrice,
-          change: reciept.change,
-        })),
-        qrcode: qrcodeItems.map((reciept) => ({
-          saleTime: reciept.createdDate,
-          totalPrice: reciept.receiptTotalPrice,
-          netPrice: reciept.receiptNetPrice,
-          change: reciept.change,
-        })),
-        cashTotal,
-        qrcodeTotal,
+        startDate,
+        endDate,
+        coffee: {
+          shifts: coffeeReportData,
+          totals: totals.coffee,
+        },
+        rice: {
+          shifts: riceReportData,
+          totals: totals.rice,
+        },
       };
-    });
-
-    console.log('Report generation completed.');
-    return reportData;
+    } catch (error) {
+      console.error('Error generating report:', error);
+      throw new HttpException(
+        'Failed to generate report',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }
