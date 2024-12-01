@@ -244,160 +244,150 @@ export class CateringEventService {
       throw new InternalServerErrorException('Failed to create catering event');
     }
   }
-
-  async update(id: number, updateData: CateringEvent): Promise<CateringEvent> {
+  async update(id: number, updateData: any): Promise<any> {
     try {
-      console.log('law1');
-      console.log('updateData', id);
-
-      // Fetch existing event with relations
-      const existingEvent = await this.cateringEventRepository.findOne({
+      // Fetch the old catering event data with meals and products
+      const oldEvent = await this.cateringEventRepository.findOne({
         where: { eventId: id },
-        relations: ['meals', 'meals.mealProducts'],
+        relations: [
+          'meals',
+          'meals.mealProducts',
+          'meals.mealProducts.product',
+          'meals.mealProducts.product.ingredient',
+        ],
       });
-      console.log('existingEvent', existingEvent);
 
-      console.log('law2');
-
-      if (!existingEvent) {
-        console.log('existingEvent', existingEvent);
-
+      if (!oldEvent) {
         throw new NotFoundException(`Catering event with id ${id} not found`);
       }
-      console.log('law4');
 
-      // Update event-level details
-      existingEvent.eventName = updateData.eventName || existingEvent.eventName;
-      existingEvent.eventDate = updateData.eventDate || existingEvent.eventDate;
-      existingEvent.eventLocation =
-        updateData.eventLocation || existingEvent.eventLocation;
-      existingEvent.attendeeCount =
-        updateData.attendeeCount || existingEvent.attendeeCount;
-      existingEvent.status = updateData.status || existingEvent.status;
+      // Compare meals and mealProducts
+      for (const oldMeal of oldEvent.meals) {
+        const newMeal = updateData.meals.find(
+          (meal: any) => meal.mealId === oldMeal.mealId,
+        );
 
-      // Step 1: Release old ingredient quantities
-      const oldIngredientQuantities = this.aggregateIngredientQuantities(
-        existingEvent.meals,
-      );
+        if (!newMeal) {
+          // Meal is removed, release all product quantities in the meal
+          for (const oldProduct of oldMeal.mealProducts) {
+            if (oldProduct.product?.ingredient) {
+              const ingredientId = oldProduct.product.ingredient.ingredientId;
+              await this.adjustInventory(
+                ingredientId,
+                -oldProduct.quantity,
+                oldProduct.type,
+                true,
+              );
+            }
+          }
+          continue; // Skip further processing for removed meals
+        }
 
-      for (const [ingredientId, { quantity, type }] of Object.entries(
-        oldIngredientQuantities,
-      )) {
-        await this.adjustInventory(Number(ingredientId), -quantity, type);
+        // Compare mealProducts
+        const oldProductsMap = new Map(
+          oldMeal.mealProducts.map((p) => [p.mealProductId, p]),
+        );
+
+        for (const newProduct of newMeal.mealProducts) {
+          const oldProduct = oldProductsMap.get(newProduct.mealProductId);
+
+          if (!oldProduct) {
+            // New product added, reserve its quantity
+            if (newProduct.product?.ingredient) {
+              const ingredientId = newProduct.product.ingredient.ingredientId;
+              await this.adjustInventory(
+                ingredientId,
+                newProduct.quantity,
+                newProduct.type,
+                true,
+              );
+            }
+          } else {
+            // Product exists, check for quantity change
+            const quantityDifference =
+              newProduct.quantity - oldProduct.quantity;
+            if (quantityDifference !== 0 && oldProduct.product?.ingredient) {
+              const ingredientId = oldProduct.product.ingredient.ingredientId;
+              await this.adjustInventory(
+                ingredientId,
+                quantityDifference,
+                oldProduct.type,
+                true,
+              );
+            }
+            // Remove from map to track leftover products
+            oldProductsMap.delete(newProduct.mealProductId);
+          }
+        }
+
+        // Handle leftover old products (removed in the new data)
+        for (const [mealProductId, oldProduct] of oldProductsMap.entries()) {
+          if (oldProduct.product?.ingredient) {
+            const ingredientId = oldProduct.product.ingredient.ingredientId;
+            await this.adjustInventory(
+              ingredientId,
+              -oldProduct.quantity,
+              oldProduct.type,
+              true,
+            );
+          }
+        }
       }
-      console.log('law5');
 
-      // Step 2: Identify meals to remove and remove them
-      const updatedMealNames = new Set(
-        (updateData.meals || []).map((meal) => meal.mealName),
-      );
-      const mealsToRemove = existingEvent.meals.filter(
-        (meal) => !updatedMealNames.has(meal.mealName),
-      );
+      // Update catering event details
+      oldEvent.eventName = updateData.eventName || oldEvent.eventName;
+      oldEvent.eventDate = updateData.eventDate || oldEvent.eventDate;
+      oldEvent.eventLocation =
+        updateData.eventLocation || oldEvent.eventLocation;
+      oldEvent.attendeeCount =
+        updateData.attendeeCount || oldEvent.attendeeCount;
+      oldEvent.status = updateData.status || oldEvent.status;
 
-      for (const meal of mealsToRemove) {
-        await this.mealProductRepository.delete({
-          meal: { mealId: meal.mealId },
-        });
-        await this.mealRepository.delete(meal.mealId);
-      }
+      // Save updated meals and mealProducts
+      oldEvent.meals = await Promise.all(
+        updateData.meals.map(async (meal: any) => {
+          const existingMeal =
+            oldEvent.meals.find((m) => m.mealId === meal.mealId) || new Meal();
+          existingMeal.mealName = meal.mealName;
+          existingMeal.mealTime = meal.mealTime;
+          existingMeal.description = meal.description;
 
-      // Step 3: Add or update meals/products
-      existingEvent.meals = await Promise.all(
-        (updateData.meals || []).map(async (mealData) => {
-          const meal =
-            existingEvent.meals.find(
-              (meal) => meal.mealName === mealData.mealName,
-            ) || new Meal();
-
-          meal.mealName = mealData.mealName;
-          meal.mealTime = mealData.mealTime;
-          meal.description = mealData.description;
-
-          const ingredientQuantities: {
-            [ingredientId: number]: { quantity: number; type: string };
-          } = {};
-
-          meal.mealProducts = await Promise.all(
-            mealData.mealProducts.map(async (mealProductData) => {
-              const mealProduct =
-                meal.mealProducts.find(
-                  (mp) =>
-                    mp.product?.productId ===
-                    mealProductData.product?.productId,
+          existingMeal.mealProducts = await Promise.all(
+            meal.mealProducts.map(async (mealProduct: any) => {
+              const existingProduct =
+                existingMeal.mealProducts.find(
+                  (p) => p.mealProductId === mealProduct.mealProductId,
                 ) || new MealProduct();
 
-              if (mealProductData.type === 'เลี้ยงรับรอง') {
-                mealProduct.product = null;
-                mealProduct.productName = mealProductData.productName;
-                mealProduct.quantity = mealProductData.quantity;
-                mealProduct.productPrice = mealProductData.productPrice;
-                mealProduct.totalPrice = mealProductData.totalPrice;
-                mealProduct.type = mealProductData.type;
-              } else {
-                const mealProduct_ = await this.mealProductRepository.findOne({
-                  where: { mealProductId: mealProductData.mealProductId },
-                  relations: ['product'],
-                });
-                console.log('mealProduct_', mealProduct_);
+              existingProduct.productName = mealProduct.productName;
+              existingProduct.productPrice = mealProduct.productPrice;
+              existingProduct.quantity = mealProduct.quantity;
+              existingProduct.totalPrice = mealProduct.totalPrice;
+              existingProduct.type = mealProduct.type;
 
+              if (mealProduct.product) {
                 const product = await this.productRepository.findOne({
-                  where: { productId: mealProduct_.product.productId },
+                  where: { productId: mealProduct.product.productId },
                   relations: ['ingredient'],
                 });
-                if (!product) {
-                  throw new NotFoundException(
-                    `Product with ID ${mealProduct_.product.productId} not found`,
-                  );
-                }
-
-                mealProduct.product = product;
-                mealProduct.productName = product.productName;
-
-                if (product.ingredient) {
-                  const ingredientId = product.ingredient.ingredientId;
-                  if (!ingredientQuantities[ingredientId]) {
-                    ingredientQuantities[ingredientId] = {
-                      quantity: 0,
-                      type: mealProductData.type,
-                    };
-                  }
-                  ingredientQuantities[ingredientId].quantity +=
-                    mealProductData.quantity;
-                }
+                if (product) existingProduct.product = product;
               }
 
-              mealProduct.productPrice = mealProductData.productPrice;
-              mealProduct.quantity = mealProductData.quantity;
-              mealProduct.totalPrice = mealProductData.totalPrice;
-
-              return this.mealProductRepository.save(mealProduct);
+              return this.mealProductRepository.save(existingProduct);
             }),
           );
 
-          // Reserve updated ingredient quantities
-          for (const [ingredientId, { quantity, type }] of Object.entries(
-            ingredientQuantities,
-          )) {
-            await this.adjustInventory(Number(ingredientId), quantity, type);
-          }
-
-          meal.totalPrice = meal.mealProducts.reduce(
-            (sum, mp) => sum + mp.totalPrice,
-            0,
-          );
-
-          return this.mealRepository.save(meal);
+          return this.mealRepository.save(existingMeal);
         }),
       );
 
-      // Step 4: Recalculate total budget
-      existingEvent.totalBudget = existingEvent.meals.reduce(
+      // Recalculate total budget
+      oldEvent.totalBudget = oldEvent.meals.reduce(
         (sum, meal) => sum + meal.totalPrice,
         0,
       );
 
-      return this.cateringEventRepository.save(existingEvent);
+      return this.cateringEventRepository.save(oldEvent);
     } catch (error) {
       console.error('Error updating catering event:', error);
       throw new InternalServerErrorException('Failed to update catering event');
@@ -423,6 +413,9 @@ export class CateringEventService {
             };
           }
           ingredientQuantities[ingredientId].quantity += mealProduct.quantity;
+          console.log(
+            `Aggregating ingredient ID ${ingredientId}: Quantity ${mealProduct.quantity}, Type: ${mealProduct.type}`,
+          );
         }
       });
     });
@@ -437,33 +430,21 @@ export class CateringEventService {
     reserve = false,
   ): Promise<void> {
     let inventory;
-
-    if (type === 'เลี้ยงรับรอง') return;
-
     if (type === 'ร้านกาแฟ') {
       inventory = await this.subInventoriesCoffeeRepository.findOne({
         where: { ingredient: { ingredientId } },
       });
-      if (!inventory) {
-        throw new NotFoundException(
-          `Coffee inventory not found for ingredient ID ${ingredientId}`,
-        );
-      }
+      if (!inventory) throw new NotFoundException('Coffee inventory not found');
     } else if (type === 'ร้านข้าว') {
       inventory = await this.subInventoriesRiceRepository.findOne({
         where: { ingredient: { ingredientId } },
       });
-      if (!inventory) {
-        throw new NotFoundException(
-          `Rice inventory not found for ingredient ID ${ingredientId}`,
-        );
-      }
+      if (!inventory) throw new NotFoundException('Rice inventory not found');
     }
 
     if (reserve) {
       // Reserve inventory
       if (quantity > 0) {
-        // Check if sufficient inventory is available to reserve
         if (inventory.quantity - inventory.reservedQuantity < quantity) {
           throw new Error(
             `Insufficient ${type} inventory for ingredient ID ${ingredientId}. Available: ${
@@ -472,29 +453,37 @@ export class CateringEventService {
           );
         }
         inventory.reservedQuantity += quantity;
+        inventory.quantity -= quantity;
+        console.log(
+          `Reserved ${quantity} of ingredient ID ${ingredientId} for ${type}. Remaining quantity: ${inventory.quantity}, Reserved: ${inventory.reservedQuantity}`,
+        );
       } else {
-        // Release reserved inventory
         const reserveReduction = Math.abs(quantity);
         if (inventory.reservedQuantity < reserveReduction) {
           throw new Error(
-            `Cannot release more reserved quantity than available for ingredient ID ${ingredientId}. Reserved: ${inventory.reservedQuantity}, Requested: ${reserveReduction}`,
+            `Cannot release more reserved quantity than available for ingredient ID ${ingredientId}. Reserved: ${inventory.reservedQuantity}, Requested to release: ${reserveReduction}`,
           );
         }
         inventory.reservedQuantity -= reserveReduction;
-      }
-    } else {
-      // Adjust inventory quantity directly
-      inventory.quantity += quantity;
-
-      // Ensure `reservedQuantity` is not greater than the updated `quantity`
-      if (inventory.reservedQuantity > inventory.quantity) {
-        throw new Error(
-          `Invalid inventory adjustment for ingredient ID ${ingredientId}. Reserved quantity (${inventory.reservedQuantity}) cannot exceed total quantity (${inventory.quantity}).`,
+        inventory.quantity += reserveReduction;
+        console.log(
+          `Released ${reserveReduction} of ingredient ID ${ingredientId} for ${type}. Remaining quantity: ${inventory.quantity}, Reserved: ${inventory.reservedQuantity}`,
         );
       }
+    } else {
+      // Adjust inventory directly
+      inventory.quantity += quantity;
+      inventory.reservedQuantity -= quantity;
+      if (inventory.quantity < 0) {
+        throw new Error(
+          `Inventory for ingredient ID ${ingredientId} cannot be negative. Current quantity: ${inventory.quantity}`,
+        );
+      }
+      console.log(
+        `Adjusted inventory for ingredient ID ${ingredientId} by ${quantity} for ${type}. Current quantity: ${inventory.quantity}, Reserved: ${inventory.reservedQuantity}`,
+      );
     }
 
-    // Save the updated inventory
     if (type === 'ร้านกาแฟ') {
       await this.subInventoriesCoffeeRepository.save(inventory);
     } else if (type === 'ร้านข้าว') {
