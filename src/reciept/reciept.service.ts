@@ -69,6 +69,9 @@ export class RecieptService {
     // /subInventoryRepository rice
     @InjectRepository(SubInventoriesRice)
     private subInventoryRiceRepository: Repository<SubInventoriesRice>,
+    //  receiptItemRepository
+    @InjectRepository(ReceiptItem)
+    private receiptItemRepository: Repository<ReceiptItem>,
   ) {}
 
   async create(createRecieptDto: CreateRecieptDto) {
@@ -906,13 +909,39 @@ export class RecieptService {
 
   async remove(id: number) {
     try {
-      const reciept = await this.recieptRepository.findOne({
+      // Fetch the receipt with all related entities
+      const receipt = await this.recieptRepository.findOne({
         where: { receiptId: id },
+        relations: [
+          'receiptItems',
+          'receiptItems.productTypeToppings',
+          'receiptItems.productTypeToppings.productType',
+        ],
       });
-      if (!reciept) {
-        throw new HttpException('Reciept not found', HttpStatus.NOT_FOUND);
+
+      if (!receipt) {
+        throw new HttpException('Receipt not found', HttpStatus.NOT_FOUND);
       }
-      return await this.recieptRepository.remove(reciept);
+
+      // Remove all related productTypeToppings for each receipt item
+      for (const item of receipt.receiptItems) {
+        if (item.productTypeToppings && item.productTypeToppings.length > 0) {
+          await this.productTypeToppingRepository.remove(
+            item.productTypeToppings,
+          );
+        }
+      }
+
+      // Remove all receipt items
+      if (receipt.receiptItems && receipt.receiptItems.length > 0) {
+        await this.receiptItemRepository.remove(receipt.receiptItems);
+      }
+      console.log('receipt', receipt);
+
+      // Remove the receipt itself
+      await this.recieptRepository.remove(receipt);
+
+      return receipt;
     } catch (error) {
       this.logger.error('Error deleting receipt', error.stack);
       throw new HttpException(

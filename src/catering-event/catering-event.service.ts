@@ -492,75 +492,84 @@ export class CateringEventService {
   }
 
   async updateStatus(id: number, status: string): Promise<CateringEvent> {
-    // Ensure all necessary relationships are loaded
-    const event = await this.cateringEventRepository.findOne({
-      where: { eventId: id },
-      relations: [
-        'meals',
-        'meals.mealProducts',
-        'meals.mealProducts.product',
-        'meals.mealProducts.product.ingredient',
-      ],
-    });
+    try {
+      // Ensure all necessary relationships are loaded
+      const event = await this.cateringEventRepository.findOne({
+        where: { eventId: id },
+        relations: [
+          'meals',
+          'meals.mealProducts',
+          'meals.mealProducts.product',
+          'meals.mealProducts.product.ingredient',
+        ],
+      });
 
-    if (!event) {
-      throw new NotFoundException(`Catering event with id ${id} not found`);
-    }
+      if (!event) {
+        throw new NotFoundException(`Catering event with id ${id} not found`);
+      }
 
-    // Perform inventory updates based on status change
-    if (event.meals) {
-      for (const meal of event.meals) {
-        for (const mealProduct of meal.mealProducts) {
-          if (mealProduct.product && mealProduct.product.needLinkIngredient) {
-            const ingredientId = mealProduct.product.ingredient?.ingredientId;
-            if (ingredientId) {
-              let inventory;
+      // Perform inventory updates based on status change
+      if (event.meals) {
+        for (const meal of event.meals) {
+          for (const mealProduct of meal.mealProducts) {
+            if (mealProduct.product && mealProduct.product.needLinkIngredient) {
+              const ingredientId = mealProduct.product.ingredient?.ingredientId;
+              if (ingredientId) {
+                let inventory;
 
-              if (mealProduct.product.storeType === 'ร้านกาแฟ') {
-                inventory = await this.subInventoriesCoffeeRepository.findOne({
-                  where: { ingredient: { ingredientId } },
-                });
-                if (!inventory)
-                  throw new NotFoundException('Coffee inventory not found');
-              } else if (mealProduct.product.storeType === 'ร้านข้าว') {
-                inventory = await this.subInventoriesRiceRepository.findOne({
-                  where: { ingredient: { ingredientId } },
-                });
-                if (!inventory)
-                  throw new NotFoundException('Rice inventory not found');
-              }
-              console.log('status', status);
+                if (mealProduct.product.storeType === 'ร้านกาแฟ') {
+                  inventory = await this.subInventoriesCoffeeRepository.findOne(
+                    {
+                      where: { ingredient: { ingredientId } },
+                    },
+                  );
+                  if (!inventory)
+                    throw new NotFoundException('Coffee inventory not found');
+                } else if (mealProduct.product.storeType === 'ร้านข้าว') {
+                  inventory = await this.subInventoriesRiceRepository.findOne({
+                    where: { ingredient: { ingredientId } },
+                  });
+                  if (!inventory)
+                    throw new NotFoundException('Rice inventory not found');
+                }
+                console.log('status', status);
 
-              if (inventory) {
-                if (status === 'paid') {
-                  // On success, deduct quantity and reserved quantity if sufficient reserve exists
-                  if (inventory.reservedQuantity >= mealProduct.quantity) {
-                    inventory.quantity -= mealProduct.quantity;
-                    inventory.reservedQuantity -= mealProduct.quantity;
-                  } else {
-                    throw new Error(
-                      `Insufficient reserved quantity for ${mealProduct.product.storeType}`,
-                    );
+                if (inventory) {
+                  if (status === 'paid') {
+                    // On success, deduct quantity and reserved quantity if sufficient reserve exists
+                    if (inventory.reservedQuantity >= mealProduct.quantity) {
+                      inventory.quantity -= mealProduct.quantity;
+                      inventory.reservedQuantity -= mealProduct.quantity;
+                    } else {
+                      throw new Error(
+                        `Insufficient reserved quantity for ${mealProduct.product.storeType}`,
+                      );
+                    }
                   }
+                  if (status === 'canceled') {
+                    inventory.quantity += mealProduct.quantity;
+                    inventory.reservedQuantity -= mealProduct.quantity;
+                  }
+                  await (mealProduct.product.storeType === 'ร้านกาแฟ'
+                    ? this.subInventoriesCoffeeRepository
+                    : this.subInventoriesRiceRepository
+                  ).save(inventory);
                 }
-                if (status === 'canceled') {
-                  inventory.quantity += mealProduct.quantity;
-                  inventory.reservedQuantity -= mealProduct.quantity;
-                }
-                await (mealProduct.product.storeType === 'ร้านกาแฟ'
-                  ? this.subInventoriesCoffeeRepository
-                  : this.subInventoriesRiceRepository
-                ).save(inventory);
               }
             }
           }
         }
       }
-    }
 
-    // Update the status of the event
-    event.status = status;
-    return this.cateringEventRepository.save(event);
+      // Update the status of the event
+      event.status = status;
+      return this.cateringEventRepository.save(event);
+    } catch (error) {
+      console.error('Error updating catering event status:', error);
+      throw new InternalServerErrorException(
+        'Failed to update catering event status',
+      );
+    }
   }
 
   async delete(id: number): Promise<void> {
