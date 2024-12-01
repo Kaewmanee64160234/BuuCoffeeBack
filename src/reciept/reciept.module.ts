@@ -20,6 +20,7 @@ import { UsersModule } from 'src/users/users.module';
 import { Cashier } from 'src/cashiers/entities/cashier.entity';
 import { SubInventoriesCoffee } from 'src/sub-inventories-coffee/entities/sub-inventories-coffee.entity';
 import { SubInventoriesRice } from 'src/sub-inventories-rice/entities/sub-inventories-rice.entity';
+import { MealProduct } from 'src/meal-products/entities/meal-product.entity';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { SubInventoriesRice } from 'src/sub-inventories-rice/entities/sub-invent
       SubInventoriesCoffee,
       SubInventoriesRice,
       Ingredient,
+      MealProduct,
     ]),
     UsersModule,
   ],

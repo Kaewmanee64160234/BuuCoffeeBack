@@ -28,6 +28,7 @@ import { Checkingredient } from 'src/checkingredients/entities/checkingredient.e
 import { Cashier } from 'src/cashiers/entities/cashier.entity';
 import { SubInventoriesCoffee } from 'src/sub-inventories-coffee/entities/sub-inventories-coffee.entity';
 import { SubInventoriesRice } from 'src/sub-inventories-rice/entities/sub-inventories-rice.entity';
+import { MealProduct } from 'src/meal-products/entities/meal-product.entity';
 @Injectable()
 export class RecieptService {
   private readonly logger = new Logger(RecieptService.name);
@@ -72,6 +73,9 @@ export class RecieptService {
     //  receiptItemRepository
     @InjectRepository(ReceiptItem)
     private receiptItemRepository: Repository<ReceiptItem>,
+    // mealProductRepository
+    @InjectRepository(MealProduct)
+    private mealProductRepository: Repository<MealProduct>,
   ) {}
 
   async create(createRecieptDto: CreateRecieptDto) {
@@ -1063,6 +1067,62 @@ export class RecieptService {
             (oldItem) => oldItem.receiptItemId === newItem.receiptItemId,
           ),
       );
+      if (existingReceipt.receiptStatus === 'เลี้ยงรับรอง') {
+        // Step 1: Handle MealProduct for Removed Receipt Items
+        for (const removedItem of removedItems) {
+          if (removedItem.mealProduct) {
+            const mealProduct = await this.mealProductRepository.findOne({
+              where: { mealProductId: removedItem.mealProduct.mealProductId },
+              relations: ['receiptItems'],
+            });
+
+            if (mealProduct) {
+              // Adjust the quantity of the MealProduct
+              mealProduct.quantity -= removedItem.quantity;
+
+              // Ensure quantity does not drop below zero
+              if (mealProduct.quantity < 0) {
+                mealProduct.quantity = 0;
+              }
+
+              // Remove the association with the receipt item
+              mealProduct.receiptItems = mealProduct.receiptItems.filter(
+                (item) => item.receiptItemId !== removedItem.receiptItemId,
+              );
+
+              // Save updated MealProduct
+              await this.mealProductRepository.save(mealProduct);
+            }
+          }
+        }
+
+        // Step 2: Link Updated and New Receipt Items to MealProduct
+        for (const receiptItem of updatedItems.concat(addedItems)) {
+          const mealProduct = await this.mealProductRepository.findOne({
+            where: { product: { productId: receiptItem.product.productId } },
+            relations: ['receiptItems'],
+          });
+
+          if (mealProduct) {
+            // Link the receipt item to the MealProduct
+            receiptItem.mealProduct = mealProduct;
+
+            // Save the updated MealProduct if necessary
+            if (
+              !mealProduct.receiptItems.some(
+                (item) => item.receiptItemId === receiptItem.receiptItemId,
+              )
+            ) {
+              mealProduct.receiptItems.push(receiptItem);
+              await this.mealProductRepository.save(mealProduct);
+            }
+          } else {
+            console.warn(
+              `MealProduct not found for product ID ${receiptItem.product.productId}`,
+            );
+          }
+        }
+      }
 
       // Revert ingredient stock for removed and updated items
       await this.revertIngredientStock(removedItems.concat(updatedItems));
@@ -1173,6 +1233,13 @@ export class RecieptService {
       // Save the updated receipt with new items and promotions
       existingReceipt.receiptItems = updatedReceiptItems;
       existingReceipt.receiptPromotions = updatedReceiptPromotions;
+      // calculate total price
+      existingReceipt.receiptTotalPrice = existingReceipt.receiptItems.reduce(
+        (acc, item) =>
+          parseFloat(item.receiptSubTotal + '') + parseFloat(acc + ''),
+        0,
+      );
+      existingReceipt.receiptNetPrice = existingReceipt.receiptTotalPrice;
 
       const receiptFinish = await this.recieptRepository.save(existingReceipt);
       console.log('updated receipt:', updatedItems.concat(addedItems));

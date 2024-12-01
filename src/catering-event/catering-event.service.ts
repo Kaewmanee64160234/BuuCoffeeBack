@@ -17,6 +17,7 @@ import { Ingredient } from 'src/ingredients/entities/ingredient.entity';
 import { log } from 'console';
 import { SubInventoriesRice } from 'src/sub-inventories-rice/entities/sub-inventories-rice.entity';
 import { ReceiptItem } from 'src/receipt-item/entities/receipt-item.entity';
+import { UpdateCateringEventDto } from './dto/update-catering-event.dto';
 
 @Injectable()
 export class CateringEventService {
@@ -244,9 +245,10 @@ export class CateringEventService {
       throw new InternalServerErrorException('Failed to create catering event');
     }
   }
-  async update(id: number, updateData: any): Promise<any> {
+
+  async update(id: number, updateData: UpdateCateringEventDto): Promise<any> {
     try {
-      // Fetch the old catering event data with meals and products
+      // Fetch the old catering event with related meals and products
       const oldEvent = await this.cateringEventRepository.findOne({
         where: { eventId: id },
         relations: [
@@ -261,80 +263,118 @@ export class CateringEventService {
         throw new NotFoundException(`Catering event with id ${id} not found`);
       }
 
+      console.log('Incoming updateData:', JSON.stringify(updateData, null, 2));
+
       // Compare meals and mealProducts
       for (const oldMeal of oldEvent.meals) {
         const newMeal = updateData.meals.find(
-          (meal: any) => meal.mealId === oldMeal.mealId,
+          (meal: Meal) => meal.mealId === oldMeal.mealId,
         );
 
         if (!newMeal) {
-          // Meal is removed, release all product quantities in the meal
-          for (const oldProduct of oldMeal.mealProducts) {
-            if (oldProduct.product?.ingredient) {
-              const ingredientId = oldProduct.product.ingredient.ingredientId;
+          // Remove old mealProducts if meal is not present in updateData
+          for (const oldMealProduct of oldMeal.mealProducts) {
+            if (oldMealProduct.product?.ingredient) {
+              const ingredientId =
+                oldMealProduct.product.ingredient.ingredientId;
+              console.log(
+                `Releasing inventory for ingredient ID: ${ingredientId}`,
+              );
               await this.adjustInventory(
                 ingredientId,
-                -oldProduct.quantity,
-                oldProduct.type,
+                -oldMealProduct.quantity,
+                oldMealProduct.type,
                 true,
               );
             }
           }
-          continue; // Skip further processing for removed meals
+          continue; // Skip further processing for this meal
         }
 
-        // Compare mealProducts
-        const oldProductsMap = new Map(
+        // Compare mealProducts within the meal
+        const oldMealProductsMap = new Map(
           oldMeal.mealProducts.map((p) => [p.mealProductId, p]),
         );
 
-        for (const newProduct of newMeal.mealProducts) {
-          const oldProduct = oldProductsMap.get(newProduct.mealProductId);
+        for (const newMealProduct of newMeal.mealProducts) {
+          const oldMealProduct = oldMealProductsMap.get(
+            newMealProduct.mealProductId,
+          );
 
-          if (!oldProduct) {
-            // New product added, reserve its quantity
-            if (newProduct.product?.ingredient) {
-              const ingredientId = newProduct.product.ingredient.ingredientId;
+          if (!oldMealProduct) {
+            // New mealProduct added
+            if (newMealProduct.product?.ingredient) {
+              const ingredientId =
+                newMealProduct.product.ingredient.ingredientId;
+              console.log(
+                `Reserving inventory for new ingredient ID: ${ingredientId}`,
+              );
               await this.adjustInventory(
                 ingredientId,
-                newProduct.quantity,
-                newProduct.type,
+                newMealProduct.quantity,
+                newMealProduct.type,
                 true,
               );
             }
           } else {
-            // Product exists, check for quantity change
+            // Existing mealProduct: Check for quantity changes
             const quantityDifference =
-              newProduct.quantity - oldProduct.quantity;
-            if (quantityDifference !== 0 && oldProduct.product?.ingredient) {
-              const ingredientId = oldProduct.product.ingredient.ingredientId;
+              newMealProduct.quantity - oldMealProduct.quantity;
+
+            if (
+              quantityDifference !== 0 &&
+              oldMealProduct.product?.ingredient
+            ) {
+              const ingredientId =
+                oldMealProduct.product.ingredient.ingredientId;
+              console.log(
+                `Adjusting inventory for ingredient ID: ${ingredientId}, Quantity Difference: ${quantityDifference}`,
+              );
               await this.adjustInventory(
                 ingredientId,
                 quantityDifference,
-                oldProduct.type,
+                oldMealProduct.type,
                 true,
               );
             }
-            // Remove from map to track leftover products
-            oldProductsMap.delete(newProduct.mealProductId);
+
+            // Update mealProduct details
+            oldMealProduct.quantity = newMealProduct.quantity;
+            oldMealProduct.totalPrice =
+              newMealProduct.productPrice * newMealProduct.quantity;
+
+            // Save updated mealProduct
+            const savedMealProduct = await this.mealProductRepository.save(
+              oldMealProduct,
+            );
+            console.log('Updated MealProduct:', savedMealProduct);
+
+            oldMealProductsMap.delete(newMealProduct.mealProductId);
           }
         }
 
         // Handle leftover old products (removed in the new data)
-        for (const [mealProductId, oldProduct] of oldProductsMap.entries()) {
-          if (oldProduct.product?.ingredient) {
-            const ingredientId = oldProduct.product.ingredient.ingredientId;
+        for (const [
+          mealProductId,
+          oldMealProduct,
+        ] of oldMealProductsMap.entries()) {
+          if (oldMealProduct.product?.ingredient) {
+            const ingredientId = oldMealProduct.product.ingredient.ingredientId;
+            console.log(
+              `Releasing inventory for removed ingredient ID: ${ingredientId}`,
+            );
             await this.adjustInventory(
               ingredientId,
-              -oldProduct.quantity,
-              oldProduct.type,
+              -oldMealProduct.quantity,
+              oldMealProduct.type,
               true,
             );
           }
+          await this.mealProductRepository.remove(oldMealProduct);
         }
       }
 
-      // Update catering event details
+      // Update event details
       oldEvent.eventName = updateData.eventName || oldEvent.eventName;
       oldEvent.eventDate = updateData.eventDate || oldEvent.eventDate;
       oldEvent.eventLocation =
@@ -345,12 +385,13 @@ export class CateringEventService {
 
       // Save updated meals and mealProducts
       oldEvent.meals = await Promise.all(
-        updateData.meals.map(async (meal: any) => {
+        updateData.meals.map(async (meal: Meal) => {
           const existingMeal =
             oldEvent.meals.find((m) => m.mealId === meal.mealId) || new Meal();
           existingMeal.mealName = meal.mealName;
           existingMeal.mealTime = meal.mealTime;
           existingMeal.description = meal.description;
+          existingMeal.totalPrice = meal.totalPrice;
 
           existingMeal.mealProducts = await Promise.all(
             meal.mealProducts.map(async (mealProduct: any) => {
@@ -362,7 +403,8 @@ export class CateringEventService {
               existingProduct.productName = mealProduct.productName;
               existingProduct.productPrice = mealProduct.productPrice;
               existingProduct.quantity = mealProduct.quantity;
-              existingProduct.totalPrice = mealProduct.totalPrice;
+              existingProduct.totalPrice =
+                mealProduct.productPrice * mealProduct.quantity;
               existingProduct.type = mealProduct.type;
 
               if (mealProduct.product) {
@@ -373,7 +415,12 @@ export class CateringEventService {
                 if (product) existingProduct.product = product;
               }
 
-              return this.mealProductRepository.save(existingProduct);
+              const savedProduct = await this.mealProductRepository.save(
+                existingProduct,
+              );
+
+              console.log('Saved MealProduct:', savedProduct);
+              return savedProduct;
             }),
           );
 
@@ -387,7 +434,9 @@ export class CateringEventService {
         0,
       );
 
-      return this.cateringEventRepository.save(oldEvent);
+      const savedEvent = await this.cateringEventRepository.save(oldEvent);
+      console.log('Updated Catering Event:', savedEvent);
+      return savedEvent;
     } catch (error) {
       console.error('Error updating catering event:', error);
       throw new InternalServerErrorException('Failed to update catering event');

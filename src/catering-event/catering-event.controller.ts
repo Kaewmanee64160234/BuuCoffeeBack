@@ -54,7 +54,7 @@ export class CateringEventController {
     @Param('id') id: string,
     @Body() updateCateringEventDto: CateringEvent,
   ): Promise<CateringEvent> {
-    console.log(updateCateringEventDto);
+    console.log('Hello___');
 
     return this.cateringEventService.update(+id, updateCateringEventDto);
   }
@@ -66,7 +66,7 @@ export class CateringEventController {
     @Param('id') id: string,
     @Body() updateStatusDto: { status: string },
   ): Promise<CateringEvent> {
-    console.log(updateStatusDto);
+    console.log('Hello');
 
     return this.cateringEventService.updateStatus(+id, updateStatusDto.status);
   }
