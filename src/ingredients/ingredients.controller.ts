@@ -174,8 +174,8 @@ export class IngredientsController {
   }
 
   @Get(':id/image')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @Permissions('ดูวัตถุดิบ')
+  // @UseGuards(JwtAuthGuard, PermissionsGuard)
+  // @Permissions('ดูวัตถุดิบ')
   async getImage(@Param('id') id: string, @Res() res: Response) {
     const ingredient = await this.ingredientsService.findOne(+id);
     res.sendFile(ingredient.ingredientImage, { root: './ingredient_images' });
