@@ -27,6 +27,15 @@ export class CateringEventController {
   async create(@Body() createCateringEventDto: CreateCateringEventDto) {
     return this.cateringEventService.create(createCateringEventDto);
   }
+  @Get('summary')
+  // @UseGuards(JwtAuthGuard, PermissionsGuard)
+  // @Permissions('จัดการการเลี้ยงรับรอง')
+  async summary(
+    @Query('year') year: number = new Date().getFullYear(),
+    @Query('month') month: number = new Date().getMonth() + 1,
+  ) {
+    return this.cateringEventService.getMonthlyReport(year, month);
+  }
   @Get()
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('จัดการการเลี้ยงรับรอง')

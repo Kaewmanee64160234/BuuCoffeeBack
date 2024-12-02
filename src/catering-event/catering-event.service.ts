@@ -55,6 +55,41 @@ export class CateringEventService {
       relations: ['meals', 'meals.mealProducts', 'user'],
     });
   }
+  async getMonthlyReport(year: number, month: number) {
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0);
+
+    const events = await this.cateringEventRepository
+      .createQueryBuilder('event')
+      .where('event.eventDate BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      })
+      .getMany();
+
+    const totalEvents = events.length;
+
+    const pendingEvents = events.filter(
+      (event) => event.status === 'pending',
+    ).length;
+
+    const completedEvents = events.filter(
+      (event) => event.status === 'paid',
+    ).length;
+
+    const totalProfit = events
+      .filter((event) => event.status === 'paid')
+      .reduce((sum, event) => sum + event.totalBudget, 0);
+
+    return {
+      month,
+      year,
+      totalEvents,
+      pendingEvents,
+      completedEvents,
+      totalProfit,
+    };
+  }
 
   async findOne(id: number): Promise<CateringEvent> {
     const event = await this.cateringEventRepository.findOne({
