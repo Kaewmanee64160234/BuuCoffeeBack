@@ -217,7 +217,6 @@ export class CheckingredientsService {
       createCheckingredientDto.checkDescription;
     checkingredient.actionType = createCheckingredientDto.actionType;
 
-    // Process each checkingredientitem, focusing on withdrawal (issuing) only
     for (const itemDto of createCheckingredientDto.checkingredientitems) {
       const ingredient = await this.ingredientRepository.findOneBy({
         ingredientId: itemDto.ingredientId,
@@ -229,7 +228,6 @@ export class CheckingredientsService {
         );
       }
 
-      // Handle only the 'issuing' (withdrawal) action
       if (createCheckingredientDto.actionType === 'issuing') {
         if (ingredient.ingredientQuantityInStock < itemDto.UsedQuantity) {
           throw new Error(
@@ -237,7 +235,6 @@ export class CheckingredientsService {
           );
         }
 
-        // Here we only log the withdrawal for coffee and rice shops without updating stock directly
         if (
           createCheckingredientDto.shopType === 'coffee' ||
           createCheckingredientDto.shopType === 'rice'
@@ -247,7 +244,15 @@ export class CheckingredientsService {
           );
         }
 
-        // Save log of withdrawal without updating actual ingredient inventory
+        if (createCheckingredientDto.shopType === 'inventory') {
+          ingredient.ingredientQuantityInStock = itemDto.UsedQuantity;
+          await this.ingredientRepository.save(ingredient);
+          console.log(
+            `Updated inventory stock for ID ${ingredient.ingredientId}:`,
+            ingredient.ingredientQuantityInStock,
+          );
+        }
+
         const checkingredientitem = new Checkingredientitem();
         checkingredientitem.ingredient = ingredient;
         checkingredientitem.UsedQuantity = itemDto.UsedQuantity;
@@ -262,162 +267,11 @@ export class CheckingredientsService {
       }
     }
 
-    // Return the created check ingredient record with its items
     return await this.checkingredientRepository.findOne({
       where: { CheckID: checkingredient.CheckID },
       relations: ['checkingredientitem'],
     });
   }
-  // async createForCatering(createCateringEventDto: CreateCateringEventDto) {
-  //   const user = await this.userRepository.findOneBy({
-  //     userId: createCateringEventDto.userId,
-  //   });
-
-  //   if (!user) {
-  //     throw new NotFoundException('User not found');
-  //   }
-
-  //   const cateringEvent = new CateringEvent();
-  //   cateringEvent.user = user;
-  //   cateringEvent.eventName = createCateringEventDto.eventName;
-  //   cateringEvent.eventDate = createCateringEventDto.eventDate;
-  //   cateringEvent.eventLocation = createCateringEventDto.eventLocation;
-  //   cateringEvent.attendeeCount = createCateringEventDto.attendeeCount;
-  //   cateringEvent.totalBudget = createCateringEventDto.totalBudget;
-  //   cateringEvent.status = 'pending';
-
-  //   const savedCateringEvent = await this.cateringEventRepository.save(
-  //     cateringEvent,
-  //   );
-
-  //   for (const mealDto of createCateringEventDto.mealDto) {
-  //     const meal = new Meal();
-  //     meal.cateringEvent = savedCateringEvent;
-  //     meal.mealName = mealDto.mealName;
-  //     meal.totalPrice = mealDto.totalPrice;
-  //     meal.mealTime = mealDto.mealTime;
-
-  //     const savedMeal = await this.mealRepository.save(meal);
-
-  //     for (const ingredientDto of mealDto.mealProductDto) {
-  //       const ingredient = await this.ingredientRepository.findOne({
-  //         where: { ingredientId: ingredientDto.productId },
-  //       });
-
-  //       if (!ingredient) {
-  //         throw new Error(
-  //           `Ingredient ID ${ingredientDto.productId} not found.`,
-  //         );
-  //       }
-  //       const mealIngredient = new MealProduct();
-  //       mealIngredient.meal = savedMeal;
-  //       mealIngredient.product = ingredient;
-  //       mealIngredient.quantity = ingredientDto.quantity;
-  //       mealIngredient.totalPrice = ingredientDto.totalPrice;
-  //       mealIngredient.type = ingredientDto.type;
-  //       if (mealIngredient.type === 'warehouse') {
-  //         const createCheckingredientDto: CreateCheckingredientDto = {
-  //           userId: createCateringEventDto.userId,
-  //           date: new Date(),
-  //           shopType: 'catering',
-  //           checkDescription: `Catering event for ${cateringEvent.eventName}`,
-  //           actionType: 'withdrawal',
-  //           checkingredientitems: [
-  //             {
-  //               userId: createCateringEventDto.userId,
-  //               ingredientId: ingredient.ingredientId,
-  //               UsedQuantity: ingredientDto.quantity,
-  //               oldRemain: ingredient.ingredientQuantityInStock,
-  //             },
-  //           ],
-  //         };
-  //         await this.create(createCheckingredientDto);
-  //       }
-  //       if (
-  //         mealIngredient.type === 'rice' ||
-  //         mealIngredient.type === 'coffee'
-  //       ) {
-  //         let subInventory;
-
-  //         if (mealIngredient.type === 'rice') {
-  //           subInventory = await this.riceShopSubInventoryRepository.findOne({
-  //             where: {
-  //               ingredient: { ingredientId: ingredientDto.productId },
-  //             },
-  //             relations: ['ingredient'],
-  //           });
-
-  //           if (!subInventory) {
-  //             throw new NotFoundException(
-  //               `SubInventory for rice with ingredient ID ${ingredientDto.productId} not found.`,
-  //             );
-  //           }
-
-  //           if (subInventory.quantity < ingredientDto.quantity) {
-  //             throw new Error(
-  //               `Not enough stock in rice sub-inventory for Ingredient ID ${ingredientDto.productId}`,
-  //             );
-  //           }
-
-  //           subInventory.quantity -= ingredientDto.quantity;
-
-  //           await this.riceShopSubInventoryRepository.save(subInventory);
-  //         } else if (mealIngredient.type === 'coffee') {
-  //           subInventory = await this.coffeeShopSubInventoryRepository.findOne({
-  //             where: {
-  //               ingredient: { ingredientId: ingredientDto.productId },
-  //             },
-  //             relations: ['ingredient'],
-  //           });
-
-  //           if (!subInventory) {
-  //             throw new NotFoundException(
-  //               `SubInventory for coffee with ingredient ID ${ingredientDto.productId} not found.`,
-  //             );
-  //           }
-
-  //           if (subInventory.quantity < ingredientDto.quantity) {
-  //             throw new Error(
-  //               `Not enough stock in coffee sub-inventory for Ingredient ID ${ingredientDto.productId}`,
-  //             );
-  //           }
-
-  //           subInventory.quantity -= ingredientDto.quantity;
-
-  //           await this.coffeeShopSubInventoryRepository.save(subInventory);
-  //         }
-  //       }
-
-  //       await this.mealIngredientsRepository.save(mealIngredient);
-  //     }
-  //   }
-
-  //   return await this.cateringEventRepository.findOne({
-  //     where: { eventId: savedCateringEvent.eventId },
-  //     relations: ['meals', 'meals.mealIngredients'],
-  //   });
-  // }
-  // async cancelCateringEvent(eventId: number): Promise<void> {
-  //   const cateringEvent = await this.cateringEventRepository.findOne({
-  //     where: { eventId },
-  //     relations: ['meals', 'meals.mealIngredients'],
-  //   });
-
-  //   if (!cateringEvent) {
-  //     throw new NotFoundException(`ไม่พบการจัดเลี้ยงที่มี ID ${eventId}`);
-  //   }
-
-  //   for (const meal of cateringEvent.meals) {
-  //     await this.mealIngredientsRepository.delete({
-  //       meal: { mealId: meal.mealId },
-  //     });
-
-  //     await this.mealRepository.delete({ mealId: meal.mealId });
-  //   }
-
-  //   cateringEvent.status = 'canceled';
-  //   await this.cateringEventRepository.save(cateringEvent);
-  // }
 
   async findAll(actionType?: string): Promise<Checkingredient[]> {
     const query = this.checkingredientRepository
@@ -487,11 +341,9 @@ export class CheckingredientsService {
       throw new NotFoundException('Checkingredient not found');
     }
 
-    // Assign the lastPrice for each ingredient item based on the latest import
     checkingredient.checkingredientitem.forEach((item) => {
       const importItems = item.ingredient.importingredientitem;
       if (importItems && importItems.length > 0) {
-        // Get the latest import item by sorting by createdDate in descending order
         const latestImportItem = importItems.sort(
           (a, b) =>
             new Date(b.createdDate).getTime() -
@@ -501,7 +353,7 @@ export class CheckingredientsService {
           ? latestImportItem.unitPrice / latestImportItem.Quantity
           : 0;
       } else {
-        item.lastPrice = 0; // If no import items, set lastPrice to null
+        item.lastPrice = 0;
       }
     });
     console.log(checkingredient);

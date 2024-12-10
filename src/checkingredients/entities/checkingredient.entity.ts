@@ -22,18 +22,16 @@ export class Checkingredient {
   @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
   date: Date;
   @Column({ type: 'varchar', length: 50 })
-  actionType: string; // withdrawal  หรือ return
+  actionType: string;
   @ManyToOne(() => User, (user) => user.checkingredients)
   @JoinColumn({ name: 'userId' })
   user: User;
   @Column()
-  shopType: string; // coffee  หรือ rice
+  shopType: string;
 
   @Column()
   checkDescription: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
-  totalPrice: number;
   @OneToMany(
     () => Checkingredientitem,
     (checkingredientitem) => checkingredientitem.checkingredient,
